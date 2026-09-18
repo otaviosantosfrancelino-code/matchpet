@@ -1,0 +1,221 @@
+@page "/pets/detalhes/{Id:int}"
+@using crudcomdb.Models
+@using crudcomdb.Interfaces
+@using crudcomdb.Services
+@inject IPetRepository PetRepository
+@inject IInteresseRepository InteresseRepository
+@inject AuthService AuthService
+@inject NavigationManager Nav
+@inject IHttpContextAccessor HttpContextAccessor
+@inject IJSRuntime JS
+@rendermode InteractiveServer
+
+<div class="container py-4 mb-5">
+    @if (pet != null)
+    {
+        <button class="btn btn-link text-muted text-decoration-none px-0 mb-3" @onclick='() => Nav.NavigateTo("/pets")'>
+            <i class="bi bi-arrow-left"></i> Voltar aos resultados
+        </button>
+
+        <div class="row g-4">
+            <div class="col-md-7">
+                <div class="card-portal overflow-hidden shadow-sm">
+                    @if (pet.Imagens != null && pet.Imagens.Any())
+                    {
+                        <div id="petCarousel" class="carousel slide" data-bs-ride="carousel">
+                            <div class="carousel-inner">
+                                @{ var index = 0; }
+                                @foreach (var img in pet.Imagens)
+                                {
+                                    <div class="carousel-item @(index == 0 ? "active" : "")">
+                                        <img src="@img.Base64Data" class="d-block w-100" style="height: 500px; object-fit: cover; background:#f8f9fa;">
+                                    </div>
+                                    index++;
+                                }
+                            </div>
+                            @if (pet.Imagens.Count > 1)
+                            {
+                                <button class="carousel-control-prev" type="button" data-bs-target="#petCarousel" data-bs-slide="prev"><span class="carousel-control-prev-icon"></span></button>
+                                <button class="carousel-control-next" type="button" data-bs-target="#petCarousel" data-bs-slide="next"><span class="carousel-control-next-icon"></span></button>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="col-md-5">
+                <div class="card-portal p-4 h-100 d-flex flex-column border">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h1 class="fw-bold text-dark m-0">@pet.Nome</h1>
+                        <span class="badge @(pet.Sexo == "Macho" ? "bg-primary-subtle text-primary" : "bg-danger-subtle text-danger") fs-6 py-2 px-3 rounded-pill">@pet.Sexo</span>
+                    </div>
+                    
+                    <p class="text-primary fw-medium mb-4"><i class="bi bi-geo-alt-fill me-1"></i> @(pet.UsuarioDoador?.Cidade ?? "Franca"), SP</p>
+
+                    <div class="row g-2 mb-4">
+                        <div class="col-6"><div class="p-2 bg-light rounded-3 border text-center small"><strong>Raça:</strong> @pet.Raca</div></div>
+                        <div class="col-6"><div class="p-2 bg-light rounded-3 border text-center small"><strong>Porte:</strong> @pet.Porte</div></div>
+                        <div class="col-6"><div class="p-2 bg-light rounded-3 border text-center small"><strong>Idade:</strong> @pet.Idade anos</div></div>
+                        <div class="col-6"><div class="p-2 bg-light rounded-3 border text-center small"><strong>Status:</strong> @pet.Status</div></div>
+                    </div>
+
+                    <h6 class="fw-bold text-dark">História e Comportamento</h6>
+                    <p class="text-muted lh-base">@pet.Descricao</p>
+                    
+                    <div class="mt-auto pt-4 border-top">
+                        @if (AuthService.UsuarioLogado != null && pet.UsuarioDoadorId == AuthService.UsuarioLogado.Id)
+                        {
+                            <div class="alert alert-secondary border-0 text-center rounded-pill"><i class="bi bi-info-circle me-2"></i>Você é o doador deste pet.</div>
+                        }
+                        else
+                        {
+                            <button class="btn btn-primary btn-lg w-100 fw-bold py-3 shadow-sm rounded-pill" @onclick="ValidarEAbrirModal">
+                                Quero Conhecer! ❤️
+                            </button>
+                            <p class="text-center text-muted small mt-3 mb-0"><i class="bi bi-shield-lock me-1"></i> Contrato digital gerado após o aceite.</p>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@if (exibirModal)
+{
+    <div class="modal fade show d-block" style="background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+                <div class="modal-header @(interesseRegistrado ? "bg-success" : "bg-dark") text-white py-3 border-0">
+                    <h5 class="modal-title fw-bold">
+                        <i class="bi @(interesseRegistrado ? "bi-check2-circle" : "bi- gavel") me-2"></i> 
+                        @(interesseRegistrado ? "Compromisso Realizado!" : "Termo de Responsabilidade e Contrato")
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="FecharModal"></button>
+                </div>
+                <div class="modal-body p-4 bg-white" style="max-height: 70vh; overflow-y: auto;">
+                    @if (!interesseRegistrado)
+                    {
+                        <div class="p-3 bg-light rounded-3 mb-4 border shadow-sm" style="font-family: 'Courier New', Courier, monospace; font-size: 0.9rem;">
+                            <h6 class="text-center fw-bold text-uppercase mb-3">Minuta do Contrato Digital</h6>
+                            <pre style="white-space: pre-wrap;">@textoContratoTemporario</pre>
+                        </div>
+
+                        <div class="alert alert-warning border-0 p-3 rounded-3 mb-4">
+                            <h6 class="fw-bold"><i class="bi bi-exclamation-triangle-fill me-2"></i>Cláusulas de Aceite:</h6>
+                            <p class="mb-1 small">1. Comprometo-me a fornecer abrigo, alimentação e cuidados veterinários.</p>
+                            <p class="mb-1 small">2. Declaro estar ciente da Lei Sansão contra maus-tratos.</p>
+                            <p class="mb-0 small text-danger fw-bold">3. Declaro que o animal não pertence à fauna silvestre ilícita (Lei 9.605/98).</p>
+                        </div>
+
+                        <button class="btn btn-primary btn-lg w-100 fw-bold rounded-pill py-3" @onclick="AceitarERegistrar">
+                            Assinar Digitalmente e Ver Contato
+                        </button>
+                    }
+                    else
+                    {
+                        <div class="text-center py-4">
+                            <div class="display-1 text-success mb-3"><i class="bi bi-whatsapp"></i></div>
+                            <p class="fs-5 fw-medium text-dark">Contrato assinado e enviado ao doador!</p>
+                            <p class="text-muted small">O WhatsApp de <strong>@(pet?.UsuarioDoador?.Nome)</strong> foi liberado para você agendar a visita.</p>
+                            <button class="btn btn-success btn-lg w-100 fw-bold mt-3 shadow rounded-pill py-3" @onclick="AbrirWhatsApp">
+                                Iniciar Conversa no WhatsApp
+                            </button>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+    private Pet? pet;
+    private bool exibirModal = false;
+    private bool interesseRegistrado = false;
+    private string userIp = "";
+    private string textoContratoTemporario = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        pet = await PetRepository.GetByIdAsync(Id);
+        userIp = HttpContextAccessor.HttpContext?.Connection?.RemoteIpAddress?.ToString() ?? "IP Remoto";
+    }
+
+    private async Task ValidarEAbrirModal()
+    {
+        // 1. Verifica se está logado
+        if (AuthService.UsuarioLogado == null)
+        {
+            await JS.InvokeVoidAsync("alert", "Atenção: Você precisa estar logado para iniciar uma adoção.");
+            Nav.NavigateTo("/login");
+            return;
+        }
+
+        // 2. A TRAVA QUE VOCÊ PEDIU: Verifica documento apenas no clique
+        if (string.IsNullOrEmpty(AuthService.UsuarioLogado.FotoDocumentoBase64))
+        {
+            await JS.InvokeVoidAsync("alert", "🛡️ SEGURANÇA: Identificamos que seu documento ainda não foi anexado. Por questões jurídicas, anexe seu documento no perfil para prosseguir com a adoção.");
+            Nav.NavigateTo("/perfil");
+            return;
+        }
+
+        // 3. Prepara a prévia do contrato
+        textoContratoTemporario = GerarTextoContrato();
+        exibirModal = true;
+    }
+
+    private string GerarTextoContrato()
+    {
+        var adotante = AuthService.UsuarioLogado;
+        var doador = pet?.UsuarioDoador;
+        return $@"CONTRATO DE DOAÇÃO E ADOÇÃO DE ANIMAL DOMÉSTICO
+        
+DOADOR: {doador?.Nome} (Doc: {doador?.Documento})
+ADOTANTE: {adotante?.Nome} (Doc: {adotante?.Documento})
+LOCAL: {adotante?.Cidade}/{adotante?.Estado}
+
+OBJETO: O animal de nome {pet?.Nome}, espécie {pet?.Especie}, raça {pet?.Raca}.
+
+Pelo presente instrumento, o ADOTANTE assume a guarda do animal acima descrito, responsabilizando-se civil e criminalmente por seu bem-estar, saúde e integridade, em conformidade com a legislação vigente em Franca/SP.
+
+Assinado via IP: {userIp} em {DateTime.Now:dd/MM/yyyy HH:mm}";
+    }
+
+    private void FecharModal() { exibirModal = false; interesseRegistrado = false; }
+
+    private async Task AceitarERegistrar()
+    {
+        try {
+            if (pet != null && AuthService.UsuarioLogado != null) {
+                var novoInteresse = new InteresseAdocao {
+                    PetId = pet.Id, 
+                    UsuarioInteressadoId = AuthService.UsuarioLogado.Id,
+                    DataInteresse = DateTime.UtcNow, 
+                    TermoAceito = true, 
+                    IpUsuario = userIp,
+                    ContratoGerado = textoContratoTemporario // Salva o contrato exato no banco
+                };
+
+                // Opcional: Muda o status do pet para "Em Processo"
+                pet.Status = "Em Processo";
+                await PetRepository.UpdateAsync(pet);
+
+                await InteresseRepository.AddAsync(novoInteresse);
+                interesseRegistrado = true;
+            }
+        } catch (Exception ex) { await JS.InvokeVoidAsync("alert", "Erro no registro jurídico: " + ex.Message); }
+    }
+
+    private async Task AbrirWhatsApp()
+    {
+        if (pet?.UsuarioDoador != null) {
+            var fone = pet.UsuarioDoador.Telefone.Replace("(", "").Replace(")", "").Replace("-", "").Replace(" ", "");
+            var textoBase = $"Olá! Acabei de assinar o contrato digital no *Match-Pet SP* para adotar o(a) *{pet.Nome}*! Podemos combinar a visita?";
+            var url = $"https://wa.me/55{fone}?text={Uri.EscapeDataString(textoBase)}";
+            await JS.InvokeVoidAsync("open", url, "_blank");
+            FecharModal();
+        }
+    }
+}

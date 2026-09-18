@@ -1,0 +1,159 @@
+@page "/itens/editar/{Id:int}"
+@using crudcomdb.Models
+@using crudcomdb.Data
+@using crudcomdb.Services
+@using Microsoft.EntityFrameworkCore
+@inject AppDbContext Db
+@inject AuthService AuthService
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+@rendermode InteractiveServer
+
+<div class="container py-4 mb-5" style="max-width: 800px;">
+    <div class="text-center mb-4">
+        <h2 class="fw-bold" style="color: #1a73e8;">Editar Doação de Item</h2>
+        <p class="text-muted">Atualize as informações do acessório ou suprimento.</p>
+    </div>
+
+    @if (itemParaEditar == null)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-warning" role="status"></div>
+            <p class="mt-2">Carregando dados do item...</p>
+        </div>
+    }
+    else
+    {
+        <div class="card-portal p-4 p-md-5 shadow-sm bg-white rounded-4 border">
+            <EditForm Model="@itemParaEditar" OnValidSubmit="SalvarAlteracoes">
+                <DataAnnotationsValidator />
+
+                <div class="bg-light p-4 rounded-4 border mb-4 text-center">
+                    <i class="bi bi-camera-fill fs-1 text-warning mb-2"></i>
+                    <h6 class="fw-bold mb-3">Gerenciar Fotos do Item</h6>
+                    <InputFile OnChange="AdicionarNovasFotos" class="form-control form-control-sm mx-auto" style="max-width: 300px;" multiple accept=".jpg,.jpeg,.png" disabled="@estaCarregando" />
+                    
+                    @if (estaCarregando) { <div class="mt-3 text-warning small"><span class="spinner-border spinner-border-sm me-2"></span>Processando fotos...</div> }
+
+                    <div class="d-flex flex-wrap gap-2 mt-3 justify-content-center">
+                        @foreach (var img in itemParaEditar.Imagens)
+                        {
+                            <div class="position-relative shadow-sm rounded overflow-hidden" style="width: 85px; height: 85px;">
+                                <img src="@img.Base64Data" style="width: 100%; height: 100%; object-fit: cover;" class="border" />
+                                <button type="button" class="btn btn-danger btn-sm position-absolute top-0 end-0 m-1 rounded-circle" style="padding: 0 5px;" 
+                                        @onclick="() => itemParaEditar.Imagens.Remove(img)">&times;</button>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <h6 class="fw-bold text-muted text-uppercase small mb-3 border-bottom pb-2">Informações do Item</h6>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold">Nome do Item</label>
+                        <InputText class="form-control" @bind-Value="itemParaEditar.Nome" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small fw-bold">Status</label>
+                        <InputSelect class="form-select fw-bold text-success" @bind-Value="itemParaEditar.Status">
+                            <option value="Disponível">Disponível</option>
+                            <option value="Doado">Doado</option>
+                        </InputSelect>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small fw-bold">Destinado para</label>
+                        <InputSelect class="form-select" @bind-Value="itemParaEditar.EspecieDestino">
+                            <option value="Cão">Cachorros</option>
+                            <option value="Gato">Gatos</option>
+                            <option value="Pássaro">Pássaros</option>
+                            <option value="Peixe">Peixes</option>
+                            <option value="Todos">Todos</option>
+                        </InputSelect>
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <label class="form-label small fw-bold">Categoria</label>
+                        <InputSelect class="form-select" @bind-Value="itemParaEditar.Categoria">
+                            <option value="Ração/Alimento">Ração / Alimento</option>
+                            <option value="Casinha/Cama">Casinha / Cama</option>
+                            <option value="Gaiola/Aquário">Gaiola / Aquário</option>
+                            <option value="Remédio/Higiene">Remédio / Higiene</option>
+                            <option value="Brinquedo/Acessório">Brinquedo / Acessório</option>
+                            <option value="Outros">Outros</option>
+                        </InputSelect>
+                    </div>
+                    <div class="col-md-8">
+                        <label class="form-label small fw-bold">Descrição / Conservação</label>
+                        <InputTextArea class="form-control" @bind-Value="itemParaEditar.Descricao" rows="3" />
+                    </div>
+                </div>
+
+                <div class="d-flex gap-3 justify-content-end mt-4">
+                    <button type="button" class="btn btn-light fw-bold px-4 rounded-pill" @onclick="VoltarMeusPets">Cancelar</button>
+                    <button type="submit" class="btn btn-warning text-dark fw-bold px-5 rounded-pill shadow" disabled="@estaCarregando">
+                        Salvar Alterações do Item
+                    </button>
+                </div>
+            </EditForm>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public int Id { get; set; }
+    private ItemDoacao? itemParaEditar;
+    private bool estaCarregando = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!AuthService.EstaLogado || AuthService.UsuarioLogado == null)
+        {
+            Nav.NavigateTo("/login", forceLoad: true);
+            return;
+        }
+
+        itemParaEditar = await Db.ItensDoacao
+            .Include(i => i.Imagens)
+            .FirstOrDefaultAsync(i => i.Id == Id);
+
+        if (itemParaEditar == null || itemParaEditar.UsuarioDoadorId != AuthService.UsuarioLogado.Id)
+        {
+            Nav.NavigateTo("/meus-pets", forceLoad: true);
+            return;
+        }
+    }
+
+    private void VoltarMeusPets() => Nav.NavigateTo("/meus-pets", forceLoad: true);
+
+    private async Task AdicionarNovasFotos(InputFileChangeEventArgs e)
+    {
+        estaCarregando = true;
+        try 
+        {
+            foreach (var arquivo in e.GetMultipleFiles(5))
+            {
+                var resized = await arquivo.RequestImageFileAsync(arquivo.ContentType, 800, 800);
+                using var stream = resized.OpenReadStream(5 * 1024 * 1024);
+                using var ms = new MemoryStream(); 
+                await stream.CopyToAsync(ms);
+                
+                var base64 = $"data:{arquivo.ContentType};base64,{Convert.ToBase64String(ms.ToArray())}";
+                itemParaEditar!.Imagens.Add(new ItemImagem { Base64Data = base64, ItemDoacaoId = itemParaEditar.Id });
+            }
+        }
+        finally 
+        {
+            estaCarregando = false;
+        }
+    }
+
+    private async Task SalvarAlteracoes()
+    {
+        Db.ItensDoacao.Update(itemParaEditar!);
+        await Db.SaveChangesAsync();
+        await JS.InvokeVoidAsync("alert", "Item atualizado com sucesso!");
+        Nav.NavigateTo("/meus-pets", forceLoad: true);
+    }
+}

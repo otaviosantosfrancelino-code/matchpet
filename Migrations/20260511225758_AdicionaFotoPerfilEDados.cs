@@ -1,0 +1,28 @@
+﻿using Microsoft.EntityFrameworkCore.Migrations;
+
+#nullable disable
+
+namespace crudcomdb.Migrations
+{
+    /// <inheritdoc />
+    public partial class AdicionaFotoPerfilEDados : Migration
+    {
+        /// <inheritdoc />
+        protected override void Up(MigrationBuilder migrationBuilder)
+        {
+            migrationBuilder.AddColumn<string>(
+                name: "FotoPerfilBase64",
+                table: "Usuarios",
+                type: "text",
+                nullable: true);
+        }
+
+        /// <inheritdoc />
+        protected override void Down(MigrationBuilder migrationBuilder)
+        {
+            migrationBuilder.DropColumn(
+                name: "FotoPerfilBase64",
+                table: "Usuarios");
+        }
+    }
+}

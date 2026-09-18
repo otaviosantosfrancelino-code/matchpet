@@ -1,0 +1,59 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Google+Sans:wght@400;500;700&display=swap');
+
+body {
+    font-family: 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
+    background-color: #f8f9fa; 
+    color: #202124;
+}
+
+h1, h2, h3, h4, h5, h6, .navbar-brand {
+    font-family: 'Google Sans', sans-serif;
+}
+
+/* REMOVE BORDAS PRETAS DE SELEÇÃO/FOCO */
+* {
+    outline: none !important;
+}
+
+/* Efeitos de Card - Estilo Google */
+.card-portal {
+    background: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 16px;
+    transition: all 0.3s cubic-bezier(.25,.8,.25,1);
+}
+
+.card-portal:hover {
+    box-shadow: 0 10px 20px rgba(0,0,0,0.08);
+    transform: translateY(-4px);
+    border-color: #1a73e8;
+}
+
+/* Botões com mais vida */
+.btn-primary {
+    background-color: #1a73e8;
+    border-color: #1a73e8;
+    border-radius: 8px;
+    font-weight: 500;
+    padding: 10px 24px;
+    letter-spacing: 0.25px;
+}
+
+.btn-primary:hover {
+    background-color: #1557b0;
+    box-shadow: 0 2px 6px rgba(26, 115, 232, 0.4);
+}
+
+.btn-danger { background-color: #d93025; border-color: #d93025; border-radius: 8px; }
+.btn-danger:hover { background-color: #b31412; box-shadow: 0 2px 6px rgba(217, 48, 37, 0.4); }
+
+.btn-outline-primary { border-radius: 8px; border-width: 2px; font-weight: 500; }
+.btn-outline-primary:hover { background-color: #e8f0fe; }
+
+/* Badges Coloridos */
+.badge-macho { background-color: #e8f0fe; color: #1967d2; border: 1px solid #d2e3fc; }
+.badge-femea { background-color: #fce8e6; color: #c5221f; border: 1px solid #fad2cf; }
+.badge-neutro { background-color: #f1f3f4; color: #3c4043; border: 1px solid #dadce0; }
+
+.form-control, .form-select { border-radius: 8px; border: 1px solid #dadce0; padding: 12px; }
+.form-control:focus, .form-select:focus { border-color: #1a73e8; box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2); }

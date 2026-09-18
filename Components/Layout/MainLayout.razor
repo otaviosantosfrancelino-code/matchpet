@@ -1,0 +1,24 @@
+﻿@inherits LayoutComponentBase
+
+<div class="page">
+    @* O NavMenu agora é a barra superior fixa *@
+    <NavMenu />
+
+    <main>
+        <article class="content px-4">
+            @Body
+        </article>
+
+        <footer class="bg-white border-top py-4 text-center mt-5">
+            <div class="container text-muted small">
+                <p class="mb-1 fw-bold" style="color: #1a73e8;">🐾 Match-Pet SP</p>
+                <i class="bi bi-shield-check text-success"></i> &copy; 2026. Sistema de Gestão de Adoções - Franca/SP.
+            </div>
+        </footer>
+    </main>
+</div>
+
+<div id="blazor-error-ui">
+    Algo deu errado. <a href="" class="reload">Recarregar</a>
+    <span class="dismiss">🗙</span>
+</div>

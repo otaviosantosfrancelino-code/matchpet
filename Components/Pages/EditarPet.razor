@@ -1,0 +1,181 @@
+@page "/pets/editar/{Id:int}"
+@using crudcomdb.Models
+@using crudcomdb.Interfaces
+@using crudcomdb.Services
+@inject IPetRepository PetRepository
+@inject AuthService AuthService
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+@rendermode InteractiveServer
+
+<div class="container py-4 mb-5" style="max-width: 800px;">
+    <div class="text-center mb-4">
+        <h2 class="fw-bold" style="color: #1a73e8;">Editar Anúncio do Pet</h2>
+        <p class="text-muted">Atualize as informações para manter o processo de adoção transparente.</p>
+    </div>
+
+    @if (petParaEditar == null)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-2">Carregando dados do amiguinho...</p>
+        </div>
+    }
+    else
+    {
+        <div class="card-portal p-4 p-md-5 shadow-sm bg-white rounded-4 border">
+            <EditForm Model="@petParaEditar" OnValidSubmit="SalvarAlteracoes">
+                <DataAnnotationsValidator />
+
+                <div class="bg-light p-4 rounded-4 border mb-4 text-center">
+                    <i class="bi bi-camera-fill fs-1 text-primary mb-2"></i>
+                    <h6 class="fw-bold mb-3">Gerenciar Galeria de Fotos</h6>
+                    <InputFile OnChange="AdicionarNovasFotos" class="form-control form-control-sm mx-auto" style="max-width: 300px;" multiple accept=".jpg,.jpeg,.png" disabled="@estaCarregando" />
+                    
+                    @if (estaCarregando) { <div class="mt-3 text-primary small"><span class="spinner-border spinner-border-sm me-2"></span>Processando imagens...</div> }
+
+                    <div class="d-flex flex-wrap gap-2 mt-3 justify-content-center">
+                        @foreach (var img in petParaEditar.Imagens)
+                        {
+                            <div class="position-relative shadow-sm rounded overflow-hidden" style="width: 85px; height: 85px;">
+                                <img src="@img.Base64Data" style="width: 100%; height: 100%; object-fit: cover;" class="border" />
+                                <button type="button" class="btn btn-danger btn-sm position-absolute top-0 end-0 m-1 rounded-circle" style="padding: 0 5px;" 
+                                        @onclick="() => petParaEditar.Imagens.Remove(img)">&times;</button>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <h6 class="fw-bold text-muted text-uppercase small mb-3 border-bottom pb-2">Dados Principais</h6>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold">Nome do Pet</label>
+                        <InputText class="form-control" @bind-Value="petParaEditar.Nome" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold">Raça (ou SRD)</label>
+                        <InputText class="form-control" @bind-Value="petParaEditar.Raca" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small fw-bold">Espécie</label>
+                        <InputSelect class="form-select" @bind-Value="petParaEditar.Especie">
+                            <option value="Cão">Cachorro</option>
+                            <option value="Gato">Gato</option>
+                            <option value="Pássaro">Pássaro</option>
+                            <option value="Peixe">Peixe</option>
+                            <option value="Outros">Outros</option>
+                        </InputSelect>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small fw-bold">Status do Anúncio</label>
+                        <InputSelect class="@(petParaEditar.Status == "Adotado" ? "form-select fw-bold text-warning" : "form-select fw-bold text-success")" @bind-Value="petParaEditar.Status">
+                            <option value="Disponível">Disponível</option>
+                            <option value="Adotado">Adotado (Final Feliz)</option>
+                        </InputSelect>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small fw-bold">Sexo</label>
+                        <InputSelect class="form-select" @bind-Value="petParaEditar.Sexo">
+                            <option value="Macho">Macho</option>
+                            <option value="Fêmea">Fêmea</option>
+                        </InputSelect>
+                    </div>
+                </div>
+
+                <h6 class="fw-bold text-muted text-uppercase small mb-3 border-bottom pb-2">Características</h6>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <label class="form-label small fw-bold">Porte</label>
+                        <InputSelect class="form-select" @bind-Value="petParaEditar.Porte">
+                            <option value="Pequeno">Pequeno</option>
+                            <option value="Médio">Médio</option>
+                            <option value="Grande">Grande</option>
+                        </InputSelect>
+                    </div>
+                    <div class="col-md-8">
+                        <label class="form-label small fw-bold">Descrição / História</label>
+                        <InputTextArea class="form-control" @bind-Value="petParaEditar.Descricao" rows="3" />
+                    </div>
+                </div>
+
+                <div class="d-flex flex-wrap gap-4 mb-5 bg-light p-3 border rounded-3 justify-content-around">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" @bind="petParaEditar.Castrado" id="c">
+                        <label class="form-check-label fw-bold small text-muted" for="c">Já castrado</label>
+                    </div>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" @bind="petParaEditar.PrecisaDeQuintal" id="q">
+                        <label class="form-check-label fw-bold small text-muted" for="q">Precisa de espaço</label>
+                    </div>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" @bind="petParaEditar.RecomendadoParaCriancas" id="k">
+                        <label class="form-check-label fw-bold small text-muted" for="k">Gosta de Crianças</label>
+                    </div>
+                </div>
+
+                <div class="d-flex gap-3 justify-content-end mt-4">
+                    <button type="button" class="btn btn-light fw-bold px-4 rounded-pill" @onclick="VoltarMeusPets">Cancelar</button>
+                    <button type="submit" class="btn btn-primary fw-bold px-5 rounded-pill shadow" disabled="@estaCarregando">
+                        Salvar Alterações
+                    </button>
+                </div>
+            </EditForm>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public int Id { get; set; }
+    private Pet? petParaEditar;
+    private bool estaCarregando = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!AuthService.EstaLogado || AuthService.UsuarioLogado == null)
+        {
+            Nav.NavigateTo("/login", forceLoad: true);
+            return;
+        }
+
+        var petExistente = await PetRepository.GetByIdAsync(Id);
+        
+        if (petExistente == null || petExistente.UsuarioDoadorId != AuthService.UsuarioLogado.Id)
+        {
+            Nav.NavigateTo("/meus-pets", forceLoad: true);
+            return;
+        }
+
+        petParaEditar = petExistente;
+    }
+
+    private void VoltarMeusPets() => Nav.NavigateTo("/meus-pets", forceLoad: true);
+
+    private async Task AdicionarNovasFotos(InputFileChangeEventArgs e)
+    {
+        estaCarregando = true;
+        try 
+        {
+            foreach (var arquivo in e.GetMultipleFiles(5))
+            {
+                var resized = await arquivo.RequestImageFileAsync(arquivo.ContentType, 800, 800);
+                using var stream = resized.OpenReadStream(5 * 1024 * 1024);
+                using var ms = new MemoryStream(); 
+                await stream.CopyToAsync(ms);
+                
+                var base64 = $"data:{arquivo.ContentType};base64,{Convert.ToBase64String(ms.ToArray())}";
+                petParaEditar!.Imagens.Add(new PetImagem { Base64Data = base64, PetId = petParaEditar.Id });
+            }
+        }
+        finally 
+        {
+            estaCarregando = false;
+        }
+    }
+
+    private async Task SalvarAlteracoes()
+    {
+        await PetRepository.UpdateAsync(petParaEditar!);
+        await JS.InvokeVoidAsync("alert", "Anúncio atualizado com sucesso!");
+        Nav.NavigateTo("/meus-pets", forceLoad: true);
+    }
+}

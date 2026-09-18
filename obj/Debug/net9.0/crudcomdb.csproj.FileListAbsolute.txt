@@ -1,0 +1,341 @@
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\appsettings.Development.json
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\appsettings.json
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\crudcomdb.staticwebassets.runtime.json
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\crudcomdb.staticwebassets.endpoints.json
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\crudcomdb.exe
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\crudcomdb.deps.json
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\crudcomdb.runtimeconfig.json
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\crudcomdb.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\crudcomdb.pdb
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\Humanizer.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\Microsoft.Bcl.AsyncInterfaces.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\Microsoft.Build.Locator.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\Microsoft.CodeAnalysis.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\Microsoft.CodeAnalysis.CSharp.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\Microsoft.CodeAnalysis.CSharp.Workspaces.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\Microsoft.CodeAnalysis.Workspaces.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\Microsoft.CodeAnalysis.Workspaces.MSBuild.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\Microsoft.EntityFrameworkCore.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\Microsoft.EntityFrameworkCore.Abstractions.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\Microsoft.EntityFrameworkCore.Design.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\Microsoft.EntityFrameworkCore.Relational.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\Microsoft.Extensions.DependencyModel.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\Mono.TextTemplating.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\Npgsql.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\Npgsql.EntityFrameworkCore.PostgreSQL.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\System.CodeDom.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\System.Composition.AttributedModel.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\System.Composition.Convention.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\System.Composition.Hosting.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\System.Composition.Runtime.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\System.Composition.TypedParts.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\cs\Microsoft.CodeAnalysis.resources.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\de\Microsoft.CodeAnalysis.resources.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\es\Microsoft.CodeAnalysis.resources.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\fr\Microsoft.CodeAnalysis.resources.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\it\Microsoft.CodeAnalysis.resources.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\ja\Microsoft.CodeAnalysis.resources.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\ko\Microsoft.CodeAnalysis.resources.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\pl\Microsoft.CodeAnalysis.resources.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\pt-BR\Microsoft.CodeAnalysis.resources.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\ru\Microsoft.CodeAnalysis.resources.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\tr\Microsoft.CodeAnalysis.resources.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\zh-Hans\Microsoft.CodeAnalysis.resources.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\zh-Hant\Microsoft.CodeAnalysis.resources.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\cs\Microsoft.CodeAnalysis.CSharp.resources.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\de\Microsoft.CodeAnalysis.CSharp.resources.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\es\Microsoft.CodeAnalysis.CSharp.resources.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\fr\Microsoft.CodeAnalysis.CSharp.resources.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\it\Microsoft.CodeAnalysis.CSharp.resources.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\ja\Microsoft.CodeAnalysis.CSharp.resources.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\ko\Microsoft.CodeAnalysis.CSharp.resources.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\pl\Microsoft.CodeAnalysis.CSharp.resources.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\pt-BR\Microsoft.CodeAnalysis.CSharp.resources.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\ru\Microsoft.CodeAnalysis.CSharp.resources.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\tr\Microsoft.CodeAnalysis.CSharp.resources.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\zh-Hans\Microsoft.CodeAnalysis.CSharp.resources.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\zh-Hant\Microsoft.CodeAnalysis.CSharp.resources.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\cs\Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\de\Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\es\Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\fr\Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\it\Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\ja\Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\ko\Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\pl\Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\pt-BR\Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\ru\Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\tr\Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\zh-Hans\Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\zh-Hant\Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\cs\Microsoft.CodeAnalysis.Workspaces.resources.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\de\Microsoft.CodeAnalysis.Workspaces.resources.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\es\Microsoft.CodeAnalysis.Workspaces.resources.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\fr\Microsoft.CodeAnalysis.Workspaces.resources.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\it\Microsoft.CodeAnalysis.Workspaces.resources.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\ja\Microsoft.CodeAnalysis.Workspaces.resources.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\ko\Microsoft.CodeAnalysis.Workspaces.resources.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\pl\Microsoft.CodeAnalysis.Workspaces.resources.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\pt-BR\Microsoft.CodeAnalysis.Workspaces.resources.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\ru\Microsoft.CodeAnalysis.Workspaces.resources.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\tr\Microsoft.CodeAnalysis.Workspaces.resources.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\zh-Hans\Microsoft.CodeAnalysis.Workspaces.resources.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\zh-Hant\Microsoft.CodeAnalysis.Workspaces.resources.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\cs\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\de\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\es\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\fr\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\it\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\ja\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\ko\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\pl\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\pt-BR\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\ru\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\tr\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\zh-Hans\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\bin\Debug\net9.0\zh-Hant\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\obj\Debug\net9.0\crudcomdb.csproj.AssemblyReference.cache
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\obj\Debug\net9.0\rpswa.dswa.cache.json
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\obj\Debug\net9.0\crudcomdb.GeneratedMSBuildEditorConfig.editorconfig
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\obj\Debug\net9.0\crudcomdb.AssemblyInfoInputs.cache
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\obj\Debug\net9.0\crudcomdb.AssemblyInfo.cs
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\obj\Debug\net9.0\crudcomdb.csproj.CoreCompileInputs.cache
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\obj\Debug\net9.0\crudcomdb.MvcApplicationPartsAssemblyInfo.cache
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\obj\Debug\net9.0\rjimswa.dswa.cache.json
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\obj\Debug\net9.0\rjsmrazor.dswa.cache.json
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\obj\Debug\net9.0\rjsmcshtml.dswa.cache.json
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\obj\Debug\net9.0\scopedcss\Components\Layout\MainLayout.razor.rz.scp.css
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\obj\Debug\net9.0\scopedcss\Components\Layout\NavMenu.razor.rz.scp.css
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\obj\Debug\net9.0\scopedcss\bundle\crudcomdb.styles.css
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\obj\Debug\net9.0\scopedcss\projectbundle\crudcomdb.bundle.scp.css
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\obj\Debug\net9.0\compressed\ic8nzypplx-khy4lop6wu.gz
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\obj\Debug\net9.0\compressed\gdo1nzrqf3-bqjiyaj88i.gz
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\obj\Debug\net9.0\compressed\horw13297p-c2jlpeoesf.gz
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\obj\Debug\net9.0\compressed\eqw62rybwj-erw9l3u2r3.gz
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\obj\Debug\net9.0\compressed\6pxltfss19-aexeepp0ev.gz
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\obj\Debug\net9.0\compressed\rrwd5z20t3-d7shbmvgxk.gz
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\obj\Debug\net9.0\compressed\wpjmwdx06z-ausgxo2sd3.gz
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\obj\Debug\net9.0\compressed\5kvpv48nj3-k8d9w2qqmf.gz
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\obj\Debug\net9.0\compressed\x2rj73fypq-cosvhxvwiu.gz
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\obj\Debug\net9.0\compressed\1bc9gfjwlz-ub07r2b239.gz
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\obj\Debug\net9.0\compressed\bvihmxizsc-fvhpjtyr6v.gz
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\obj\Debug\net9.0\compressed\ynghzb4ocv-b7pk76d08c.gz
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\obj\Debug\net9.0\compressed\m8jaf479vx-fsbi9cje9m.gz
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\obj\Debug\net9.0\compressed\45k924n7bb-rzd6atqjts.gz
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\obj\Debug\net9.0\compressed\6822htsmat-ee0r1s7dh0.gz
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\obj\Debug\net9.0\compressed\zn3ab3ui0e-dxx9fxp4il.gz
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\obj\Debug\net9.0\compressed\wc13nwtzft-jd9uben2k1.gz
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\obj\Debug\net9.0\compressed\u7tjyu6x41-khv3u5hwcm.gz
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\obj\Debug\net9.0\compressed\c64v3ha3pm-r4e9w2rdcm.gz
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\obj\Debug\net9.0\compressed\6ojugp9xtf-lcd1t2u6c8.gz
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\obj\Debug\net9.0\compressed\z08vf8qspd-c2oey78nd0.gz
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\obj\Debug\net9.0\compressed\b3szovh9i1-tdbxkamptv.gz
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\obj\Debug\net9.0\compressed\mdpgpzyo0f-j5mq2jizvt.gz
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\obj\Debug\net9.0\compressed\a43ta7kqvr-06098lyss8.gz
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\obj\Debug\net9.0\compressed\lqfc04buly-nvvlpmu67g.gz
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\obj\Debug\net9.0\compressed\p1wzm6bz8a-s35ty4nyc5.gz
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\obj\Debug\net9.0\compressed\x75f94g58u-pj5nd1wqec.gz
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\obj\Debug\net9.0\compressed\cyoralz6rd-46ein0sx1k.gz
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\obj\Debug\net9.0\compressed\dxnpos4k2g-v0zj4ognzu.gz
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\obj\Debug\net9.0\compressed\f1og91p0yh-37tfw0ft22.gz
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\obj\Debug\net9.0\compressed\bdtezszqfv-hrwsygsryq.gz
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\obj\Debug\net9.0\compressed\q8cipuo7z2-pk9g2wxc8p.gz
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\obj\Debug\net9.0\compressed\7vid0mre8e-ft3s53vfgj.gz
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\obj\Debug\net9.0\compressed\yd2l8e005h-6cfz1n2cew.gz
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\obj\Debug\net9.0\compressed\wdek9muhcn-6pdc2jztkx.gz
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\obj\Debug\net9.0\compressed\zpcxr5wx72-493y06b0oq.gz
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\obj\Debug\net9.0\compressed\jw7xjpgkec-iovd86k7lj.gz
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\obj\Debug\net9.0\compressed\2hhgav01r6-vr1egmr9el.gz
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\obj\Debug\net9.0\compressed\zo0flc1qj0-kbrnm935zg.gz
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\obj\Debug\net9.0\compressed\e5zn6svcj4-jj8uyg4cgr.gz
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\obj\Debug\net9.0\compressed\z32e41s2n4-y7v9cxd14o.gz
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\obj\Debug\net9.0\compressed\8edhz8mbnj-notf2xhcfb.gz
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\obj\Debug\net9.0\compressed\u2natm4dc5-h1s4sie4z3.gz
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\obj\Debug\net9.0\compressed\vkrtuwp8pt-63fj8s7r0e.gz
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\obj\Debug\net9.0\compressed\72lcn5ewvm-0j3bgjxly4.gz
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\obj\Debug\net9.0\compressed\y87mebpy7v-b710acw384.gz
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\obj\Debug\net9.0\compressed\r90bx6lt41-b710acw384.gz
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\obj\Debug\net9.0\staticwebassets.build.json
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\obj\Debug\net9.0\staticwebassets.build.json.cache
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\obj\Debug\net9.0\staticwebassets.development.json
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\obj\Debug\net9.0\staticwebassets.build.endpoints.json
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\obj\Debug\net9.0\crudcomdb.csproj.Up2Date
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\obj\Debug\net9.0\crudcomdb.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\obj\Debug\net9.0\refint\crudcomdb.dll
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\obj\Debug\net9.0\crudcomdb.pdb
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\obj\Debug\net9.0\crudcomdb.genruntimeconfig.cache
+C:\FACULDADE\POO PROGRAMACAO ORIENTADA A OBJETOS\aula05\crudcomdb\obj\Debug\net9.0\ref\crudcomdb.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\appsettings.Development.json
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\appsettings.json
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\crudcomdb.staticwebassets.runtime.json
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\crudcomdb.staticwebassets.endpoints.json
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\crudcomdb.exe
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\crudcomdb.deps.json
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\crudcomdb.runtimeconfig.json
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\crudcomdb.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\crudcomdb.pdb
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\Humanizer.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\Microsoft.Bcl.AsyncInterfaces.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\Microsoft.Build.Locator.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\Microsoft.CodeAnalysis.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\Microsoft.CodeAnalysis.CSharp.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\Microsoft.CodeAnalysis.CSharp.Workspaces.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\Microsoft.CodeAnalysis.Workspaces.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\Microsoft.CodeAnalysis.Workspaces.MSBuild.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\Microsoft.EntityFrameworkCore.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\Microsoft.EntityFrameworkCore.Abstractions.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\Microsoft.EntityFrameworkCore.Design.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\Microsoft.EntityFrameworkCore.Relational.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\Microsoft.Extensions.DependencyModel.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\Microsoft.OpenApi.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\Mono.TextTemplating.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\Npgsql.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\Npgsql.EntityFrameworkCore.PostgreSQL.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\Swashbuckle.AspNetCore.Swagger.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\Swashbuckle.AspNetCore.SwaggerGen.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\Swashbuckle.AspNetCore.SwaggerUI.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\System.CodeDom.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\System.Composition.AttributedModel.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\System.Composition.Convention.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\System.Composition.Hosting.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\System.Composition.Runtime.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\System.Composition.TypedParts.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\cs\Microsoft.CodeAnalysis.resources.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\de\Microsoft.CodeAnalysis.resources.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\es\Microsoft.CodeAnalysis.resources.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\fr\Microsoft.CodeAnalysis.resources.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\it\Microsoft.CodeAnalysis.resources.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\ja\Microsoft.CodeAnalysis.resources.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\ko\Microsoft.CodeAnalysis.resources.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\pl\Microsoft.CodeAnalysis.resources.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\pt-BR\Microsoft.CodeAnalysis.resources.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\ru\Microsoft.CodeAnalysis.resources.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\tr\Microsoft.CodeAnalysis.resources.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\zh-Hans\Microsoft.CodeAnalysis.resources.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\zh-Hant\Microsoft.CodeAnalysis.resources.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\cs\Microsoft.CodeAnalysis.CSharp.resources.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\de\Microsoft.CodeAnalysis.CSharp.resources.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\es\Microsoft.CodeAnalysis.CSharp.resources.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\fr\Microsoft.CodeAnalysis.CSharp.resources.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\it\Microsoft.CodeAnalysis.CSharp.resources.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\ja\Microsoft.CodeAnalysis.CSharp.resources.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\ko\Microsoft.CodeAnalysis.CSharp.resources.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\pl\Microsoft.CodeAnalysis.CSharp.resources.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\pt-BR\Microsoft.CodeAnalysis.CSharp.resources.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\ru\Microsoft.CodeAnalysis.CSharp.resources.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\tr\Microsoft.CodeAnalysis.CSharp.resources.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\zh-Hans\Microsoft.CodeAnalysis.CSharp.resources.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\zh-Hant\Microsoft.CodeAnalysis.CSharp.resources.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\cs\Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\de\Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\es\Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\fr\Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\it\Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\ja\Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\ko\Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\pl\Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\pt-BR\Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\ru\Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\tr\Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\zh-Hans\Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\zh-Hant\Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\cs\Microsoft.CodeAnalysis.Workspaces.resources.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\de\Microsoft.CodeAnalysis.Workspaces.resources.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\es\Microsoft.CodeAnalysis.Workspaces.resources.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\fr\Microsoft.CodeAnalysis.Workspaces.resources.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\it\Microsoft.CodeAnalysis.Workspaces.resources.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\ja\Microsoft.CodeAnalysis.Workspaces.resources.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\ko\Microsoft.CodeAnalysis.Workspaces.resources.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\pl\Microsoft.CodeAnalysis.Workspaces.resources.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\pt-BR\Microsoft.CodeAnalysis.Workspaces.resources.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\ru\Microsoft.CodeAnalysis.Workspaces.resources.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\tr\Microsoft.CodeAnalysis.Workspaces.resources.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\zh-Hans\Microsoft.CodeAnalysis.Workspaces.resources.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\zh-Hant\Microsoft.CodeAnalysis.Workspaces.resources.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\cs\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\de\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\es\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\fr\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\it\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\ja\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\ko\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\pl\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\pt-BR\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\ru\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\tr\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\zh-Hans\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\bin\Debug\net9.0\zh-Hant\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\obj\Debug\net9.0\crudcomdb.csproj.AssemblyReference.cache
+C:\FACULDADE\CRUD TCC\crudcomdb\obj\Debug\net9.0\rpswa.dswa.cache.json
+C:\FACULDADE\CRUD TCC\crudcomdb\obj\Debug\net9.0\crudcomdb.GeneratedMSBuildEditorConfig.editorconfig
+C:\FACULDADE\CRUD TCC\crudcomdb\obj\Debug\net9.0\crudcomdb.AssemblyInfoInputs.cache
+C:\FACULDADE\CRUD TCC\crudcomdb\obj\Debug\net9.0\crudcomdb.AssemblyInfo.cs
+C:\FACULDADE\CRUD TCC\crudcomdb\obj\Debug\net9.0\crudcomdb.csproj.CoreCompileInputs.cache
+C:\FACULDADE\CRUD TCC\crudcomdb\obj\Debug\net9.0\crudcomdb.MvcApplicationPartsAssemblyInfo.cs
+C:\FACULDADE\CRUD TCC\crudcomdb\obj\Debug\net9.0\crudcomdb.MvcApplicationPartsAssemblyInfo.cache
+C:\FACULDADE\CRUD TCC\crudcomdb\obj\Debug\net9.0\rjimswa.dswa.cache.json
+C:\FACULDADE\CRUD TCC\crudcomdb\obj\Debug\net9.0\rjsmrazor.dswa.cache.json
+C:\FACULDADE\CRUD TCC\crudcomdb\obj\Debug\net9.0\rjsmcshtml.dswa.cache.json
+C:\FACULDADE\CRUD TCC\crudcomdb\obj\Debug\net9.0\scopedcss\Components\Layout\MainLayout.razor.rz.scp.css
+C:\FACULDADE\CRUD TCC\crudcomdb\obj\Debug\net9.0\scopedcss\Components\Layout\NavMenu.razor.rz.scp.css
+C:\FACULDADE\CRUD TCC\crudcomdb\obj\Debug\net9.0\scopedcss\bundle\crudcomdb.styles.css
+C:\FACULDADE\CRUD TCC\crudcomdb\obj\Debug\net9.0\scopedcss\projectbundle\crudcomdb.bundle.scp.css
+C:\FACULDADE\CRUD TCC\crudcomdb\obj\Debug\net9.0\compressed\ic8nzypplx-zzeivegdka.gz
+C:\FACULDADE\CRUD TCC\crudcomdb\obj\Debug\net9.0\compressed\gdo1nzrqf3-bqjiyaj88i.gz
+C:\FACULDADE\CRUD TCC\crudcomdb\obj\Debug\net9.0\compressed\horw13297p-c2jlpeoesf.gz
+C:\FACULDADE\CRUD TCC\crudcomdb\obj\Debug\net9.0\compressed\eqw62rybwj-erw9l3u2r3.gz
+C:\FACULDADE\CRUD TCC\crudcomdb\obj\Debug\net9.0\compressed\6pxltfss19-aexeepp0ev.gz
+C:\FACULDADE\CRUD TCC\crudcomdb\obj\Debug\net9.0\compressed\rrwd5z20t3-d7shbmvgxk.gz
+C:\FACULDADE\CRUD TCC\crudcomdb\obj\Debug\net9.0\compressed\wpjmwdx06z-ausgxo2sd3.gz
+C:\FACULDADE\CRUD TCC\crudcomdb\obj\Debug\net9.0\compressed\5kvpv48nj3-k8d9w2qqmf.gz
+C:\FACULDADE\CRUD TCC\crudcomdb\obj\Debug\net9.0\compressed\x2rj73fypq-cosvhxvwiu.gz
+C:\FACULDADE\CRUD TCC\crudcomdb\obj\Debug\net9.0\compressed\1bc9gfjwlz-ub07r2b239.gz
+C:\FACULDADE\CRUD TCC\crudcomdb\obj\Debug\net9.0\compressed\bvihmxizsc-fvhpjtyr6v.gz
+C:\FACULDADE\CRUD TCC\crudcomdb\obj\Debug\net9.0\compressed\ynghzb4ocv-b7pk76d08c.gz
+C:\FACULDADE\CRUD TCC\crudcomdb\obj\Debug\net9.0\compressed\m8jaf479vx-fsbi9cje9m.gz
+C:\FACULDADE\CRUD TCC\crudcomdb\obj\Debug\net9.0\compressed\45k924n7bb-rzd6atqjts.gz
+C:\FACULDADE\CRUD TCC\crudcomdb\obj\Debug\net9.0\compressed\6822htsmat-ee0r1s7dh0.gz
+C:\FACULDADE\CRUD TCC\crudcomdb\obj\Debug\net9.0\compressed\zn3ab3ui0e-dxx9fxp4il.gz
+C:\FACULDADE\CRUD TCC\crudcomdb\obj\Debug\net9.0\compressed\wc13nwtzft-jd9uben2k1.gz
+C:\FACULDADE\CRUD TCC\crudcomdb\obj\Debug\net9.0\compressed\u7tjyu6x41-khv3u5hwcm.gz
+C:\FACULDADE\CRUD TCC\crudcomdb\obj\Debug\net9.0\compressed\c64v3ha3pm-r4e9w2rdcm.gz
+C:\FACULDADE\CRUD TCC\crudcomdb\obj\Debug\net9.0\compressed\6ojugp9xtf-lcd1t2u6c8.gz
+C:\FACULDADE\CRUD TCC\crudcomdb\obj\Debug\net9.0\compressed\z08vf8qspd-c2oey78nd0.gz
+C:\FACULDADE\CRUD TCC\crudcomdb\obj\Debug\net9.0\compressed\b3szovh9i1-tdbxkamptv.gz
+C:\FACULDADE\CRUD TCC\crudcomdb\obj\Debug\net9.0\compressed\mdpgpzyo0f-j5mq2jizvt.gz
+C:\FACULDADE\CRUD TCC\crudcomdb\obj\Debug\net9.0\compressed\a43ta7kqvr-06098lyss8.gz
+C:\FACULDADE\CRUD TCC\crudcomdb\obj\Debug\net9.0\compressed\lqfc04buly-nvvlpmu67g.gz
+C:\FACULDADE\CRUD TCC\crudcomdb\obj\Debug\net9.0\compressed\p1wzm6bz8a-s35ty4nyc5.gz
+C:\FACULDADE\CRUD TCC\crudcomdb\obj\Debug\net9.0\compressed\x75f94g58u-pj5nd1wqec.gz
+C:\FACULDADE\CRUD TCC\crudcomdb\obj\Debug\net9.0\compressed\cyoralz6rd-46ein0sx1k.gz
+C:\FACULDADE\CRUD TCC\crudcomdb\obj\Debug\net9.0\compressed\dxnpos4k2g-v0zj4ognzu.gz
+C:\FACULDADE\CRUD TCC\crudcomdb\obj\Debug\net9.0\compressed\f1og91p0yh-37tfw0ft22.gz
+C:\FACULDADE\CRUD TCC\crudcomdb\obj\Debug\net9.0\compressed\bdtezszqfv-hrwsygsryq.gz
+C:\FACULDADE\CRUD TCC\crudcomdb\obj\Debug\net9.0\compressed\q8cipuo7z2-pk9g2wxc8p.gz
+C:\FACULDADE\CRUD TCC\crudcomdb\obj\Debug\net9.0\compressed\7vid0mre8e-ft3s53vfgj.gz
+C:\FACULDADE\CRUD TCC\crudcomdb\obj\Debug\net9.0\compressed\yd2l8e005h-6cfz1n2cew.gz
+C:\FACULDADE\CRUD TCC\crudcomdb\obj\Debug\net9.0\compressed\wdek9muhcn-6pdc2jztkx.gz
+C:\FACULDADE\CRUD TCC\crudcomdb\obj\Debug\net9.0\compressed\zpcxr5wx72-493y06b0oq.gz
+C:\FACULDADE\CRUD TCC\crudcomdb\obj\Debug\net9.0\compressed\jw7xjpgkec-iovd86k7lj.gz
+C:\FACULDADE\CRUD TCC\crudcomdb\obj\Debug\net9.0\compressed\2hhgav01r6-vr1egmr9el.gz
+C:\FACULDADE\CRUD TCC\crudcomdb\obj\Debug\net9.0\compressed\zo0flc1qj0-kbrnm935zg.gz
+C:\FACULDADE\CRUD TCC\crudcomdb\obj\Debug\net9.0\compressed\e5zn6svcj4-jj8uyg4cgr.gz
+C:\FACULDADE\CRUD TCC\crudcomdb\obj\Debug\net9.0\compressed\z32e41s2n4-y7v9cxd14o.gz
+C:\FACULDADE\CRUD TCC\crudcomdb\obj\Debug\net9.0\compressed\8edhz8mbnj-notf2xhcfb.gz
+C:\FACULDADE\CRUD TCC\crudcomdb\obj\Debug\net9.0\compressed\u2natm4dc5-h1s4sie4z3.gz
+C:\FACULDADE\CRUD TCC\crudcomdb\obj\Debug\net9.0\compressed\vkrtuwp8pt-63fj8s7r0e.gz
+C:\FACULDADE\CRUD TCC\crudcomdb\obj\Debug\net9.0\compressed\72lcn5ewvm-0j3bgjxly4.gz
+C:\FACULDADE\CRUD TCC\crudcomdb\obj\Debug\net9.0\compressed\y87mebpy7v-om4u2gvnfw.gz
+C:\FACULDADE\CRUD TCC\crudcomdb\obj\Debug\net9.0\compressed\r90bx6lt41-om4u2gvnfw.gz
+C:\FACULDADE\CRUD TCC\crudcomdb\obj\Debug\net9.0\staticwebassets.build.json
+C:\FACULDADE\CRUD TCC\crudcomdb\obj\Debug\net9.0\staticwebassets.build.json.cache
+C:\FACULDADE\CRUD TCC\crudcomdb\obj\Debug\net9.0\staticwebassets.development.json
+C:\FACULDADE\CRUD TCC\crudcomdb\obj\Debug\net9.0\staticwebassets.build.endpoints.json
+C:\FACULDADE\CRUD TCC\crudcomdb\obj\Debug\net9.0\crudcomdb.csproj.Up2Date
+C:\FACULDADE\CRUD TCC\crudcomdb\obj\Debug\net9.0\crudcomdb.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\obj\Debug\net9.0\refint\crudcomdb.dll
+C:\FACULDADE\CRUD TCC\crudcomdb\obj\Debug\net9.0\crudcomdb.pdb
+C:\FACULDADE\CRUD TCC\crudcomdb\obj\Debug\net9.0\crudcomdb.genruntimeconfig.cache
+C:\FACULDADE\CRUD TCC\crudcomdb\obj\Debug\net9.0\ref\crudcomdb.dll

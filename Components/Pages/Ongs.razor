@@ -1,0 +1,295 @@
+@page "/ongs"
+@using crudcomdb.Interfaces
+@using crudcomdb.Models
+@using crudcomdb.Data
+@using Microsoft.EntityFrameworkCore
+@inject IPetRepository PetRepository
+@inject AppDbContext Db
+@inject IJSRuntime JS
+@rendermode InteractiveServer
+
+<div class="container py-4 mb-5">
+    <!-- BANNER DA ÁREA DE ONGS -->
+    <div class="text-center mb-5 p-5 bg-success bg-opacity-10 rounded-5 border border-success border-opacity-25 shadow-sm">
+        <h1 class="fw-bold text-success"><i class="bi bi-building-check me-2"></i>Área de ONGs e Instituições Parceiras</h1>
+        <p class="text-muted mx-auto fs-5 mt-2" style="max-width: 700px;">
+            Conheça as entidades de proteção animal de Franca e região. Adote com segurança ou apoie com doações financeiras e suprimentos!
+        </p>
+    </div>
+
+    <!-- SEÇÃO 1: LISTA DE PERFIS DE ONGS CADASTRADAS -->
+    <div class="mb-5">
+        <h3 class="fw-bold text-dark mb-4"><i class="bi bi-shield-shaded text-success me-2"></i>Instituições Cadastradas</h3>
+        
+        @if (ongsList == null)
+        {
+            <div class="text-center py-4"><div class="spinner-border text-success"></div></div>
+        }
+        else if (!ongsList.Any())
+        {
+            <div class="alert alert-light border shadow-sm rounded-4 p-4 text-center text-muted">
+                <i class="bi bi-info-circle fs-3 text-secondary d-block mb-2"></i>
+                Nenhuma ONG cadastrada no momento.
+            </div>
+        }
+        else
+        {
+            <div class="row g-4">
+                @foreach (var ong in ongsList)
+                {
+                    bool selecionada = ongSelecionadaId == ong.Id;
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card h-100 border rounded-4 shadow-sm p-4 bg-white transition-all @(selecionada ? "border-success border-3 shadow" : "")">
+                            <div class="d-flex align-items-center mb-3">
+                                @if (!string.IsNullOrEmpty(ong.FotoPerfilBase64))
+                                {
+                                    <img src="@ong.FotoPerfilBase64" class="rounded-circle shadow-sm border border-2 border-white me-3" style="width: 65px; height: 65px; object-fit: cover; flex-shrink: 0;" />
+                                }
+                                else
+                                {
+                                    <div class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center fw-bold fs-3 me-3 shadow-sm" style="width: 65px; height: 65px; flex-shrink: 0;">
+                                        @ong.Nome.Substring(0, 1).ToUpper()
+                                    </div>
+                                }
+                                <div>
+                                    <h5 class="fw-bold text-dark mb-1">@ong.Nome</h5>
+                                    <span class="badge bg-success text-white rounded-pill px-3"><i class="bi bi-patch-check-fill me-1"></i> ONG Oficial</span>
+                                </div>
+                            </div>
+                            
+                            <!-- DESCRIÇÃO DA ONG -->
+                            @if (!string.IsNullOrEmpty(ong.DescricaoOng))
+                            {
+                                <p class="small text-muted mb-3" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">@ong.DescricaoOng</p>
+                            }
+                            else
+                            {
+                                <p class="small text-muted italic mb-3">Instituição de proteção e amparo animal na região de Franca.</p>
+                            }
+
+                            <p class="small text-secondary mb-3"><i class="bi bi-geo-alt-fill text-danger me-1"></i> @ong.Cidade / @ong.Estado • <i class="bi bi-whatsapp text-success me-1"></i> @ong.Telefone</p>
+
+                            <div class="d-flex gap-2 mt-auto pt-2 border-top">
+                                <button class="btn @(selecionada ? "btn-success" : "btn-outline-success") btn-sm rounded-pill fw-bold flex-grow-1" @onclick="() => FiltrarPorOng(ong.Id)">
+                                    <i class="bi bi-search me-1"></i> @(selecionada ? "Filtrando Animais" : "Ver Animais")
+                                </button>
+                                <button class="btn btn-warning btn-sm rounded-pill fw-bold text-dark px-3 shadow-sm" @onclick="() => AbrirModalDoacao(ong)">
+                                    <i class="bi bi-heart-fill me-1"></i> Doar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+
+    <!-- SEÇÃO 2: CATÁLOGO DE ANIMAIS DA ONG SELECIONADA -->
+    <div class="mb-5 pt-4 border-top">
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+            <h3 class="fw-bold text-dark m-0">
+                <i class="bi bi-heart-pulse text-danger me-2"></i> 
+                @(ongSelecionadaId == null ? "Todos os Animais de Instituições" : $"Animais sob tutela de: {NomeOngSelecionada}")
+            </h3>
+            @if (ongSelecionadaId != null)
+            {
+                <button class="btn btn-outline-secondary btn-sm rounded-pill fw-bold" @onclick="LimparFiltroOng">
+                    <i class="bi bi-x-circle me-1"></i> Ver todas as ONGs
+                </button>
+            }
+        </div>
+
+        @if (petsOng == null)
+        {
+            <div class="text-center py-5"><div class="spinner-border text-success"></div></div>
+        }
+        else if (!petsOng.Any())
+        {
+            <div class="text-center py-5 text-muted bg-white rounded-4 border shadow-sm p-5">
+                <i class="bi bi-emoji-frown fs-1 text-muted"></i>
+                <h5 class="mt-3">Nenhum animal cadastrado por esta instituição no momento.</h5>
+            </div>
+        }
+        else
+        {
+            <div class="row g-4">
+                @foreach (var pet in petsOng.Where(p => p.Status == "Disponível"))
+                {
+                    <div class="col-md-4 col-lg-3">
+                        <div class="card-portal overflow-hidden h-100 d-flex flex-column border rounded-4 bg-white shadow-sm">
+                            <div class="position-relative" style="height: 200px;">
+                                @if (pet.Imagens != null && pet.Imagens.Any())
+                                {
+                                    <img src="@pet.Imagens.First().Base64Data" class="w-100 h-100" style="object-fit: cover;">
+                                }
+                                else
+                                {
+                                    <div class="w-100 h-100 bg-light d-flex justify-content-center align-items-center text-muted"><i class="bi bi-camera fs-2"></i></div>
+                                }
+                                <div class="position-absolute top-0 start-0 w-100 p-2">
+                                    <span class="badge bg-success text-white shadow-sm rounded-pill">
+                                        <i class="bi bi-patch-check-fill me-1"></i> @(pet.UsuarioDoador?.Nome ?? "ONG")
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            <div class="p-3 flex-grow-1">
+                                <h5 class="fw-bold mb-1 text-dark">@pet.Nome</h5>
+                                <p class="small text-muted mb-2">@pet.Especie • @pet.Porte</p>
+                            </div>
+
+                            <div class="p-3 border-top bg-light">
+                                <a href="/pets/detalhes/@pet.Id" class="btn btn-success w-100 fw-bold rounded-pill shadow-sm">Saber Mais</a>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+
+    <!-- SEÇÃO 3: DOAÇÕES FINANCEIRAS E SUPRIMENTOS -->
+    <div class="bg-white p-4 p-md-5 rounded-4 border shadow-sm mt-5">
+        <div class="row align-items-center">
+            <div class="col-lg-7">
+                <h3 class="fw-bold text-dark mb-3"><i class="bi bi-wallet2 text-warning me-2"></i> Quer ajudar uma ONG com Doações?</h3>
+                <p class="text-muted lh-base">
+                    As instituições parceiras dependem de ração, medicamentos veterinários e contribuições financeiras para manter os resgates ativos em Franca. Você pode doar diretamente via <strong>Pix</strong> ou entrar em contato para entregar suprimentos físicos.
+                </p>
+                <div class="d-flex gap-3 mt-4 flex-wrap">
+                    <div class="p-3 bg-light rounded-3 border flex-fill">
+                        <h6 class="fw-bold text-primary mb-1"><i class="bi bi-cash-coin me-1"></i> Apoio Financeiro</h6>
+                        <p class="small text-muted mb-0">Contribua com qualquer valor direto na Chave Pix oficial da ONG.</p>
+                    </div>
+                    <div class="p-3 bg-light rounded-3 border flex-fill">
+                        <h6 class="fw-bold text-warning mb-1 text-dark"><i class="bi bi-box-seam me-1"></i> Bazar & Rações</h6>
+                        <p class="small text-muted mb-0">Doe acessórios ou sacos de ração através do nosso Bazar Solidário.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-5 text-center mt-4 mt-lg-0">
+                <div class="p-4 bg-success bg-opacity-10 rounded-4 border border-success border-opacity-25">
+                    <i class="bi bi-heart-fill text-danger fs-1 mb-2 d-block"></i>
+                    <h5 class="fw-bold text-success">Faça a diferença hoje</h5>
+                    <p class="small text-muted mb-3">Clique no botão "Doar" no card de qualquer ONG acima para copiar a chave Pix ou falar com o responsável.</p>
+                    <a href="/pets" class="btn btn-success fw-bold rounded-pill px-4 shadow-sm">Ver Bazar Solidário de Itens</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL DE DOAÇÃO PARA A ONG ESCOLHIDA -->
+@if (ongModalAberta && ongSelecionadaModal != null)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background: rgba(0,0,0,0.5); backdrop-filter: blur(3px);">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg rounded-4 p-3">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="fw-bold text-dark"><i class="bi bi-heart-fill text-danger me-2"></i> Apoiar @ongSelecionadaModal.Nome</h5>
+                    <button type="button" class="btn-close" @onclick="FecharModalDoacao"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="small text-muted mb-4">Escolha como você deseja ajudar esta instituição de proteção animal:</p>
+                    
+                    <div class="mb-3 p-3 bg-light rounded-3 border">
+                        <label class="form-label small fw-bold text-dark"><i class="bi bi-qr-code text-primary me-1"></i> Chave Pix para Doação em Dinheiro:</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control fw-bold text-success bg-white" readonly value="@(string.IsNullOrEmpty(ongSelecionadaModal.ChavePix) ? "pix@ongparceirasfranca.com.br (Chave Padrão)" : ongSelecionadaModal.ChavePix)" />
+                            <button class="btn btn-outline-primary" type="button" @onclick="() => CopiarPix(ongSelecionadaModal.ChavePix)">
+                                <i class="bi bi-clipboard"></i> Copiar
+                            </button>
+                        </div>
+                        <span class="form-text small text-muted">Copie a chave e cole no aplicativo do seu banco.</span>
+                    </div>
+
+                    <div class="d-grid gap-2 mt-4">
+                        <button class="btn btn-success fw-bold rounded-pill py-2 shadow-sm" @onclick="ContatarWhatsAppOng">
+                            <i class="bi bi-whatsapp me-2"></i> Combinar Doação de Ração / Itens via WhatsApp
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<Usuario>? ongsList;
+    private List<Pet>? petsOng;
+    private int? ongSelecionadaId = null;
+    private string NomeOngSelecionada = "";
+    
+    private bool ongModalAberta = false;
+    private Usuario? ongSelecionadaModal = null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        ongsList = await Db.Usuarios.Where(u => u.EhOng).ToListAsync();
+        await CarregarTodosPetsOngs();
+    }
+
+    private async Task CarregarTodosPetsOngs()
+    {
+        petsOng = await Db.Pets
+            .Include(p => p.Imagens)
+            .Include(p => p.UsuarioDoador)
+            .Where(p => p.UsuarioDoador != null && p.UsuarioDoador.EhOng)
+            .ToListAsync();
+    }
+
+    private async Task FiltrarPorOng(int ongId)
+    {
+        if (ongSelecionadaId == ongId)
+        {
+            await LimparFiltroOng();
+            return;
+        }
+
+        ongSelecionadaId = ongId;
+        var ong = ongsList?.FirstOrDefault(o => o.Id == ongId);
+        NomeOngSelecionada = ong?.Nome ?? "ONG";
+
+        petsOng = await Db.Pets
+            .Include(p => p.Imagens)
+            .Include(p => p.UsuarioDoador)
+            .Where(p => p.UsuarioDoadorId == ongId)
+            .ToListAsync();
+    }
+
+    private async Task LimparFiltroOng()
+    {
+        ongSelecionadaId = null;
+        NomeOngSelecionada = "";
+        await CarregarTodosPetsOngs();
+    }
+
+    private void AbrirModalDoacao(Usuario ong)
+    {
+        ongSelecionadaModal = ong;
+        ongModalAberta = true;
+    }
+
+    private void FecharModalDoacao()
+    {
+        ongModalAberta = false;
+        ongSelecionadaModal = null;
+    }
+
+    private async Task CopiarPix(string? chave)
+    {
+        var chaveFinal = string.IsNullOrEmpty(chave) ? "pix@ongparceirasfranca.com.br" : chave;
+        await JS.InvokeVoidAsync("navigator.clipboard.writeText", chaveFinal);
+        await JS.InvokeVoidAsync("alert", "Chave Pix copiada para a área de transferência!");
+    }
+
+    private async Task ContatarWhatsAppOng()
+    {
+        if (ongSelecionadaModal == null) return;
+        var fone = ongSelecionadaModal.Telefone.Replace(" ", "").Replace("-", "").Replace("(", "").Replace(")", "");
+        var texto = $"Olá, {ongSelecionadaModal.Nome}! Vi o perfil de vocês no *Match-Pet SP* e gostaria de fazer a doação de suprimentos/ração. Como podemos combinar?";
+        var url = $"https://api.whatsapp.com/send?phone=55{fone}&text={Uri.EscapeDataString(texto)}";
+        await JS.InvokeVoidAsync("open", url, "_blank");
+        FecharModalDoacao();
+    }
+}

@@ -1,0 +1,177 @@
+﻿@using crudcomdb.Services
+@inject AuthService AuthService
+@inject NavigationManager Nav
+@implements IDisposable
+
+<nav class="navbar navbar-expand-lg fixed-top shadow-sm navbar-custom">
+    <div class="container d-flex align-items-stretch justify-content-between" style="height: 72px;">
+        
+        <a class="navbar-brand d-flex align-items-center m-0" href="/" style="flex: 1; height: 72px;">
+            <img src="/logo-match-pet.png" alt="Match-Pet SP" style="height: 55px; max-height: 100%; object-fit: contain; padding: 2px 0;" />
+        </a>
+
+        <div class="collapse navbar-collapse justify-content-center" style="flex: 3; height: 72px;">
+            <ul class="navbar-nav d-flex flex-row justify-content-center m-0 p-0 h-100" style="gap: 1.5rem;">
+                <li class="nav-item d-flex align-items-center h-100">
+                    <NavLink class="nav-link nav-link-custom" href="/" Match="NavLinkMatch.All">Início</NavLink>
+                </li>
+                <li class="nav-item d-flex align-items-center h-100">
+                    <NavLink class="nav-link nav-link-custom" href="/pets">Catálogo</NavLink>
+                </li>
+                <li class="nav-item d-flex align-items-center h-100">
+                    <NavLink class="nav-link nav-link-custom text-success fw-bold" href="/ongs">ONGs</NavLink>
+                </li>
+                <li class="nav-item d-flex align-items-center h-100">
+                    <NavLink class="nav-link nav-link-custom text-warning fw-bold" href="/final-feliz">Final Feliz</NavLink>
+                </li>
+                @if (AuthService.EstaLogado)
+                {
+                    <li class="nav-item d-flex align-items-center h-100">
+                        <NavLink class="nav-link nav-link-custom" href="/meus-pets">Meus Animais</NavLink>
+                    </li>
+                }
+            </ul>
+        </div>
+
+        <div class="d-flex align-items-center justify-content-end m-0 gap-3" style="flex: 1.5;">
+            <NavLink class="btn btn-outline-primary btn-sm px-3 fw-bold d-none d-xl-flex align-items-center btn-nav-rounded shadow-sm" href="/pets/novo">
+                <i class="bi bi-plus-lg me-1"></i> Cadastrar
+            </NavLink>
+
+            @if (AuthService.EstaLogado)
+            {
+                <div class="dropdown">
+                    <button class="btn btn-light btn-sm rounded-pill px-2 py-1 border d-flex align-items-center dropdown-toggle shadow-sm" type="button" data-bs-toggle="dropdown">
+                        @if (!string.IsNullOrEmpty(AuthService.UsuarioLogado?.FotoPerfilBase64))
+                        {
+                            <img src="@AuthService.UsuarioLogado.FotoPerfilBase64" class="rounded-circle me-2" style="width: 32px; height: 32px; object-fit: cover;" />
+                        }
+                        else
+                        {
+                            <i class="bi bi-person-circle text-primary me-2 fs-5"></i>
+                        }
+                        <span class="small fw-bold text-dark d-none d-md-inline">@AuthService.UsuarioLogado?.Nome</span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2 rounded-4 p-2">
+                        <li><a class="dropdown-item rounded-3 fw-bold py-2" href="/perfil"><i class="bi bi-person-gear me-2"></i>Meu Perfil</a></li>
+                        <li><a class="dropdown-item rounded-3 fw-bold py-2" href="/meus-pets"><i class="bi bi-collection me-2"></i>Meus Animais</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><button class="dropdown-item rounded-3 text-danger fw-bold py-2" @onclick="ExecutarSair"><i class="bi bi-power me-2"></i>Sair</button></li>
+                    </ul>
+                </div>
+            }
+            else
+            {
+                <button class="btn btn-primary btn-sm rounded-pill px-4 fw-bold shadow-sm" @onclick='() => Nav.NavigateTo("/login")'>Entrar</button>
+            }
+        </div>
+    </div>
+</nav>
+
+<!-- BOTÃO FLUTUANTE PARA MOBILE -->
+<button class="btn-floating-menu show shadow-lg" @onclick="ToggleMenu">
+    <i class="bi @(menuAberto ? "bi-x-lg" : "bi-list")"></i>
+</button>
+
+<div class="menu-overlay @(menuAberto ? "active" : "")" @onclick="ToggleMenu">
+    <div class="menu-content shadow-lg" @onclick:stopPropagation="true">
+        <h5 class="fw-bold text-primary mb-4 border-bottom pb-2">Navegação</h5>
+        <ul class="list-unstyled">
+            <li class="mb-3"><a href="/" class="menu-item-overlay"><i class="bi bi-house-door me-2"></i> Início</a></li>
+            <li class="mb-3"><a href="/pets" class="menu-item-overlay"><i class="bi bi-search me-2"></i> Catálogo Geral</a></li>
+            <li class="mb-3"><a href="/ongs" class="menu-item-overlay text-success fw-bold"><i class="bi bi-building-check me-2"></i> Área de ONGs</a></li>
+            <li class="mb-3"><a href="/final-feliz" class="menu-item-overlay text-warning fw-bold"><i class="bi bi-stars me-2"></i> Final Feliz</a></li>
+            <hr>
+            @if (AuthService.EstaLogado)
+            {
+                <li class="mb-3"><a href="/meus-pets" class="menu-item-overlay fw-bold"><i class="bi bi-collection me-2"></i> Meus Animais</a></li>
+                <li class="mb-3"><a href="/perfil" class="menu-item-overlay"><i class="bi bi-person-vcard me-2"></i> Meu Perfil</a></li>
+                <li><button class="btn btn-outline-danger w-100 rounded-pill fw-bold" @onclick="ExecutarSair">Sair</button></li>
+            }
+            else
+            {
+                <li><button class="btn btn-primary w-100 rounded-pill fw-bold" @onclick='() => Nav.NavigateTo("/login")'>Fazer Login</button></li>
+            }
+        </ul>
+    </div>
+</div>
+
+<style>
+    .navbar-custom { background: #ffffff; height: 72px; }
+
+    .nav-link-custom { 
+        color: #444746 !important; 
+        font-weight: 500; 
+        font-size: 1rem;
+        padding: 0 10px !important;
+        margin: 0 !important;
+        height: 72px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        position: relative;
+        text-decoration: none !important;
+        white-space: nowrap;
+        background: transparent !important;
+        border: none !important;
+    }
+
+    .nav-link-custom::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 0;
+        height: 4px;
+        background-color: #1a73e8;
+        transition: width 0.3s ease;
+        border-radius: 4px 4px 0 0;
+    }
+
+    .nav-link-custom.active {
+        color: #1a73e8 !important;
+        font-weight: 700 !important;
+    }
+
+    .nav-link-custom.active::after {
+        width: 100%;
+    }
+
+    .nav-link-custom:hover {
+        color: #1a73e8 !important;
+    }
+
+    .btn-nav-rounded { border-radius: 20px; border-width: 2px; }
+    
+    .btn-floating-menu {
+        position: fixed; top: 20px; right: 20px; width: 56px; height: 56px;
+        background-color: #1a73e8; color: white; border: none; border-radius: 50%;
+        display: flex !important; align-items: center !important; justify-content: center !important;
+        z-index: 2000; transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .btn-floating-menu i { font-size: 1.8rem; line-height: 1; }
+    
+    .menu-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); backdrop-filter: blur(4px); z-index: 1999; opacity: 0; visibility: hidden; transition: 0.3s; }
+    .menu-overlay.active { opacity: 1; visibility: visible; }
+    .menu-content { position: absolute; top: 85px; right: 20px; width: 260px; background: white; border-radius: 20px; padding: 25px; transform: translateY(-20px); transition: 0.3s; }
+    .menu-overlay.active .menu-content { transform: translateY(0); }
+    .menu-item-overlay { text-decoration: none; color: #202124; font-weight: 500; display: block; }
+</style>
+
+@code {
+    private bool menuAberto = false;
+
+    protected override void OnInitialized() => AuthService.OnChage += StateHasChanged;
+
+    private void ToggleMenu() => menuAberto = !menuAberto;
+    
+    private void ExecutarSair() 
+    { 
+        menuAberto = false; 
+        AuthService.Logout(); 
+        Nav.NavigateTo("/", forceLoad: true); 
+    }
+
+    public void Dispose() => AuthService.OnChage -= StateHasChanged;
+}

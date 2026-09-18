@@ -1,0 +1,297 @@
+@page "/cadastro"
+@using crudcomdb.Models
+@using crudcomdb.Interfaces
+@using crudcomdb.Services
+@using System.Net.Http.Json
+@inject IUsuarioRepository UsuarioRepository
+@inject AuthService AuthService
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+@inject IHttpContextAccessor HttpContextAccessor
+@rendermode InteractiveServer
+
+<div class="container mt-5 mb-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-lg border-0 rounded-4 overflow-hidden">
+                <div class="card-header border-0 py-4 text-center" style="background-color: #001534; color: white;">
+                    <i class="bi bi-shield-check fs-1 text-info"></i>
+                    <h2 class="fw-bold mt-2">Crie sua Conta</h2>
+                    <p class="mb-0 opacity-75">Sua identificação protege você e os animais</p>
+                </div>
+                
+                <div class="card-body p-4 p-md-5 bg-white">
+                    @if (!string.IsNullOrEmpty(mensagemErroGeral))
+                    {
+                        <div class="alert alert-danger fw-bold small text-center mb-4">
+                            <i class="bi bi-exclamation-triangle-fill me-1"></i> @mensagemErroGeral
+                        </div>
+                    }
+
+                    @if (!aguardandoConfirmacao)
+                    {
+                        <EditForm Model="@novoUsuario" OnValidSubmit="IniciarProcessoCadastro">
+                            <DataAnnotationsValidator />
+                            
+                            <div class="row">
+                                <h5 class="fw-bold text-primary mb-3 border-bottom pb-2">Dados Pessoais / Institucionais</h5>
+                                <div class="col-md-12 mb-3">
+                                    <label class="form-label fw-bold">Nome Completo ou Razão Social da ONG</label>
+                                    <InputText class="form-control" @bind-Value="novoUsuario.Nome" />
+                                    <ValidationMessage For="@(() => novoUsuario.Nome)" class="text-danger small" />
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">CPF ou CNPJ</label>
+                                    <InputText class="form-control" @bind-Value="novoUsuario.Documento" @oninput="VerificarSeEhCnpj" />
+                                    <ValidationMessage For="@(() => novoUsuario.Documento)" class="text-danger small" />
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Telefone / WhatsApp</label>
+                                    <InputText class="form-control" @bind-Value="novoUsuario.Telefone" placeholder="(16) 99999-9999" />
+                                    <ValidationMessage For="@(() => novoUsuario.Telefone)" class="text-danger small" />
+                                </div>
+
+                                @if (possuiCnpj)
+                                {
+                                    <div class="col-12 mb-3">
+                                        <div class="p-3 bg-success bg-opacity-10 rounded-4 border border-success border-opacity-25">
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" @bind="novoUsuario.EhOng" id="checkOng">
+                                                <label class="form-check-label fw-bold text-success" for="checkOng">
+                                                    <i class="bi bi-building-check me-1"></i> Cadastrar como uma Instituição / ONG oficial
+                                                </label>
+                                            </div>
+                                            @if (novoUsuario.EhOng)
+                                            {
+                                                <div class="mt-3">
+                                                    <label class="form-label small fw-bold text-muted">Chave Pix da ONG</label>
+                                                    <InputText class="form-control form-control-sm" @bind-Value="novoUsuario.ChavePix" placeholder="CNPJ, E-mail ou Telefone Pix" />
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+
+                                <h5 class="fw-bold text-primary mt-3 mb-3 border-bottom pb-2">Endereço</h5>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label fw-bold">CEP</label>
+                                    <div class="input-group">
+                                        <InputText class="form-control" @bind-Value="novoUsuario.CEP" @onblur="ConsultarCEP" />
+                                        <button class="btn btn-outline-secondary" type="button" @onclick="ConsultarCEP"><i class="bi bi-search"></i></button>
+                                    </div>
+                                </div>
+                                <div class="col-md-8 mb-3">
+                                    <label class="form-label fw-bold">Rua</label>
+                                    <InputText class="form-control" @bind-Value="novoUsuario.Logradouro" />
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <label class="form-label fw-bold">Nº</label>
+                                    <InputText class="form-control" @bind-Value="novoUsuario.Numero" />
+                                </div>
+                                <div class="col-md-5 mb-3">
+                                    <label class="form-label fw-bold">Bairro</label>
+                                    <InputText class="form-control" @bind-Value="novoUsuario.Bairro" />
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label fw-bold">Cidade</label>
+                                    <InputText class="form-control" @bind-Value="novoUsuario.Cidade" readonly />
+                                </div>
+
+                                <h5 class="fw-bold text-primary mt-3 mb-3 border-bottom pb-2">Segurança</h5>
+                                <div class="col-md-12 mb-3">
+                                    <label class="form-label fw-bold">E-mail (Login)</label>
+                                    <InputText class="form-control" @bind-Value="novoUsuario.Email" />
+                                    <ValidationMessage For="@(() => novoUsuario.Email)" class="text-danger small" />
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Senha</label>
+                                    <InputText type="password" class="form-control" @bind-Value="novoUsuario.Senha" />
+                                    <ValidationMessage For="@(() => novoUsuario.Senha)" class="text-danger small" />
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Confirme a Senha</label>
+                                    <InputText type="password" class="form-control" @bind-Value="novoUsuario.ConfirmarSenha" />
+                                    <ValidationMessage For="@(() => novoUsuario.ConfirmarSenha)" class="text-danger small" />
+                                </div>
+                            </div>
+
+                            <div class="alert alert-light border mt-4 p-3 shadow-sm">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" @bind="novoUsuario.AceitouTermos" id="checkLGPD" required>
+                                    <label class="form-check-label small" for="checkLGPD">
+                                        Concordo com os Termos e LGPD para formalização de adoção.
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="d-grid gap-2 mt-4">
+                                <button type="submit" class="btn btn-primary btn-lg fw-bold py-3 shadow" disabled="@enviandoEmail">
+                                    @if (enviandoEmail) {
+                                        <span class="spinner-border spinner-border-sm me-2"></span><span>Enviando código real para o e-mail...</span>
+                                    } else {
+                                        <span>Continuar e Enviar Código <i class="bi bi-arrow-right ms-1"></i></span>
+                                    }
+                                </button>
+                            </div>
+                        </EditForm>
+                    }
+                    else
+                    {
+                        <div class="text-center py-5 slide-in">
+                            <i class="bi bi-envelope-check-fill fs-1 text-primary mb-3"></i>
+                            <h3 class="fw-bold text-dark">Confirme seu E-mail</h3>
+                            <p class="text-muted mt-2">
+                                Enviamos um código de verificação para:<br/>
+                                <strong class="text-primary fs-5">@novoUsuario.Email</strong>
+                            </p>
+                            
+                            <div class="mx-auto mt-4" style="max-width: 320px;">
+                                <input type="text" class="form-control form-control-lg text-center fw-bold text-primary shadow-sm border-2 @(erroCodigo ? "is-invalid border-danger" : "border-primary")" 
+                                       placeholder="000000" maxlength="6" 
+                                       @bind="codigoDigitado" @bind:event="oninput" 
+                                       style="letter-spacing: 12px; font-size: 1.8rem;" />
+                                
+                                @if (erroCodigo)
+                                {
+                                    <div class="invalid-feedback fw-bold mt-2 d-block">
+                                        <i class="bi bi-exclamation-triangle-fill me-1"></i> O código digitado está incorreto.
+                                    </div>
+                                }
+                            </div>
+
+                            <div class="d-grid gap-3 mt-5 mx-auto" style="max-width: 320px;">
+                                <button type="button" class="btn btn-primary btn-lg fw-bold shadow" @onclick="ConfirmarECadastrar">
+                                    Validar Conta e Entrar
+                                </button>
+                                <button type="button" class="btn btn-light fw-bold text-muted border shadow-sm" @onclick="VoltarParaFormulario">
+                                    <i class="bi bi-arrow-left me-1"></i> Voltar e corrigir dados
+                                </button>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .slide-in { animation: slideInFromRight 0.4s ease-out; }
+    @@keyframes slideInFromRight {
+        0% { transform: translateX(30px); opacity: 0; }
+        100% { transform: translateX(0); opacity: 1; }
+    }
+</style>
+
+@code {
+    private Usuario novoUsuario = new();
+    private HttpClient http = new HttpClient();
+    private bool possuiCnpj = false;
+    private bool enviandoEmail = false;
+    private string mensagemErroGeral = "";
+    
+    private bool aguardandoConfirmacao = false;
+    private string codigoGerado = string.Empty;
+    private string codigoDigitado = string.Empty;
+    private bool erroCodigo = false;
+
+    private void VerificarSeEhCnpj(ChangeEventArgs e)
+    {
+        var doc = e.Value?.ToString()?.Replace(".", "").Replace("/", "").Replace("-", "").Trim() ?? "";
+        possuiCnpj = doc.Length == 14;
+        if (!possuiCnpj) novoUsuario.EhOng = false;
+    }
+
+    private async Task ConsultarCEP() {
+        var cep = novoUsuario.CEP?.Replace("-", "").Trim();
+        if (cep?.Length == 8) {
+            try {
+                var dados = await http.GetFromJsonAsync<ViaCEPResponse>($"https://viacep.com.br/ws/{cep}/json/");
+                if (dados != null && !dados.Erro) {
+                    novoUsuario.Logradouro = dados.Logradouro;
+                    novoUsuario.Bairro = dados.Bairro;
+                    novoUsuario.Cidade = dados.Localidade;
+                    novoUsuario.Estado = dados.Uf;
+                    StateHasChanged();
+                }
+            } catch { }
+        }
+    }
+
+    private async Task IniciarProcessoCadastro() {
+        mensagemErroGeral = "";
+        enviandoEmail = true;
+        StateHasChanged();
+
+        try {
+            // 1. Validação de Duplicidade (E-mail e CPF/CNPJ)
+            var usuarioExistenteEmail = await UsuarioRepository.GetByEmailAsync(novoUsuario.Email.Trim());
+            if (usuarioExistenteEmail != null) {
+                mensagemErroGeral = "Este e-mail já está cadastrado no sistema.";
+                enviandoEmail = false;
+                return;
+            }
+
+            var usuarioExistenteDoc = await UsuarioRepository.GetByDocumentoAsync(novoUsuario.Documento.Trim());
+            if (usuarioExistenteDoc != null) {
+                mensagemErroGeral = "Este CPF ou CNPJ já possui uma conta cadastrada.";
+                enviandoEmail = false;
+                return;
+            }
+
+            // 2. Validação de Senha
+            if (novoUsuario.Senha != novoUsuario.ConfirmarSenha) {
+                mensagemErroGeral = "As senhas não coincidem.";
+                enviandoEmail = false;
+                return;
+            }
+
+            // 3. Geração e Envio Real do Código
+            codigoGerado = new Random().Next(100000, 999999).ToString();
+            await AuthService.EnviarEmailConfirmacaoAsync(novoUsuario.Email, codigoGerado);
+
+            aguardandoConfirmacao = true;
+            erroCodigo = false;
+            codigoDigitado = "";
+        } catch (Exception ex) {
+            mensagemErroGeral = "Erro ao enviar o e-mail: " + ex.Message;
+        } finally {
+            enviandoEmail = false;
+        }
+    }
+
+    private async Task ConfirmarECadastrar() {
+        if (codigoDigitado.Trim() == codigoGerado) {
+            try {
+                novoUsuario.IpAceite = HttpContextAccessor.HttpContext?.Connection?.RemoteIpAddress?.ToString() ?? "IP Local";
+                novoUsuario.DataAceiteTermos = DateTime.UtcNow;
+                novoUsuario.DataCadastro = DateTime.UtcNow;
+                novoUsuario.EmailConfirmado = true;
+                novoUsuario.CodigoConfirmacao = codigoGerado;
+
+                await UsuarioRepository.AddAsync(novoUsuario);
+                AuthService.Login(novoUsuario);
+                Nav.NavigateTo("/pets");
+            } catch (Exception ex) {
+                mensagemErroGeral = "Erro ao salvar no banco: " + (ex.InnerException?.Message ?? ex.Message);
+            }
+        } else {
+            erroCodigo = true;
+        }
+    }
+
+    private void VoltarParaFormulario() {
+        aguardandoConfirmacao = false;
+        codigoDigitado = string.Empty;
+        erroCodigo = false;
+        mensagemErroGeral = "";
+    }
+
+    public class ViaCEPResponse {
+        public string Logradouro { get; set; } = "";
+        public string Bairro { get; set; } = "";
+        public string Localidade { get; set; } = "";
+        public string Uf { get; set; } = "";
+        public bool Erro { get; set; }
+    }
+}
