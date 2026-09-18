@@ -57,3 +57,31 @@ h1, h2, h3, h4, h5, h6, .navbar-brand {
 
 .form-control, .form-select { border-radius: 8px; border: 1px solid #dadce0; padding: 12px; }
 .form-control:focus, .form-select:focus { border-color: #1a73e8; box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2); }
+
+/* =========================================
+   📱 AJUSTES PARA CELULAR (RESPONSIVIDADE)
+   ========================================= */
+@media (max-width: 768px) {
+    /* 1. Reduz o tamanho dos títulos para não quebrarem a tela */
+    h1 { font-size: 1.7rem; }
+    h2 { font-size: 1.4rem; }
+    h3 { font-size: 1.2rem; }
+
+    /* 2. Reduz a margem interna dos Cards para sobrar mais espaço para a foto do pet */
+    .card-portal {
+        padding: 10px !important;
+    }
+
+    /* 3. Ajusta o tamanho dos campos de texto (Touch Target) para o dedo não errar o clique */
+    .form-control, .form-select {
+        padding: 14px 12px;
+        font-size: 1rem;
+    }
+
+    /* 4. Faz os botões principais ocuparem 100% da largura na tela do celular (Padrão de App) */
+    .btn-mobile-full {
+        width: 100%;
+        display: block;
+        margin-bottom: 10px;
+    }
+}
