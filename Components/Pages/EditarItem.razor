@@ -8,6 +8,9 @@
 @inject NavigationManager Nav
 @inject IJSRuntime JS
 @rendermode InteractiveServer
+@implements IDisposable
+
+<PageTitle>Editar Item | Match-Pet SP</PageTitle>
 
 <div class="container py-4 mb-5" style="max-width: 800px;">
     <div class="text-center mb-4">
@@ -92,7 +95,7 @@
 
                 <div class="d-flex gap-3 justify-content-end mt-4">
                     <button type="button" class="btn btn-light fw-bold px-4 rounded-pill" @onclick="VoltarMeusPets">Cancelar</button>
-                    <button type="submit" class="btn btn-warning text-dark fw-bold px-5 rounded-pill shadow" disabled="@estaCarregando">
+                    <button type="submit" class="btn btn-warning text-dark fw-bold px-5 rounded-pill shadow" disabled="@(estaCarregando || salvando)">
                         Salvar Alterações do Item
                     </button>
                 </div>
@@ -110,7 +113,7 @@
     {
         if (!AuthService.EstaLogado || AuthService.UsuarioLogado == null)
         {
-            Nav.NavigateTo("/login", forceLoad: true);
+            Nav.NavigateTo("/login");
             return;
         }
 
@@ -120,12 +123,27 @@
 
         if (itemParaEditar == null || itemParaEditar.UsuarioDoadorId != AuthService.UsuarioLogado.Id)
         {
-            Nav.NavigateTo("/meus-pets", forceLoad: true);
+            Nav.NavigateTo("/meus-pets");
             return;
         }
     }
 
-    private void VoltarMeusPets() => Nav.NavigateTo("/meus-pets", forceLoad: true);
+    private bool salvo = false;
+    private bool salvando = false;
+
+    // Sai sem salvar: descarta o que foi alterado na memória para não aparecer em outras telas
+    private void DescartarAlteracoes()
+    {
+        if (!salvo) Db.ChangeTracker.Clear();
+    }
+
+    private void VoltarMeusPets()
+    {
+        DescartarAlteracoes();
+        Nav.NavigateTo("/meus-pets");
+    }
+
+    public void Dispose() => DescartarAlteracoes();
 
     private async Task AdicionarNovasFotos(InputFileChangeEventArgs e)
     {
@@ -143,7 +161,11 @@
                 itemParaEditar!.Imagens.Add(new ItemImagem { Base64Data = base64, ItemDoacaoId = itemParaEditar.Id });
             }
         }
-        finally 
+        catch
+        {
+            await JS.InvokeVoidAsync("alert", "Não foi possível carregar uma das fotos (máx. 5MB cada).");
+        }
+        finally
         {
             estaCarregando = false;
         }
@@ -151,9 +173,24 @@
 
     private async Task SalvarAlteracoes()
     {
-        Db.ItensDoacao.Update(itemParaEditar!);
-        await Db.SaveChangesAsync();
-        await JS.InvokeVoidAsync("alert", "Item atualizado com sucesso!");
-        Nav.NavigateTo("/meus-pets", forceLoad: true);
+        if (salvando) return;
+        salvando = true;
+        try
+        {
+            itemParaEditar!.FotoUrl = itemParaEditar.Imagens.FirstOrDefault()?.Base64Data ?? "";
+            Db.ItensDoacao.Update(itemParaEditar);
+            await Db.SaveChangesAsync();
+            salvo = true;
+            await JS.InvokeVoidAsync("alert", "Item atualizado com sucesso!");
+            Nav.NavigateTo("/meus-pets");
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", "Erro ao salvar: " + (ex.InnerException?.Message ?? ex.Message));
+        }
+        finally
+        {
+            salvando = false;
+        }
     }
 }

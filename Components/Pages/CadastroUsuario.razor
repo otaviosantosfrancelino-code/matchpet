@@ -10,9 +10,11 @@
 @inject IHttpContextAccessor HttpContextAccessor
 @rendermode InteractiveServer
 
-<div class="container mt-5 mb-5">
+<PageTitle>Criar Conta | Match-Pet SP</PageTitle>
+
+<div class="container mt-4 mt-md-5 mb-5">
     <div class="row justify-content-center">
-        <div class="col-md-8">
+        <div class="col-lg-8">
             <div class="card shadow-lg border-0 rounded-4 overflow-hidden">
                 <div class="card-header border-0 py-4 text-center" style="background-color: #001534; color: white;">
                     <i class="bi bi-shield-check fs-1 text-info"></i>
@@ -20,7 +22,7 @@
                     <p class="mb-0 opacity-75">Sua identificação protege você e os animais</p>
                 </div>
                 
-                <div class="card-body p-4 p-md-5 bg-white">
+                <div class="card-body p-3 p-sm-4 p-md-5 bg-white">
                     @if (!string.IsNullOrEmpty(mensagemErroGeral))
                     {
                         <div class="alert alert-danger fw-bold small text-center mb-4">
@@ -74,9 +76,15 @@
                             <div class="col-md-4 mb-3">
                                 <label class="form-label fw-bold">CEP</label>
                                 <div class="input-group">
-                                    <InputText class="form-control" @bind-Value="novoUsuario.CEP" @onblur="ConsultarCEP" />
-                                    <button class="btn btn-outline-secondary" type="button" @onclick="ConsultarCEP"><i class="bi bi-search"></i></button>
+                                    <InputText class="form-control" inputmode="numeric" placeholder="14400-000" @bind-Value="novoUsuario.CEP" @onblur="ConsultarCEP" />
+                                    <button class="btn btn-outline-secondary" type="button" @onclick="ConsultarCEP" aria-label="Buscar CEP" disabled="@buscandoCep">
+                                        @if (buscandoCep) { <span class="spinner-border spinner-border-sm"></span> } else { <i class="bi bi-search"></i> }
+                                    </button>
                                 </div>
+                                @if (!string.IsNullOrEmpty(mensagemCep))
+                                {
+                                    <div class="small text-danger mt-1">@mensagemCep</div>
+                                }
                             </div>
                             <div class="col-md-8 mb-3">
                                 <label class="form-label fw-bold">Rua</label>
@@ -92,7 +100,7 @@
                             </div>
                             <div class="col-md-4 mb-3">
                                 <label class="form-label fw-bold">Cidade</label>
-                                <InputText class="form-control" @bind-Value="novoUsuario.Cidade" readonly />
+                                <InputText class="form-control" @bind-Value="novoUsuario.Cidade" />
                             </div>
 
                             <h5 class="fw-bold text-primary mt-3 mb-3 border-bottom pb-2">Segurança</h5>
@@ -103,7 +111,8 @@
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label fw-bold">Senha</label>
-                                <InputText type="password" class="form-control" @bind-Value="novoUsuario.Senha" />
+                                <InputText type="password" class="form-control" autocomplete="new-password" @bind-Value="novoUsuario.Senha" />
+                                <div class="form-text small">Mínimo de 6 caracteres.</div>
                                 <ValidationMessage For="@(() => novoUsuario.Senha)" class="text-danger small" />
                             </div>
                             <div class="col-md-6 mb-3">
@@ -140,10 +149,13 @@
 
 @code {
     private Usuario novoUsuario = new();
-    private HttpClient http = new HttpClient();
+    // Um único HttpClient para o app todo (criar um por página esgota conexões)
+    private static readonly HttpClient http = new() { Timeout = TimeSpan.FromSeconds(8) };
     private bool possuiCnpj = false;
     private bool processando = false;
+    private bool buscandoCep = false;
     private string mensagemErroGeral = "";
+    private string mensagemCep = "";
 
     private void VerificarSeEhCnpj(ChangeEventArgs e)
     {
@@ -153,23 +165,52 @@
     }
 
     private async Task ConsultarCEP() {
-        var cep = novoUsuario.CEP?.Replace("-", "").Trim();
-        if (cep?.Length == 8) {
-            try {
-                var dados = await http.GetFromJsonAsync<ViaCEPResponse>($"https://viacep.com.br/ws/{cep}/json/");
-                if (dados != null && !dados.Erro) {
-                    novoUsuario.Logradouro = dados.Logradouro;
-                    novoUsuario.Bairro = dados.Bairro;
-                    novoUsuario.Cidade = dados.Localidade;
-                    novoUsuario.Estado = dados.Uf;
-                    StateHasChanged();
-                }
-            } catch { }
+        mensagemCep = "";
+        var cep = new string((novoUsuario.CEP ?? "").Where(char.IsDigit).ToArray());
+        if (cep.Length == 0 || buscandoCep) return;
+        if (cep.Length != 8) { mensagemCep = "O CEP deve ter 8 números."; return; }
+
+        buscandoCep = true;
+        try {
+            var dados = await http.GetFromJsonAsync<ViaCEPResponse>($"https://viacep.com.br/ws/{cep}/json/");
+            if (dados != null && !dados.Erro) {
+                novoUsuario.CEP = $"{cep[..5]}-{cep[5..]}";
+                novoUsuario.Logradouro = dados.Logradouro;
+                novoUsuario.Bairro = dados.Bairro;
+                novoUsuario.Cidade = dados.Localidade;
+                novoUsuario.Estado = dados.Uf;
+            } else {
+                mensagemCep = "CEP não encontrado. Preencha o endereço manualmente.";
+            }
+        } catch {
+            mensagemCep = "Não foi possível consultar o CEP agora. Preencha o endereço manualmente.";
+        } finally {
+            buscandoCep = false;
         }
     }
 
     private async Task RealizarCadastro() {
+        if (processando) return;
         mensagemErroGeral = "";
+
+        // Validações simples antes de ir ao banco
+        if (!novoUsuario.AceitouTermos) {
+            mensagemErroGeral = "Você precisa aceitar os Termos e a LGPD para criar a conta.";
+            return;
+        }
+        if (string.IsNullOrWhiteSpace(novoUsuario.Senha) || novoUsuario.Senha.Length < 6) {
+            mensagemErroGeral = "A senha deve ter pelo menos 6 caracteres.";
+            return;
+        }
+        if (novoUsuario.Senha != novoUsuario.ConfirmarSenha) {
+            mensagemErroGeral = "As senhas não coincidem.";
+            return;
+        }
+
+        novoUsuario.Nome = novoUsuario.Nome.Trim();
+        novoUsuario.Email = novoUsuario.Email.Trim();
+        novoUsuario.Documento = novoUsuario.Documento.Trim();
+
         processando = true;
         StateHasChanged();
 
@@ -185,13 +226,6 @@
             var usuarioExistenteDoc = await UsuarioRepository.GetByDocumentoAsync(novoUsuario.Documento.Trim());
             if (usuarioExistenteDoc != null) {
                 mensagemErroGeral = "Este CPF ou CNPJ já possui uma conta cadastrada.";
-                processando = false;
-                return;
-            }
-
-            // 2. Validação de Senha
-            if (novoUsuario.Senha != novoUsuario.ConfirmarSenha) {
-                mensagemErroGeral = "As senhas não coincidem.";
                 processando = false;
                 return;
             }

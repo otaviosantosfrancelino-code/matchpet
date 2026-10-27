@@ -10,13 +10,15 @@
 @inject IJSRuntime JS
 @rendermode InteractiveServer
 
+<PageTitle>Novo Anúncio | Match-Pet SP</PageTitle>
+
 <div class="container py-4 mb-5" style="max-width: 850px;">
     <div class="text-center mb-4">
         <h2 class="fw-bold" style="color: #1a73e8;">Central de Publicação Solidária</h2>
         <p class="text-muted">Divulgue um animal para adoção ou doe suprimentos e acessórios em Franca.</p>
         
         <!-- SELETOR DE ABAS (2 TIPOS DE CADASTRO) -->
-        <div class="d-inline-flex p-1 bg-light border rounded-pill shadow-sm mt-2">
+        <div class="d-inline-flex flex-wrap justify-content-center p-1 bg-light border rounded-pill shadow-sm mt-2">
             <button type="button" class="btn btn-sm rounded-pill px-4 py-2 fw-bold transition-all @(tipoCadastro == "pet" ? "btn-primary shadow-sm" : "text-muted")" @onclick='() => tipoCadastro = "pet"'>
                 <i class="bi bi-heart-fill me-2"></i> Cadastrar Animal
             </button>
@@ -25,6 +27,14 @@
             </button>
         </div>
     </div>
+
+    @if (!string.IsNullOrEmpty(mensagemErro))
+    {
+        <div class="alert alert-danger small fw-bold d-flex align-items-center rounded-4">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i> @mensagemErro
+            <button type="button" class="btn-close ms-auto" aria-label="Fechar" @onclick='() => mensagemErro = ""'></button>
+        </div>
+    }
 
     @if (tipoCadastro == "pet")
     {
@@ -82,6 +92,11 @@
                         </div>
                     }
 
+                    <div class="col-md-12 mt-3">
+                        <label class="form-label small fw-bold">Raça</label>
+                        <InputText class="form-control" @bind-Value="novoPet.Raca" placeholder="Ex: SRD (vira-lata), Poodle, Siamês..." />
+                    </div>
+
                     <div class="col-md-4 mt-3">
                         <label class="form-label small fw-bold">Sexo</label>
                         <InputSelect class="form-select" @bind-Value="novoPet.Sexo">
@@ -98,8 +113,8 @@
                         </InputSelect>
                     </div>
                     <div class="col-md-4 mt-3">
-                        <label class="form-label small fw-bold">Idade Aparente</label>
-                        <InputNumber class="form-control" @bind-Value="novoPet.Idade" />
+                        <label class="form-label small fw-bold">Idade Aparente (anos)</label>
+                        <InputNumber class="form-control" min="0" max="40" @bind-Value="novoPet.Idade" />
                     </div>
                 </div>
 
@@ -115,10 +130,10 @@
                     <div class="form-check form-switch"><input class="form-check-input" type="checkbox" @bind="novoPet.RecomendadoParaCriancas" id="k"><label class="form-check-label fw-bold small text-muted" for="k">Gosta de Crianças</label></div>
                 </div>
 
-                <div class="d-flex gap-3 justify-content-end">
+                <div class="d-flex flex-wrap gap-2 gap-md-3 justify-content-end">
                     <button type="button" class="btn btn-light fw-bold px-4 rounded-pill" @onclick='() => Nav.NavigateTo("/pets")'>Cancelar</button>
-                    <button type="submit" class="btn btn-primary fw-bold px-5 rounded-pill shadow" disabled="@estaCarregando">
-                        Publicar Anúncio do Pet
+                    <button type="submit" class="btn btn-primary fw-bold px-5 rounded-pill shadow" disabled="@(estaCarregando || salvando)">
+                        @(salvando ? "Publicando..." : "Publicar Anúncio do Pet")
                     </button>
                 </div>
             </EditForm>
@@ -208,10 +223,10 @@
                     <ValidationMessage For="@(() => novoItem.Descricao)" />
                 </div>
 
-                <div class="d-flex gap-3 justify-content-end">
+                <div class="d-flex flex-wrap gap-2 gap-md-3 justify-content-end">
                     <button type="button" class="btn btn-light fw-bold px-4 rounded-pill" @onclick='() => Nav.NavigateTo("/pets")'>Cancelar</button>
-                    <button type="submit" class="btn btn-warning fw-bold px-5 rounded-pill shadow text-dark" disabled="@estaCarregando">
-                        Publicar Doação do Item
+                    <button type="submit" class="btn btn-warning fw-bold px-5 rounded-pill shadow text-dark" disabled="@(estaCarregando || salvando)">
+                        @(salvando ? "Publicando..." : "Publicar Doação do Item")
                     </button>
                 </div>
             </EditForm>
@@ -221,9 +236,15 @@
 
 @code {
     private string tipoCadastro = "pet"; // "pet" ou "item"
-    private Pet novoPet = new Pet();
+    // Valores iniciais iguais à 1ª opção dos selects (antes ficavam vazios no banco)
+    private Pet novoPet = new Pet { Sexo = "Macho", Porte = "Pequeno" };
     private ItemDoacao novoItem = new ItemDoacao();
     private bool estaCarregando = false;
+    private bool salvando = false;
+    private string mensagemErro = "";
+
+    private const int MaxFotos = 5;
+    private const long TamanhoMaxFoto = 5 * 1024 * 1024; // 5MB
 
     // Variaveis Inteligentes para "Outros" do Pet
     private string especieSelecionadaPet = "Cão";
@@ -243,80 +264,112 @@
         }
     }
 
-    private async Task CarregarFotosPet(InputFileChangeEventArgs e) 
+    // Lê as fotos escolhidas, reduz para 800px e devolve em Base64. Avisa se algo der errado.
+    private async Task<List<string>> LerFotos(InputFileChangeEventArgs e, int jaAdicionadas)
     {
+        var resultado = new List<string>();
+        mensagemErro = "";
+        var vagas = MaxFotos - jaAdicionadas;
+        if (vagas <= 0) { mensagemErro = $"Limite de {MaxFotos} fotos atingido. Remova alguma para adicionar outra."; return resultado; }
+
+        var arquivos = e.GetMultipleFiles(50).ToList();
+        if (arquivos.Count > vagas) mensagemErro = $"Apenas {vagas} foto(s) foram adicionadas (limite de {MaxFotos}).";
+
         estaCarregando = true;
         try {
-            foreach (var arquivo in e.GetMultipleFiles(5)) {
+            foreach (var arquivo in arquivos.Take(vagas)) {
+                if (!arquivo.ContentType.StartsWith("image/")) { mensagemErro = $"\"{arquivo.Name}\" não é uma imagem."; continue; }
+                if (arquivo.Size > TamanhoMaxFoto) { mensagemErro = $"\"{arquivo.Name}\" passa de 5MB."; continue; }
+
                 var resized = await arquivo.RequestImageFileAsync(arquivo.ContentType, 800, 800);
-                using var stream = resized.OpenReadStream(5 * 1024 * 1024);
+                using var stream = resized.OpenReadStream(TamanhoMaxFoto);
                 using var ms = new MemoryStream(); 
                 await stream.CopyToAsync(ms);
-                var base64 = $"data:{arquivo.ContentType};base64,{Convert.ToBase64String(ms.ToArray())}";
-                if (string.IsNullOrEmpty(novoPet.FotoUrl)) novoPet.FotoUrl = base64;
-                novoPet.Imagens.Add(new PetImagem { Base64Data = base64 });
+                resultado.Add($"data:{arquivo.ContentType};base64,{Convert.ToBase64String(ms.ToArray())}");
             }
-        } catch {} finally { estaCarregando = false; StateHasChanged(); }
+        } catch {
+            mensagemErro = "Não foi possível carregar uma das fotos. Tente outra imagem.";
+        } finally {
+            estaCarregando = false;
+        }
+        return resultado;
+    }
+
+    private async Task CarregarFotosPet(InputFileChangeEventArgs e) 
+    {
+        foreach (var base64 in await LerFotos(e, novoPet.Imagens.Count)) {
+            if (string.IsNullOrEmpty(novoPet.FotoUrl)) novoPet.FotoUrl = base64;
+            novoPet.Imagens.Add(new PetImagem { Base64Data = base64 });
+        }
     }
 
     private async Task CarregarFotosItem(InputFileChangeEventArgs e) 
     {
-        estaCarregando = true;
-        try {
-            foreach (var arquivo in e.GetMultipleFiles(5)) {
-                var resized = await arquivo.RequestImageFileAsync(arquivo.ContentType, 800, 800);
-                using var stream = resized.OpenReadStream(5 * 1024 * 1024);
-                using var ms = new MemoryStream(); 
-                await stream.CopyToAsync(ms);
-                var base64 = $"data:{arquivo.ContentType};base64,{Convert.ToBase64String(ms.ToArray())}";
-                if (string.IsNullOrEmpty(novoItem.FotoUrl)) novoItem.FotoUrl = base64;
-                novoItem.Imagens.Add(new ItemImagem { Base64Data = base64 });
-            }
-        } catch {} finally { estaCarregando = false; StateHasChanged(); }
+        foreach (var base64 in await LerFotos(e, novoItem.Imagens.Count)) {
+            if (string.IsNullOrEmpty(novoItem.FotoUrl)) novoItem.FotoUrl = base64;
+            novoItem.Imagens.Add(new ItemImagem { Base64Data = base64 });
+        }
+    }
+
+    private async Task<bool> DocumentoOk(string mensagem)
+    {
+        if (!string.IsNullOrEmpty(AuthService.UsuarioLogado?.FotoDocumentoBase64)) return true;
+        await JS.InvokeVoidAsync("alert", mensagem);
+        Nav.NavigateTo("/perfil");
+        return false;
     }
 
     private async Task SalvarPet() 
     {
-        if (string.IsNullOrEmpty(AuthService.UsuarioLogado?.FotoDocumentoBase64))
-        {
-            await JS.InvokeVoidAsync("alert", "🛡️ SEGURANÇA: Para publicar um anúncio, anexe a foto do seu documento no Perfil para validação jurídica.");
-            Nav.NavigateTo("/perfil");
-            return;
-        }
+        if (salvando) return;
+        if (!await DocumentoOk("🛡️ SEGURANÇA: Para publicar um anúncio, anexe a foto do seu documento no Perfil para validação jurídica.")) return;
 
         // Aplica a lógica "Outros" para a Espécie
         novoPet.Especie = especieSelecionadaPet == "Outros" && !string.IsNullOrWhiteSpace(especiePersonalizadaPet) 
-            ? especiePersonalizadaPet 
+            ? especiePersonalizadaPet.Trim() 
             : especieSelecionadaPet;
+        if (string.IsNullOrWhiteSpace(novoPet.Raca)) novoPet.Raca = "SRD";
+        novoPet.Nome = novoPet.Nome.Trim();
+        novoPet.FotoUrl = novoPet.Imagens.FirstOrDefault()?.Base64Data ?? "";
 
         novoPet.UsuarioDoadorId = AuthService.UsuarioLogado?.Id ?? 0;
-        await PetRepository.AddAsync(novoPet);
-        Nav.NavigateTo("/pets");
+        salvando = true;
+        try {
+            await PetRepository.AddAsync(novoPet);
+            Nav.NavigateTo("/meus-pets");
+        } catch (Exception ex) {
+            mensagemErro = "Erro ao publicar o anúncio: " + (ex.InnerException?.Message ?? ex.Message);
+        } finally {
+            salvando = false;
+        }
     }
 
     private async Task SalvarItem() 
     {
-        if (string.IsNullOrEmpty(AuthService.UsuarioLogado?.FotoDocumentoBase64))
-        {
-            await JS.InvokeVoidAsync("alert", "🛡️ SEGURANÇA: Para doar itens e ração, anexe seu documento no Perfil para fins de rastreabilidade.");
-            Nav.NavigateTo("/perfil");
-            return;
-        }
+        if (salvando) return;
+        if (!await DocumentoOk("🛡️ SEGURANÇA: Para doar itens e ração, anexe seu documento no Perfil para fins de rastreabilidade.")) return;
 
         // Aplica a lógica "Outros" para a Categoria do Item
         novoItem.Categoria = categoriaSelecionadaItem == "Outros" && !string.IsNullOrWhiteSpace(categoriaPersonalizadaItem)
-            ? categoriaPersonalizadaItem
+            ? categoriaPersonalizadaItem.Trim()
             : categoriaSelecionadaItem;
 
         // Aplica a lógica "Outros" para a Espécie de Destino do Item
         novoItem.EspecieDestino = especieDestinoItem == "Outros" && !string.IsNullOrWhiteSpace(especieDestinoPersonalizadaItem)
-            ? especieDestinoPersonalizadaItem
+            ? especieDestinoPersonalizadaItem.Trim()
             : especieDestinoItem;
+        novoItem.FotoUrl = novoItem.Imagens.FirstOrDefault()?.Base64Data ?? "";
 
         novoItem.UsuarioDoadorId = AuthService.UsuarioLogado?.Id ?? 0;
-        Db.ItensDoacao.Add(novoItem);
-        await Db.SaveChangesAsync();
-
-        Nav.NavigateTo("/pets");
+        salvando = true;
+        try {
+            Db.ItensDoacao.Add(novoItem);
+            await Db.SaveChangesAsync();
+            Nav.NavigateTo("/meus-pets");
+        } catch (Exception ex) {
+            mensagemErro = "Erro ao publicar a doação: " + (ex.InnerException?.Message ?? ex.Message);
+        } finally {
+            salvando = false;
+        }
     }
 }

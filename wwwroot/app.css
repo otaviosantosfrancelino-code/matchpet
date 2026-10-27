@@ -7,13 +7,37 @@ body {
 }
 
 h1, h2, h3, h4, h5, h6, .navbar-brand {
-    font-family: 'Google Sans', sans-serif;
+    font-family: 'Google Sans', 'Roboto', sans-serif;
 }
 
-/* REMOVE BORDAS PRETAS DE SELEÇÃO/FOCO */
-* {
-    outline: none !important;
+/* FOCO: some no clique do mouse, mas continua visível para quem navega pelo teclado */
+:focus:not(:focus-visible) { outline: none; }
+:focus-visible {
+    outline: 3px solid rgba(26, 115, 232, 0.55);
+    outline-offset: 2px;
 }
+
+/* O título recebe foco ao trocar de página (acessibilidade); sem contorno nele */
+h1:focus { outline: none; }
+
+/* Fotos dos cards: preenchem a área sem distorcer */
+.img-cover { width: 100%; height: 100%; object-fit: cover; }
+
+/* Placeholder quando o pet/item não tem foto */
+.foto-vazia {
+    width: 100%; height: 100%;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, #f1f3f4 0%, #e8f0fe 100%);
+    color: #80868b;
+}
+
+/* Corta textos longos em 2 linhas */
+.texto-2-linhas {
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+
+/* Modais feitos em Blazor (sem o JS do Bootstrap) */
+.modal-blazor { background: rgba(0, 0, 0, 0.55); backdrop-filter: blur(4px); }
 
 /* Efeitos de Card - Estilo Google */
 .card-portal {
@@ -67,10 +91,6 @@ h1, h2, h3, h4, h5, h6, .navbar-brand {
     h2 { font-size: 1.4rem; }
     h3 { font-size: 1.2rem; }
 
-    /* 2. Reduz a margem interna dos Cards para sobrar mais espaço para a foto do pet */
-    .card-portal {
-        padding: 10px !important;
-    }
 
     /* 3. Ajusta o tamanho dos campos de texto (Touch Target) para o dedo não errar o clique */
     .form-control, .form-select {

@@ -7,9 +7,9 @@
 
 main {
     flex: 1;
-    /* O padding-top de 76px garante que o conteúdo não fique 
+    /* O padding-top garante que o conteúdo não fique 
        atrás da barra de menu fixa no topo */
-    padding-top: 76px;
+    padding-top: 60px; /* altura do menu fixo */
     background-color: #f8f9fa; /* Fundo leve do Google */
 }
 
@@ -45,7 +45,7 @@ article.content {
 /* Ajustes para telas menores (Celulares) */
 @media (max-width: 640.98px) {
     main {
-        padding-top: 70px;
+        padding-top: 60px;
     }
     
     article.content {

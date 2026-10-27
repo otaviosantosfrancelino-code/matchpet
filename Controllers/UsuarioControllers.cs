@@ -17,21 +17,24 @@ namespace crudcomdb.Controllers
 
         // GET: api/usuarios/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<Usuario>> GetUsuario(int id)
+        public async Task<ActionResult> GetUsuario(int id)
         {
             var usuario = await _repository.GetByIdAsync(id);
             if (usuario == null) return NotFound("Usuário não encontrado.");
-            return Ok(usuario);
+            return Ok(ParaResposta(usuario));
         }
 
         // POST: api/usuarios (O cadastro propriamente dito)
         [HttpPost]
-        public async Task<ActionResult<Usuario>> PostUsuario(Usuario usuario)
+        public async Task<ActionResult> PostUsuario(Usuario usuario)
         {
             // 1. VALIDAÇÃO DE DUPLICIDADE (Segurança de Dados)
             var usuarioExistente = await _repository.GetByEmailAsync(usuario.Email);
             if (usuarioExistente != null) 
                 return BadRequest("Este e-mail já está vinculado a uma conta ativa.");
+
+            if (await _repository.GetByDocumentoAsync(usuario.Documento.Trim()) != null)
+                return BadRequest("Este CPF ou CNPJ já possui uma conta cadastrada.");
 
             // 2. SEGURANÇA JURÍDICA E LGPD (Nexo Causal)
             // AJUSTE: O operador '??' elimina o aviso CS8601 de referência nula
@@ -53,12 +56,20 @@ namespace crudcomdb.Controllers
             try 
             {
                 await _repository.AddAsync(usuario);
-                return CreatedAtAction(nameof(GetUsuario), new { id = usuario.Id }, usuario);
+                return CreatedAtAction(nameof(GetUsuario), new { id = usuario.Id }, ParaResposta(usuario));
             }
             catch (Exception ex)
             {
                 return StatusCode(500, $"Erro interno ao processar identificação civil: {ex.Message}");
             }
         }
+
+        // Nunca devolve senha, documento, código de confirmação ou IP na API
+        private static object ParaResposta(Usuario u) => new
+        {
+            u.Id, u.Nome, u.Email, u.Telefone, u.Cidade, u.Estado,
+            u.EhOng, u.DescricaoOng, u.ChavePix, u.Classificacao,
+            u.StatusValidacaoDocumento, u.DataCadastro
+        };
     }
 }

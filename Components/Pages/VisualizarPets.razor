@@ -10,62 +10,104 @@
 @inject IJSRuntime JS
 @rendermode InteractiveServer
 
+<PageTitle>@(pet?.Nome ?? "Detalhes do Pet") | Match-Pet SP</PageTitle>
+
 <div class="container py-4 mb-5">
-    @if (pet != null)
+    @if (carregando)
+    {
+        <div class="text-center py-5"><div class="spinner-border text-primary"></div></div>
+    }
+    else if (pet == null)
+    {
+        <div class="text-center py-5 bg-white rounded-4 border shadow-sm p-4 mx-auto" style="max-width: 600px;">
+            <i class="bi bi-search-heart fs-1 text-muted"></i>
+            <h4 class="mt-3 fw-bold">Pet não encontrado</h4>
+            <p class="text-muted">Este anúncio pode ter sido removido pelo doador.</p>
+            <a href="/pets" class="btn btn-primary rounded-pill px-4 fw-bold">Voltar ao Catálogo</a>
+        </div>
+    }
+    else
     {
         <button class="btn btn-link text-muted text-decoration-none px-0 mb-3" @onclick='() => Nav.NavigateTo("/pets")'>
             <i class="bi bi-arrow-left"></i> Voltar aos resultados
         </button>
 
         <div class="row g-4">
-            <div class="col-md-7">
-                <div class="card-portal overflow-hidden shadow-sm">
+            <div class="col-lg-7">
+                <div class="card-portal overflow-hidden shadow-sm foto-detalhe">
                     @if (pet.Imagens != null && pet.Imagens.Any())
                     {
-                        <div id="petCarousel" class="carousel slide" data-bs-ride="carousel">
-                            <div class="carousel-inner">
-                                @{ var index = 0; }
-                                @foreach (var img in pet.Imagens)
+                        <div id="petCarousel" class="carousel slide h-100">
+                            <div class="carousel-inner h-100">
+                                @for (var i = 0; i < pet.Imagens.Count; i++)
                                 {
-                                    <div class="carousel-item @(index == 0 ? "active" : "")">
-                                        <img src="@img.Base64Data" class="d-block w-100" style="height: 500px; object-fit: cover; background:#f8f9fa;">
+                                    var img = pet.Imagens[i];
+                                    <div class="carousel-item h-100 @(i == 0 ? "active" : "")">
+                                        <img src="@img.Base64Data" class="d-block img-cover" style="background:#f8f9fa;" alt="Foto @(i + 1) de @pet.Nome">
                                     </div>
-                                    index++;
                                 }
                             </div>
                             @if (pet.Imagens.Count > 1)
                             {
-                                <button class="carousel-control-prev" type="button" data-bs-target="#petCarousel" data-bs-slide="prev"><span class="carousel-control-prev-icon"></span></button>
-                                <button class="carousel-control-next" type="button" data-bs-target="#petCarousel" data-bs-slide="next"><span class="carousel-control-next-icon"></span></button>
+                                <button class="carousel-control-prev" type="button" data-bs-target="#petCarousel" data-bs-slide="prev" aria-label="Foto anterior"><span class="carousel-control-prev-icon"></span></button>
+                                <button class="carousel-control-next" type="button" data-bs-target="#petCarousel" data-bs-slide="next" aria-label="Próxima foto"><span class="carousel-control-next-icon"></span></button>
                             }
                         </div>
+                    }
+                    else
+                    {
+                        <div class="foto-vazia"><i class="bi bi-camera fs-1"></i><span>Sem fotos</span></div>
                     }
                 </div>
             </div>
 
-            <div class="col-md-5">
+            <div class="col-lg-5">
                 <div class="card-portal p-4 h-100 d-flex flex-column border">
-                    <div class="d-flex justify-content-between align-items-start mb-2">
-                        <h1 class="fw-bold text-dark m-0">@pet.Nome</h1>
-                        <span class="badge @(pet.Sexo == "Macho" ? "bg-primary-subtle text-primary" : "bg-danger-subtle text-danger") fs-6 py-2 px-3 rounded-pill">@pet.Sexo</span>
+                    <div class="d-flex justify-content-between align-items-start mb-2 gap-2">
+                        <h1 class="fw-bold text-dark m-0 text-break">@pet.Nome</h1>
+                        @if (!string.IsNullOrEmpty(pet.Sexo))
+                        {
+                            <span class="badge @(pet.Sexo == "Macho" ? "badge-macho" : "badge-femea") fs-6 py-2 px-3 rounded-pill flex-shrink-0">@pet.Sexo</span>
+                        }
                     </div>
-                    
-                    <p class="text-primary fw-medium mb-4"><i class="bi bi-geo-alt-fill me-1"></i> @(pet.UsuarioDoador?.Cidade ?? "Franca"), SP</p>
 
-                    <div class="row g-2 mb-4">
+                    <p class="text-primary fw-medium mb-3"><i class="bi bi-geo-alt-fill me-1"></i> @(pet.UsuarioDoador?.Cidade ?? "Franca"), @(pet.UsuarioDoador?.Estado ?? "SP")</p>
+
+                    @if (pet.UsuarioDoador != null)
+                    {
+                        <p class="small text-muted mb-4">
+                            Anunciado por <strong class="text-dark">@pet.UsuarioDoador.Nome</strong>
+                            @if (pet.UsuarioDoador.EhOng) { <span class="badge bg-success rounded-pill ms-1"><i class="bi bi-patch-check-fill me-1"></i>ONG</span> }
+                        </p>
+                    }
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-6"><div class="p-2 bg-light rounded-3 border text-center small"><strong>Espécie:</strong> @pet.Especie</div></div>
                         <div class="col-6"><div class="p-2 bg-light rounded-3 border text-center small"><strong>Raça:</strong> @pet.Raca</div></div>
-                        <div class="col-6"><div class="p-2 bg-light rounded-3 border text-center small"><strong>Porte:</strong> @pet.Porte</div></div>
-                        <div class="col-6"><div class="p-2 bg-light rounded-3 border text-center small"><strong>Idade:</strong> @pet.Idade anos</div></div>
-                        <div class="col-6"><div class="p-2 bg-light rounded-3 border text-center small"><strong>Status:</strong> @pet.Status</div></div>
+                        <div class="col-6"><div class="p-2 bg-light rounded-3 border text-center small"><strong>Porte:</strong> @(string.IsNullOrEmpty(pet.Porte) ? "—" : pet.Porte)</div></div>
+                        <div class="col-6"><div class="p-2 bg-light rounded-3 border text-center small"><strong>Idade:</strong> @(pet.Idade == 1 ? "1 ano" : $"{pet.Idade} anos")</div></div>
+                    </div>
+
+                    <div class="d-flex flex-wrap gap-2 mb-4">
+                        <span class="badge rounded-pill @(pet.Castrado ? "bg-success-subtle text-success" : "badge-neutro")">@(pet.Castrado ? "✂️ Castrado" : "Não castrado")</span>
+                        <span class="badge rounded-pill @(pet.RecomendadoParaCriancas ? "bg-success-subtle text-success" : "badge-neutro")">@(pet.RecomendadoParaCriancas ? "🍼 Gosta de crianças" : "Prefere adultos")</span>
+                        <span class="badge rounded-pill @(!pet.PrecisaDeQuintal ? "bg-success-subtle text-success" : "badge-neutro")">@(pet.PrecisaDeQuintal ? "🌳 Precisa de quintal" : "🏢 Vive bem em apto.")</span>
                     </div>
 
                     <h6 class="fw-bold text-dark">História e Comportamento</h6>
-                    <p class="text-muted lh-base">@pet.Descricao</p>
-                    
+                    <p class="text-muted lh-base" style="white-space: pre-line;">@(string.IsNullOrWhiteSpace(pet.Descricao) ? "O doador ainda não escreveu uma descrição." : pet.Descricao)</p>
+
                     <div class="mt-auto pt-4 border-top">
                         @if (AuthService.UsuarioLogado != null && pet.UsuarioDoadorId == AuthService.UsuarioLogado.Id)
                         {
                             <div class="alert alert-secondary border-0 text-center rounded-pill"><i class="bi bi-info-circle me-2"></i>Você é o doador deste pet.</div>
+                        }
+                        else if (pet.Status != "Disponível")
+                        {
+                            <div class="alert @(pet.Status == "Adotado" ? "alert-warning" : "alert-info") border-0 text-center rounded-4 mb-0">
+                                <i class="bi @(pet.Status == "Adotado" ? "bi-stars" : "bi-hourglass-split") me-2"></i>
+                                @(pet.Status == "Adotado" ? "Este pet já encontrou um lar! 💛" : "Este pet já está em processo de adoção.")
+                            </div>
                         }
                         else
                         {
@@ -83,15 +125,15 @@
 
 @if (exibirModal)
 {
-    <div class="modal fade show d-block" style="background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal fade show d-block modal-blazor" tabindex="-1" role="dialog" aria-modal="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg modal-fullscreen-sm-down">
             <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
                 <div class="modal-header @(interesseRegistrado ? "bg-success" : "bg-dark") text-white py-3 border-0">
                     <h5 class="modal-title fw-bold">
-                        <i class="bi @(interesseRegistrado ? "bi-check2-circle" : "bi- gavel") me-2"></i> 
+                        <i class="bi @(interesseRegistrado ? "bi-check2-circle" : "bi-file-earmark-text") me-2"></i>
                         @(interesseRegistrado ? "Compromisso Realizado!" : "Termo de Responsabilidade e Contrato")
                     </h5>
-                    <button type="button" class="btn-close btn-close-white" @onclick="FecharModal"></button>
+                    <button type="button" class="btn-close btn-close-white" aria-label="Fechar" @onclick="FecharModal"></button>
                 </div>
                 <div class="modal-body p-4 bg-white" style="max-height: 70vh; overflow-y: auto;">
                     @if (!interesseRegistrado)
@@ -108,8 +150,14 @@
                             <p class="mb-0 small text-danger fw-bold">3. Declaro que o animal não pertence à fauna silvestre ilícita (Lei 9.605/98).</p>
                         </div>
 
-                        <button class="btn btn-primary btn-lg w-100 fw-bold rounded-pill py-3" @onclick="AceitarERegistrar">
-                            Assinar Digitalmente e Ver Contato
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="chkClausulas" @bind="leuClausulas">
+                            <label class="form-check-label small fw-bold" for="chkClausulas">Li e concordo com o contrato e as cláusulas acima.</label>
+                        </div>
+
+                        <button class="btn btn-primary btn-lg w-100 fw-bold rounded-pill py-3" @onclick="AceitarERegistrar" disabled="@(!leuClausulas || registrando)">
+                            @if (registrando) { <span class="spinner-border spinner-border-sm me-2"></span><span>Registrando...</span> }
+                            else { <span>Assinar Digitalmente e Ver Contato</span> }
                         </button>
                     }
                     else
@@ -129,18 +177,28 @@
     </div>
 }
 
+<style>
+    .foto-detalhe { height: 500px; }
+    @@media (max-width: 768px) { .foto-detalhe { height: 320px; } }
+</style>
+
 @code {
     [Parameter] public int Id { get; set; }
     private Pet? pet;
+    private bool carregando = true;
     private bool exibirModal = false;
     private bool interesseRegistrado = false;
+    private bool registrando = false;
+    private bool leuClausulas = false;
     private string userIp = "";
     private string textoContratoTemporario = "";
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnParametersSetAsync()
     {
+        carregando = true;
         pet = await PetRepository.GetByIdAsync(Id);
         userIp = HttpContextAccessor.HttpContext?.Connection?.RemoteIpAddress?.ToString() ?? "IP Remoto";
+        carregando = false;
     }
 
     private async Task ValidarEAbrirModal()
@@ -153,7 +211,7 @@
             return;
         }
 
-        // 2. A TRAVA QUE VOCÊ PEDIU: Verifica documento apenas no clique
+        // 2. Verifica documento apenas no clique
         if (string.IsNullOrEmpty(AuthService.UsuarioLogado.FotoDocumentoBase64))
         {
             await JS.InvokeVoidAsync("alert", "🛡️ SEGURANÇA: Identificamos que seu documento ainda não foi anexado. Por questões jurídicas, anexe seu documento no perfil para prosseguir com a adoção.");
@@ -163,6 +221,7 @@
 
         // 3. Prepara a prévia do contrato
         textoContratoTemporario = GerarTextoContrato();
+        leuClausulas = false;
         exibirModal = true;
     }
 
@@ -171,7 +230,7 @@
         var adotante = AuthService.UsuarioLogado;
         var doador = pet?.UsuarioDoador;
         return $@"CONTRATO DE DOAÇÃO E ADOÇÃO DE ANIMAL DOMÉSTICO
-        
+
 DOADOR: {doador?.Nome} (Doc: {doador?.Documento})
 ADOTANTE: {adotante?.Nome} (Doc: {adotante?.Documento})
 LOCAL: {adotante?.Cidade}/{adotante?.Estado}
@@ -187,31 +246,37 @@ Assinado via IP: {userIp} em {DateTime.Now:dd/MM/yyyy HH:mm}";
 
     private async Task AceitarERegistrar()
     {
+        if (registrando) return;
+        registrando = true;
         try {
             if (pet != null && AuthService.UsuarioLogado != null) {
                 var novoInteresse = new InteresseAdocao {
-                    PetId = pet.Id, 
+                    PetId = pet.Id,
                     UsuarioInteressadoId = AuthService.UsuarioLogado.Id,
-                    DataInteresse = DateTime.UtcNow, 
-                    TermoAceito = true, 
+                    DataInteresse = DateTime.UtcNow,
+                    TermoAceito = true,
                     IpUsuario = userIp,
                     ContratoGerado = textoContratoTemporario // Salva o contrato exato no banco
                 };
 
-                // Opcional: Muda o status do pet para "Em Processo"
+                // Muda o status do pet para "Em Processo" (sai do catálogo até o doador finalizar ou reabrir)
                 pet.Status = "Em Processo";
                 await PetRepository.UpdateAsync(pet);
 
                 await InteresseRepository.AddAsync(novoInteresse);
                 interesseRegistrado = true;
             }
-        } catch (Exception ex) { await JS.InvokeVoidAsync("alert", "Erro no registro jurídico: " + ex.Message); }
+        } catch (Exception ex) {
+            await JS.InvokeVoidAsync("alert", "Erro no registro jurídico: " + ex.Message);
+        } finally {
+            registrando = false;
+        }
     }
 
     private async Task AbrirWhatsApp()
     {
         if (pet?.UsuarioDoador != null) {
-            var fone = pet.UsuarioDoador.Telefone.Replace("(", "").Replace(")", "").Replace("-", "").Replace(" ", "");
+            var fone = new string(pet.UsuarioDoador.Telefone.Where(char.IsDigit).ToArray());
             var textoBase = $"Olá! Acabei de assinar o contrato digital no *Match-Pet SP* para adotar o(a) *{pet.Nome}*! Podemos combinar a visita?";
             var url = $"https://wa.me/55{fone}?text={Uri.EscapeDataString(textoBase)}";
             await JS.InvokeVoidAsync("open", url, "_blank");

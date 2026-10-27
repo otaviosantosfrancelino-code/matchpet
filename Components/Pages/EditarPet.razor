@@ -2,11 +2,16 @@
 @using crudcomdb.Models
 @using crudcomdb.Interfaces
 @using crudcomdb.Services
+@using crudcomdb.Data
 @inject IPetRepository PetRepository
+@inject AppDbContext Db
 @inject AuthService AuthService
 @inject NavigationManager Nav
 @inject IJSRuntime JS
 @rendermode InteractiveServer
+@implements IDisposable
+
+<PageTitle>Editar Pet | Match-Pet SP</PageTitle>
 
 <div class="container py-4 mb-5" style="max-width: 800px;">
     <div class="text-center mb-4">
@@ -68,8 +73,9 @@
                     </div>
                     <div class="col-md-4">
                         <label class="form-label small fw-bold">Status do Anúncio</label>
-                        <InputSelect class="@(petParaEditar.Status == "Adotado" ? "form-select fw-bold text-warning" : "form-select fw-bold text-success")" @bind-Value="petParaEditar.Status">
+                        <InputSelect class="@(petParaEditar.Status switch { "Adotado" => "form-select fw-bold text-warning", "Em Processo" => "form-select fw-bold text-primary", _ => "form-select fw-bold text-success" })" @bind-Value="petParaEditar.Status">
                             <option value="Disponível">Disponível</option>
+                            <option value="Em Processo">Em Processo (alguém assinou o termo)</option>
                             <option value="Adotado">Adotado (Final Feliz)</option>
                         </InputSelect>
                     </div>
@@ -115,7 +121,7 @@
 
                 <div class="d-flex gap-3 justify-content-end mt-4">
                     <button type="button" class="btn btn-light fw-bold px-4 rounded-pill" @onclick="VoltarMeusPets">Cancelar</button>
-                    <button type="submit" class="btn btn-primary fw-bold px-5 rounded-pill shadow" disabled="@estaCarregando">
+                    <button type="submit" class="btn btn-primary fw-bold px-5 rounded-pill shadow" disabled="@(estaCarregando || salvando)">
                         Salvar Alterações
                     </button>
                 </div>
@@ -133,7 +139,7 @@
     {
         if (!AuthService.EstaLogado || AuthService.UsuarioLogado == null)
         {
-            Nav.NavigateTo("/login", forceLoad: true);
+            Nav.NavigateTo("/login");
             return;
         }
 
@@ -141,14 +147,29 @@
         
         if (petExistente == null || petExistente.UsuarioDoadorId != AuthService.UsuarioLogado.Id)
         {
-            Nav.NavigateTo("/meus-pets", forceLoad: true);
+            Nav.NavigateTo("/meus-pets");
             return;
         }
 
         petParaEditar = petExistente;
     }
 
-    private void VoltarMeusPets() => Nav.NavigateTo("/meus-pets", forceLoad: true);
+    private bool salvo = false;
+    private bool salvando = false;
+
+    // Sai sem salvar: descarta o que foi alterado na memória para não aparecer em outras telas
+    private void DescartarAlteracoes()
+    {
+        if (!salvo) Db.ChangeTracker.Clear();
+    }
+
+    private void VoltarMeusPets()
+    {
+        DescartarAlteracoes();
+        Nav.NavigateTo("/meus-pets");
+    }
+
+    public void Dispose() => DescartarAlteracoes();
 
     private async Task AdicionarNovasFotos(InputFileChangeEventArgs e)
     {
@@ -166,7 +187,11 @@
                 petParaEditar!.Imagens.Add(new PetImagem { Base64Data = base64, PetId = petParaEditar.Id });
             }
         }
-        finally 
+        catch
+        {
+            await JS.InvokeVoidAsync("alert", "Não foi possível carregar uma das fotos (máx. 5MB cada).");
+        }
+        finally
         {
             estaCarregando = false;
         }
@@ -174,8 +199,23 @@
 
     private async Task SalvarAlteracoes()
     {
-        await PetRepository.UpdateAsync(petParaEditar!);
-        await JS.InvokeVoidAsync("alert", "Anúncio atualizado com sucesso!");
-        Nav.NavigateTo("/meus-pets", forceLoad: true);
+        if (salvando) return;
+        salvando = true;
+        try
+        {
+            petParaEditar!.FotoUrl = petParaEditar.Imagens.FirstOrDefault()?.Base64Data ?? "";
+            await PetRepository.UpdateAsync(petParaEditar);
+            salvo = true;
+            await JS.InvokeVoidAsync("alert", "Anúncio atualizado com sucesso!");
+            Nav.NavigateTo("/meus-pets");
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", "Erro ao salvar: " + (ex.InnerException?.Message ?? ex.Message));
+        }
+        finally
+        {
+            salvando = false;
+        }
     }
 }

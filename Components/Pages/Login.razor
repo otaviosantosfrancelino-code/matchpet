@@ -7,19 +7,21 @@
 @inject NavigationManager Nav
 @rendermode InteractiveServer
 
-<div class="container py-5 mt-4 mb-5">
+<PageTitle>Entrar | Match-Pet SP</PageTitle>
+
+<div class="container py-4 py-md-5 mt-md-4 mb-5">
     <div class="row justify-content-center">
         <div class="col-lg-8">
             <div class="card-portal overflow-hidden d-flex flex-column flex-md-row shadow-lg border-0 rounded-4">
                 <!-- Lado Esquerdo Colorido -->
-                <div class="bg-primary text-white p-5 d-flex flex-column justify-content-center text-center" style="flex: 1; background: linear-gradient(135deg, #1a73e8 0%, #1557b0 100%);">
+                <div class="bg-primary text-white p-4 p-md-5 d-flex flex-column justify-content-center text-center" style="flex: 1; background: linear-gradient(135deg, #1a73e8 0%, #1557b0 100%);">
                     <i class="bi bi-door-open-fill display-1 mb-3 text-warning"></i>
                     <h3 class="fw-bold">Bem-vindo de volta!</h3>
                     <p class="opacity-75">Acesse sua conta para continuar conectando corações e focinhos.</p>
                 </div>
                 
                 <!-- Formulário -->
-                <div class="p-5 bg-white" style="flex: 1.2;">
+                <div class="p-4 p-md-5 bg-white" style="flex: 1.2;">
                     <h3 class="fw-bold text-dark mb-4 text-center">Fazer Login</h3>
                     
                     @if (!string.IsNullOrEmpty(mensagemErro))
@@ -27,19 +29,27 @@
                         <div class="alert alert-danger py-2 small fw-bold text-center"><i class="bi bi-x-circle-fill me-1"></i> @mensagemErro</div>
                     }
 
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold text-muted">CPF ou CNPJ</label>
-                        <input type="text" class="form-control bg-light" @bind="documento" placeholder="Digite seu CPF ou CNPJ" />
-                    </div>
+                    <form @onsubmit="ProcessarLogin" @onsubmit:preventDefault>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted" for="loginDoc">CPF ou CNPJ</label>
+                            <input id="loginDoc" type="text" inputmode="numeric" autocomplete="username" class="form-control bg-light" @bind="documento" placeholder="Digite seu CPF ou CNPJ" />
+                        </div>
 
-                    <div class="mb-4">
-                        <label class="form-label small fw-bold text-muted">Senha</label>
-                        <input type="password" class="form-control bg-light" @bind="senha" placeholder="••••••••" />
-                    </div>
+                        <div class="mb-4">
+                            <label class="form-label small fw-bold text-muted" for="loginSenha">Senha</label>
+                            <div class="input-group">
+                                <input id="loginSenha" type="@(mostrarSenha ? "text" : "password")" autocomplete="current-password" class="form-control bg-light" @bind="senha" placeholder="••••••••" />
+                                <button type="button" class="btn btn-light border" @onclick="() => mostrarSenha = !mostrarSenha" aria-label="@(mostrarSenha ? "Esconder senha" : "Mostrar senha")">
+                                    <i class="bi @(mostrarSenha ? "bi-eye-slash" : "bi-eye")"></i>
+                                </button>
+                            </div>
+                        </div>
 
-                    <button class="btn btn-primary w-100 fw-bold py-2 rounded-pill shadow-sm mb-3" @onclick="ProcessarLogin">
-                        Entrar no Match-Pet
-                    </button>
+                        <button type="submit" class="btn btn-primary w-100 fw-bold py-2 rounded-pill shadow-sm mb-3" disabled="@entrando">
+                            @if (entrando) { <span class="spinner-border spinner-border-sm me-2"></span><span>Entrando...</span> }
+                            else { <span>Entrar no Match-Pet</span> }
+                        </button>
+                    </form>
 
                     <div class="text-center mt-3 border-top pt-3">
                         <span class="text-muted small">Novo por aqui?</span> <a href="/cadastro" class="fw-bold small">Crie sua conta</a>
@@ -52,17 +62,28 @@
 
 @code {
     private string documento = "", senha = "", mensagemErro = "";
+    private bool mostrarSenha = false, entrando = false;
+
     protected override void OnInitialized() { if (AuthService.EstaLogado) Nav.NavigateTo("/pets"); }
+
     private async Task ProcessarLogin() {
+        if (entrando) return;
         mensagemErro = "";
         if (string.IsNullOrWhiteSpace(documento) || string.IsNullOrWhiteSpace(senha)) { mensagemErro = "Preencha todos os campos."; return; }
-        
-        var usuario = await UsuarioRepository.GetByDocumentoAsync(documento.Trim());
-        if (usuario != null && usuario.Senha == senha) { 
-            AuthService.Login(usuario); 
-            Nav.NavigateTo("/pets"); 
-        } else { 
-            mensagemErro = "CPF/CNPJ ou senha inválidos."; 
+
+        entrando = true;
+        try {
+            var usuario = await UsuarioRepository.GetByDocumentoAsync(documento.Trim());
+            if (usuario != null && usuario.Senha == senha) {
+                AuthService.Login(usuario);
+                Nav.NavigateTo("/pets");
+            } else {
+                mensagemErro = "CPF/CNPJ ou senha inválidos.";
+            }
+        } catch (Exception) {
+            mensagemErro = "Não foi possível conectar ao servidor. Tente novamente.";
+        } finally {
+            entrando = false;
         }
     }
 }

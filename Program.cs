@@ -43,8 +43,13 @@ else
     app.UseHsts();
 }
 
+// Endereço inexistente no site mostra a página amigável "/nao-encontrado" (a API continua devolvendo 404 normal)
+app.UseWhen(ctx => !ctx.Request.Path.StartsWithSegments("/api"),
+    site => site.UseStatusCodePagesWithReExecute("/nao-encontrado"));
+
 app.UseHttpsRedirection();
 app.UseStaticFiles();
+app.UseRouting(); // depois do UseStatusCodePages, para a página 404 conseguir ser encontrada
 app.UseAntiforgery();
 
 app.MapControllers();

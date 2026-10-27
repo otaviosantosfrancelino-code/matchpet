@@ -11,6 +11,8 @@
 @inject IJSRuntime JS
 @rendermode InteractiveServer
 
+<PageTitle>Meus Anúncios | Match-Pet SP</PageTitle>
+
 <div class="container py-4 mb-5">
     <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
         <div>
@@ -23,7 +25,7 @@
     </div>
 
     <!-- ABAS DE NAVEGAÇÃO INTERNA (PETS VS ITENS) -->
-    <div class="d-flex gap-2 mb-4 border-bottom pb-3">
+    <div class="d-flex flex-wrap gap-2 mb-4 border-bottom pb-3">
         <button class="btn rounded-pill px-4 fw-bold @(abaAtiva == "pets" ? "btn-primary shadow-sm" : "btn-light text-muted")" @onclick="MudarParaPets">
             <i class="bi bi-heart-fill me-2"></i> Meus Animais (@(meusPets?.Count() ?? 0))
         </button>
@@ -53,38 +55,50 @@
                 {
                     <div class="col-md-6 col-lg-4">
                         <div class="card-portal border h-100 d-flex flex-row overflow-hidden shadow-sm rounded-4 bg-white">
-                            <div style="width: 130px; min-height: 140px;">
+                            <div class="flex-shrink-0" style="width: 120px; min-height: 140px;">
                                 @if (pet.Imagens != null && pet.Imagens.Any())
                                 {
-                                    <img src="@pet.Imagens.First().Base64Data" class="w-100 h-100" style="object-fit: cover;">
+                                    <img src="@pet.Imagens.First().Base64Data" class="img-cover" alt="Foto de @pet.Nome" loading="lazy">
                                 }
                                 else
                                 {
-                                    <div class="w-100 h-100 bg-light d-flex align-items-center justify-content-center text-muted"><i class="bi bi-camera"></i></div>
+                                    <div class="foto-vazia"><i class="bi bi-camera"></i></div>
                                 }
                             </div>
-                            <div class="p-3 flex-grow-1 d-flex flex-column justify-content-between">
+                            <div class="p-3 flex-grow-1 d-flex flex-column justify-content-between" style="min-width: 0;">
                                 <div>
-                                    <div class="d-flex justify-content-between align-items-start">
-                                        <h5 class="fw-bold mb-1 text-dark">@pet.Nome</h5>
-                                        <div class="d-flex gap-1">
-                                            <button class="btn btn-sm btn-outline-primary px-2" title="Editar" @onclick="() => EditarPet(pet.Id)">
+                                    <div class="d-flex justify-content-between align-items-start gap-2">
+                                        <h5 class="fw-bold mb-1 text-dark text-truncate" title="@pet.Nome">@pet.Nome</h5>
+                                        <div class="d-flex gap-1 flex-shrink-0">
+                                            <button class="btn btn-sm btn-outline-primary px-2" title="Editar" aria-label="Editar @pet.Nome" @onclick="() => EditarPet(pet.Id)">
                                                 <i class="bi bi-pencil-square"></i>
                                             </button>
-                                            <button class="btn btn-sm btn-outline-danger px-2" title="Excluir" @onclick="() => ExcluirPet(pet)">
+                                            <button class="btn btn-sm btn-outline-danger px-2" title="Excluir" aria-label="Excluir @pet.Nome" @onclick="() => ExcluirPet(pet)">
                                                 <i class="bi bi-trash"></i>
                                             </button>
                                         </div>
                                     </div>
-                                    <span class="badge @(pet.Status == "Disponível" ? "bg-success" : "bg-warning text-dark") mb-2">@pet.Status</span>
+                                    <span class="badge @(pet.Status switch { "Disponível" => "bg-success", "Em Processo" => "bg-primary", _ => "bg-warning text-dark" }) mb-2">@pet.Status</span>
                                     <p class="small text-muted mb-2">@pet.Especie • @pet.Porte</p>
                                 </div>
-                                
-                                @if (pet.Status == "Disponível")
+
+                                @if (pet.Status == "Em Processo")
                                 {
-                                    <button class="btn btn-sm btn-warning w-100 fw-bold rounded-pill text-dark" @onclick="() => MarcarAdotado(pet)">
-                                        <i class="bi bi-heart-fill me-1"></i> Finalizar Adoção
-                                    </button>
+                                    <p class="small text-primary mb-2"><i class="bi bi-hourglass-split me-1"></i>Alguém assinou o termo. Combine a visita!</p>
+                                }
+                                @if (pet.Status != "Adotado")
+                                {
+                                    <div class="d-flex gap-2">
+                                        <button class="btn btn-sm btn-warning flex-grow-1 fw-bold rounded-pill text-dark" @onclick="() => MarcarAdotado(pet)">
+                                            <i class="bi bi-heart-fill me-1"></i> Finalizar Adoção
+                                        </button>
+                                        @if (pet.Status == "Em Processo")
+                                        {
+                                            <button class="btn btn-sm btn-outline-secondary rounded-pill fw-bold" title="Voltar a ficar disponível no catálogo" @onclick="() => ReabrirAnuncio(pet)">
+                                                Reabrir
+                                            </button>
+                                        }
+                                    </div>
                                 }
                             </div>
                         </div>
@@ -117,11 +131,11 @@
                             <div style="width: 130px; min-height: 140px;">
                                 @if (item.Imagens != null && item.Imagens.Any())
                                 {
-                                    <img src="@item.Imagens.First().Base64Data" class="w-100 h-100" style="object-fit: cover;">
+                                    <img src="@item.Imagens.First().Base64Data" class="img-cover" alt="Foto de @item.Nome" loading="lazy">
                                 }
                                 else
                                 {
-                                    <div class="w-100 h-100 bg-light d-flex align-items-center justify-content-center text-muted"><i class="bi bi-box"></i></div>
+                                    <div class="foto-vazia"><i class="bi bi-box"></i></div>
                                 }
                             </div>
                             <div class="p-3 flex-grow-1 d-flex flex-column justify-content-between">
@@ -167,7 +181,7 @@
     {
         if (!AuthService.EstaLogado || AuthService.UsuarioLogado == null) 
         {
-            Nav.NavigateTo("/login", forceLoad: true);
+            Nav.NavigateTo("/login");
             return;
         }
         await CarregarDados();
@@ -198,6 +212,17 @@
         if (confirmar)
         {
             pet.Status = "Adotado";
+            await PetRepository.UpdateAsync(pet);
+            await CarregarDados();
+        }
+    }
+
+    private async Task ReabrirAnuncio(Pet pet)
+    {
+        var confirmar = await JS.InvokeAsync<bool>("confirm", $"A adoção de {pet.Nome} não deu certo? O anúncio voltará para o catálogo.");
+        if (confirmar)
+        {
+            pet.Status = "Disponível";
             await PetRepository.UpdateAsync(pet);
             await CarregarDados();
         }

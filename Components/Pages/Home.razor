@@ -4,23 +4,25 @@
 @inject AuthService AuthService
 @rendermode InteractiveServer
 
-<div class="position-relative overflow-hidden" style="background: linear-gradient(135deg, #1a73e8 0%, #1557b0 100%); padding: 120px 0 100px 0;">
+<PageTitle>Match-Pet SP | Adoção responsável em Franca</PageTitle>
+
+<div class="position-relative overflow-hidden home-hero rounded-4 mt-2 mt-md-3" style="background: linear-gradient(135deg, #1a73e8 0%, #1557b0 100%);">
     <div class="container text-center text-white position-relative" style="z-index: 2;">
         
         <!-- Logo transparente no topo -->
-        <img src="/logo-match-pet.png" alt="Match-Pet SP" class="mb-4 animate-logo" style="height: 140px; object-fit: contain; filter: drop-shadow(0px 0px 15px rgba(255, 255, 255, 0.7));" />
+        <img src="/logo-match-pet.png" alt="Match-Pet SP" class="mb-4 animate-logo home-logo" style="object-fit: contain; filter: drop-shadow(0px 0px 15px rgba(255, 255, 255, 0.7));" />
         
-        <h1 class="display-3 fw-bold mb-3" style="text-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+        <h1 class="display-4 fw-bold mb-3" style="text-shadow: 0 2px 10px rgba(0,0,0,0.1);">
             Encontre seu melhor amigo em <span class="text-warning">Franca</span>.
         </h1>
         
-        <p class="fs-4 mb-5 mx-auto" style="max-width: 800px; opacity: 0.95; font-weight: 400;">
+        <p class="fs-5 mb-5 mx-auto" style="max-width: 800px; opacity: 0.95; font-weight: 400;">
             Adoções seguras, rastreáveis e focadas na compatibilidade real. A tecnologia dando oportunidades de conhecer seu novo animalzinho!
         </p>
         
         <div class="d-flex justify-content-center gap-3 flex-wrap">
-            <button class="btn btn-warning btn-lg px-5 fw-bold shadow-lg text-dark home-btn-main" @onclick='() => Nav.NavigateTo("/pets")'>
-                <i class="bi bi-search me-2"></i> Ver Animais Disponíveis
+            <button class="btn btn-warning btn-lg px-4 px-md-5 fw-bold shadow-lg text-dark home-btn-main" @onclick='() => Nav.NavigateTo("/pets")'>
+                <i class="bi bi-search me-2"></i> Ver Animais
             </button>
             @if (!AuthService.EstaLogado)
             {
@@ -45,7 +47,7 @@
             <p class="text-muted fs-5 lh-base mb-4">
                 Nosso propósito é usar o <strong class="text-dark">Match Inteligente</strong> para filtrar animais que se adaptem exatamente ao seu estilo de vida em Franca.
             </p>
-            <div class="d-flex gap-3 mt-4">
+            <div class="d-flex flex-wrap gap-3 mt-4">
                 <div class="text-center p-3 border rounded-4 bg-white flex-fill shadow-sm card-hover">
                     <i class="bi bi-shield-check fs-1 text-success"></i>
                     <h6 class="mt-2 fw-bold mb-0">Segurança</h6>
@@ -63,7 +65,7 @@
         <div class="col-lg-6 mt-5 mt-lg-0 text-center">
             <div class="position-relative">
                 <!-- Imagem do mascote na seção central -->
-                <img src="/home-match-pet.png" class="img-fluid rounded-5 shadow-lg border border-4 border-white" style="max-height: 400px; object-fit: cover;">
+                <img src="/home-match-pet.png" alt="Mascote do Match-Pet com um cachorro e um gato" class="img-fluid rounded-5 shadow-lg border border-4 border-white" style="max-height: 400px; object-fit: cover;">
                 <div class="position-absolute top-0 end-0 bg-warning text-dark p-3 rounded-circle shadow fw-bold m-3 d-none d-md-flex align-items-center justify-content-center" style="width: 80px; height: 80px; font-size: 0.8rem; line-height: 1;">
                     MATCH REAL!
                 </div>
@@ -81,7 +83,7 @@
     <div class="row g-4 text-center">
         @foreach (var passo in steps)
         {
-            <div class="col-md-3">
+            <div class="col-sm-6 col-md-3">
                 <div class="bg-white p-4 h-100 rounded-4 shadow-sm border card-hover" style="border-top: 4px solid #1a73e8 !important;">
                     <div class="display-5 fw-bold mb-2" style="color: #1a73e8;">@passo.Numero</div>
                     <h5 class="fw-bold">@passo.Titulo</h5>
@@ -182,6 +184,13 @@
 </div>
 
 <style>
+    .home-hero { padding: 120px 0 100px 0; }
+    .home-logo { height: 140px; }
+    @@media (max-width: 768px) {
+        .home-hero { padding: 60px 0 90px 0; }
+        .home-logo { height: 90px; }
+    }
+
     .home-btn-main { border-radius: 30px; transition: 0.3s; }
     .home-btn-main:hover { transform: scale(1.05); }
     .card-hover { transition: transform 0.3s ease; }
