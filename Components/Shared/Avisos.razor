@@ -1,0 +1,21 @@
+@* Mostra os avisos (toasts) do ToastService no canto da tela *@
+@inject ToastService Toast
+@implements IDisposable
+
+<div class="toasts" aria-live="polite">
+    @foreach (var t in Toast.Toasts)
+    {
+        <div class="toast-mp @t.Tipo" role="status">
+            <i class="bi @(t.Tipo switch { "sucesso" => "bi-check-circle-fill", "erro" => "bi-x-circle-fill", "aviso" => "bi-exclamation-triangle-fill", _ => "bi-info-circle-fill" })"></i>
+            <span>@t.Mensagem</span>
+            <button type="button" aria-label="Fechar aviso" @onclick="() => Toast.Fechar(t.Id)"><i class="bi bi-x-lg" style="font-size:.85rem"></i></button>
+        </div>
+    }
+</div>
+
+@code {
+    protected override void OnInitialized() => Toast.OnChange += Atualizar;
+    // Os avisos somem sozinhos a partir de outra thread, por isso InvokeAsync
+    private void Atualizar() => InvokeAsync(StateHasChanged);
+    public void Dispose() => Toast.OnChange -= Atualizar;
+}

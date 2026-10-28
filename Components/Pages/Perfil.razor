@@ -1,238 +1,296 @@
 @page "/perfil"
-@using crudcomdb.Models
-@using crudcomdb.Interfaces
-@using crudcomdb.Services
 @inject AuthService AuthService
 @inject IUsuarioRepository UsuarioRepository
+@inject DocumentoValidacaoService Validacao
 @inject NavigationManager Nav
-@inject IJSRuntime JS
-@rendermode InteractiveServer
+@inject ToastService Toast
 
-<PageTitle>Meu Perfil | Match-Pet SP</PageTitle>
+<PageTitle>Meu perfil | Match-Pet SP</PageTitle>
 
-<div class="container py-4 py-md-5 mt-md-4">
-    @if (AuthService.UsuarioLogado != null)
-    {
+@if (AuthService.UsuarioLogado is { } u)
+{
+    <div class="container-xl py-4 py-md-5">
         <div class="row g-4">
-            <div class="col-md-4">
-                <div class="card-portal p-4 text-center border shadow-sm rounded-4 bg-white">
+            @* ===== CARTÃO DO USUÁRIO ===== *@
+            <div class="col-lg-4">
+                <div class="mp-card p-4 text-center perfil-cartao">
                     <div class="position-relative d-inline-block mb-3">
-                        @if (!string.IsNullOrEmpty(AuthService.UsuarioLogado.FotoPerfilBase64))
-                        {
-                            <img src="@AuthService.UsuarioLogado.FotoPerfilBase64" class="rounded-circle shadow border border-4 border-white" style="width: 150px; height: 150px; object-fit: cover;" />
-                        }
-                        else
-                        {
-                            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold display-4 shadow border border-4 border-white mx-auto" style="width: 150px; height: 150px;">
-                                @Inicial
-                            </div>
-                        }
-                        <label for="uploadPerfil" title="Trocar foto" class="position-absolute bottom-0 end-0 bg-primary text-white rounded-circle shadow-sm d-flex align-items-center justify-content-center" style="cursor: pointer; width: 40px; height: 40px;">
+                        <Avatar Usuario="u" Tamanho="120" />
+                        <label for="uploadPerfil" title="Trocar foto" class="botao-foto">
                             <i class="bi bi-camera-fill"></i>
-                            <InputFile id="uploadPerfil" OnChange="CarregarFotoPerfil" class="d-none" accept=".jpg,.jpeg,.png" />
+                            <InputFile id="uploadPerfil" OnChange="CarregarFotoPerfil" class="d-none" accept="image/jpeg,image/png,image/webp" />
                         </label>
                     </div>
-                    
-                    <h4 class="fw-bold mb-0">@AuthService.UsuarioLogado.Nome</h4>
-                    <span class="badge rounded-pill bg-warning text-dark mt-2 px-3 fw-bold">@AuthService.UsuarioLogado.Classificacao</span>
-                    
-                    @if (AuthService.UsuarioLogado.EhOng)
-                    {
-                        <span class="badge rounded-pill bg-success text-white mt-1 px-3 fw-bold"><i class="bi bi-building-check me-1"></i> Instituição Oficial</span>
-                    }
-                    
-                    <div class="alert @(AuthService.UsuarioLogado.StatusValidacaoDocumento == "Aprovado" ? "alert-success" : "alert-danger") mt-4 border-0 small shadow-sm">
-                        <i class="bi @(AuthService.UsuarioLogado.StatusValidacaoDocumento == "Aprovado" ? "bi-shield-fill-check fs-5" : "bi-shield-slash fs-5") me-2"></i>
-                        <strong class="d-block mt-1">
-                            @(AuthService.UsuarioLogado.StatusValidacaoDocumento == "Aprovado" ? "Identidade Verificada (IA)" : "Documento Pendente")
-                        </strong>
+                    <h2 class="h4 mb-1">@u.Nome</h2>
+                    <p class="text-muted small mb-2">@u.Email</p>
+                    <div class="d-flex flex-wrap gap-1 justify-content-center">
+                        <span class="tag azul">@u.Classificacao</span>
+                        @if (u.EhOng) { <span class="tag verde"><i class="bi bi-building-check"></i>ONG</span> }
+                    </div>
+
+                    <div class="status-doc mt-4 @ClasseStatus(u.StatusValidacaoDocumento)">
+                        <i class="bi @IconeStatus(u.StatusValidacaoDocumento)"></i>
+                        <div class="text-start">
+                            <b>@TituloStatus(u.StatusValidacaoDocumento)</b>
+                            <small>@(u.StatusValidacaoDocumento == "Aprovado" ? "Você já pode adotar e pedir itens." : "Necessário para adotar e pedir itens.")</small>
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2 mt-4">
+                        <a href="/meus-pets" class="btn btn-light"><i class="bi bi-collection me-1"></i> Meus anúncios</a>
                     </div>
                 </div>
             </div>
 
-            <div class="col-md-8">
-                <div class="card-portal p-4 p-md-5 border shadow-sm rounded-4 bg-white">
-                    <h5 class="fw-bold mb-4 text-primary border-bottom pb-2">Gerenciar Dados da Conta</h5>
-                    @if (!string.IsNullOrEmpty(mensagemErro))
+            <div class="col-lg-8">
+                @* ===== VERIFICAÇÃO DO DOCUMENTO ===== *@
+                <div class="mp-card p-4 p-md-5 mb-4" id="documento">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="icone-bolha @(u.StatusValidacaoDocumento == "Aprovado" ? "verde" : "laranja")"><i class="bi bi-person-vcard"></i></div>
+                        <div>
+                            <h3 class="h5 mb-0">Verificação de identidade</h3>
+                            <small class="text-muted">@(u.EhOng ? "Cartão CNPJ ou estatuto da instituição" : "RG, CNH ou outro documento oficial com foto e CPF")</small>
+                        </div>
+                    </div>
+
+                    @if (analisando)
                     {
-                        <div class="alert alert-danger small fw-bold"><i class="bi bi-exclamation-triangle-fill me-1"></i> @mensagemErro</div>
-                    }
-                    <EditForm Model="@AuthService.UsuarioLogado" OnValidSubmit="() => SalvarPerfil(false)">
-                        <div class="row g-3">
-                            <!-- NOME VISÍVEL PARA OUTROS USUÁRIOS -->
-                            <div class="col-12">
-                                <label class="form-label small fw-bold text-muted">Nome / Razão Social Visível no Site</label>
-                                <InputText class="form-control fw-bold" @bind-Value="AuthService.UsuarioLogado.Nome" />
-                                <div class="form-text small">Este é o nome que aparecerá nos animais publicados e no catálogo de ONGs.</div>
-                            </div>
-
-                            <div class="col-md-6 mt-3">
-                                <label class="form-label small fw-bold text-muted">WhatsApp / Telefone</label>
-                                <InputText class="form-control" @bind-Value="AuthService.UsuarioLogado.Telefone" />
-                            </div>
-                            <div class="col-md-6 mt-3">
-                                <label class="form-label small fw-bold text-muted">Cidade</label>
-                                <InputText class="form-control" @bind-Value="AuthService.UsuarioLogado.Cidade" />
-                            </div>
-                            <div class="col-12">
-                                <label class="form-label small fw-bold text-muted">Endereço Residencial / Sede</label>
-                                <InputText class="form-control" @bind-Value="AuthService.UsuarioLogado.Logradouro" />
-                            </div>
-
-                            <!-- PAINEL EXCLUSIVO PARA EDITAR PERFIL DE ONG -->
-                            @if (AuthService.UsuarioLogado.EhOng)
+                        <div class="analise">
+                            @for (var i = 0; i < Etapas.Length; i++)
                             {
-                                <div class="col-12 mt-4">
-                                    <div class="p-4 bg-success bg-opacity-10 rounded-4 border border-success border-opacity-25 shadow-sm">
-                                        <h6 class="fw-bold text-success mb-3"><i class="bi bi-building-fill-gear me-2"></i> Painel de Configuração da Instituição (ONG)</h6>
-                                        
-                                        <div class="mb-3">
-                                            <label class="form-label small fw-bold text-muted">Sobre a Instituição / Descrição Institucional</label>
-                                            <InputTextArea class="form-control bg-white" @bind-Value="AuthService.UsuarioLogado.DescricaoOng" rows="3" placeholder="Fale um pouco sobre a história da ONG, missão e como os adotantes podem ajudar..." />
-                                        </div>
-
-                                        <div>
-                                            <label class="form-label small fw-bold text-muted">Chave Pix Oficial para Doações</label>
-                                            <InputText class="form-control bg-white" @bind-Value="AuthService.UsuarioLogado.ChavePix" placeholder="CNPJ, E-mail, Telefone ou Chave Aleatória Pix" />
-                                        </div>
-                                    </div>
+                                <div class="etapa @(i < etapaAtual ? "feita" : i == etapaAtual ? "atual" : "")">
+                                    @if (i < etapaAtual) { <i class="bi bi-check-circle-fill"></i> }
+                                    else if (i == etapaAtual) { <span class="spinner-border spinner-border-sm"></span> }
+                                    else { <i class="bi bi-circle"></i> }
+                                    <span>@Etapas[i]</span>
                                 </div>
                             }
-
-                            <!-- AUDITORIA DE DOCUMENTO -->
-                            <div class="col-12 mt-4">
-                                <div class="p-4 rounded-4 border bg-light text-center" style="border-style: dashed !important; border-width: 2px !important;">
-                                    <h6 class="fw-bold text-dark"><i class="bi bi-file-earmark-person-fill text-primary me-2 fs-4"></i>Documento Oficial (CPF / CNH / Estatuto)</h6>
-                                    <p class="small text-muted mb-3">Necessário para validação de segurança e assinatura de termos.</p>
-                                    
-                                    @if (AuthService.UsuarioLogado.StatusValidacaoDocumento != "Aprovado" && !analisandoDocumento)
-                                    {
-                                        <InputFile OnChange="CarregarFotoDocumento" class="form-control form-control-sm mx-auto" style="max-width: 350px;" accept=".jpg,.jpeg,.png" />
-                                    }
-                                    
-                                    @if (analisandoDocumento)
-                                    {
-                                        <div class="mt-4 p-3 bg-white rounded-3 shadow-sm border mx-auto" style="max-width: 400px;">
-                                            <div class="text-primary fw-bold mb-2">
-                                                <i class="bi bi-cpu-fill me-2 fs-5"></i> @mensagemAnalise
-                                            </div>
-                                            <div class="progress" style="height: 8px;">
-                                                <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary w-100"></div>
-                                            </div>
-                                        </div>
-                                    }
-                                    else if (AuthService.UsuarioLogado.StatusValidacaoDocumento == "Aprovado")
-                                    {
-                                        <div class="mt-3 text-success p-3 bg-success bg-opacity-10 rounded-3 border border-success mx-auto" style="max-width: 400px;">
-                                            <i class="bi bi-patch-check-fill fs-3 d-block mb-2"></i> 
-                                            <strong class="d-block">Documento Validado com Sucesso!</strong>
-                                        </div>
-                                    }
-                                </div>
+                        </div>
+                    }
+                    else
+                    {
+                        @if (!string.IsNullOrEmpty(u.DocumentoObservacao) && u.StatusValidacaoDocumento != "Pendente")
+                        {
+                            <div class="alert @(u.StatusValidacaoDocumento switch { "Aprovado" => "alert-success", "Reprovado" => "alert-danger", _ => "alert-warning" }) small">
+                                <strong>@TituloStatus(u.StatusValidacaoDocumento):</strong> @u.DocumentoObservacao
                             </div>
+                        }
+
+                        @if (u.StatusValidacaoDocumento != "Aprovado")
+                        {
+                            <div class="upload-area">
+                                <InputFile OnChange="CarregarFotoDocumento" accept="image/jpeg,image/png,image/webp" />
+                                <i class="bi bi-cloud-arrow-up fs-1 text-primary"></i>
+                                <div class="fw-bold text-dark mt-1">@(u.StatusValidacaoDocumento == "Reprovado" ? "Enviar outra foto" : "Toque para enviar a foto do documento")</div>
+                                <small class="text-muted">JPG ou PNG, até 10 MB</small>
+                            </div>
+                            <ul class="dicas small text-muted mt-3 mb-0">
+                                <li>Fotografe o documento <b>inteiro</b>, sobre uma superfície lisa e com boa luz.</li>
+                                <li>O <b>nome</b> e o <b>@(u.EhOng ? "CNPJ" : "CPF")</b> precisam ser iguais aos do seu cadastro.</li>
+                                <li>Cada foto só pode ser usada em <b>uma conta</b>.</li>
+                            </ul>
+                        }
+                        else
+                        {
+                            <p class="small text-muted mb-0"><i class="bi bi-lock-fill me-1"></i>Seu documento está guardado com segurança e não aparece para outros usuários.</p>
+                        }
+                    }
+                </div>
+
+                @* ===== DADOS DA CONTA ===== *@
+                <div class="mp-card p-4 p-md-5">
+                    <h3 class="h5 mb-4">Dados da conta</h3>
+                    <EditForm Model="@u" OnValidSubmit="() => SalvarPerfil(false)">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label">@(u.EhOng ? "Nome da instituição" : "Nome")</label>
+                                <InputText class="form-control" @bind-Value="u.Nome" disabled="@(u.StatusValidacaoDocumento == "Aprovado")" />
+                                @if (u.StatusValidacaoDocumento == "Aprovado")
+                                {
+                                    <div class="form-text"><i class="bi bi-lock-fill"></i> O nome fica bloqueado depois que o documento é verificado.</div>
+                                }
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">@(u.EhOng ? "CNPJ" : "CPF")</label>
+                                <input class="form-control" value="@DocumentoUtil.Formatar(u.Documento)" disabled />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">WhatsApp / Telefone</label>
+                                <InputText class="form-control" inputmode="tel" @bind-Value="u.Telefone" />
+                            </div>
+                            <div class="col-md-8">
+                                <label class="form-label">Endereço</label>
+                                <InputText class="form-control" @bind-Value="u.Logradouro" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Cidade</label>
+                                <InputText class="form-control" @bind-Value="u.Cidade" />
+                            </div>
+
+                            @if (u.EhOng)
+                            {
+                                <div class="col-12">
+                                    <label class="form-label">Sobre a instituição</label>
+                                    <InputTextArea class="form-control" rows="3" @bind-Value="u.DescricaoOng" placeholder="História, missão e como as pessoas podem ajudar..." />
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label">Chave Pix para doações</label>
+                                    <InputText class="form-control" @bind-Value="u.ChavePix" placeholder="CNPJ, e-mail, telefone ou chave aleatória" />
+                                </div>
+                            }
                         </div>
 
-                        <div class="mt-4 text-end">
-                            <button type="submit" class="btn btn-primary px-5 rounded-pill fw-bold shadow" disabled="@analisandoDocumento">
-                                <i class="bi bi-save me-2"></i> Salvar Alterações
-                            </button>
+                        <div class="d-flex justify-content-end mt-4">
+                            <button type="submit" class="btn btn-primary px-4" disabled="@salvando"><i class="bi bi-check2 me-1"></i> @(salvando ? "Salvando..." : "Salvar alterações")</button>
                         </div>
                     </EditForm>
                 </div>
             </div>
         </div>
-    }
-</div>
+    </div>
+}
+
+<style>
+    .botao-foto { position: absolute; bottom: 2px; right: 2px; width: 38px; height: 38px; border-radius: 50%; background: var(--mp-primary); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 3px solid #fff; box-shadow: var(--mp-shadow-sm); }
+    .status-doc { display: flex; align-items: center; gap: .8rem; padding: .9rem 1rem; border-radius: 16px; }
+    .status-doc i { font-size: 1.6rem; }
+    .status-doc b { display: block; font-size: .95rem; }
+    .status-doc small { font-size: .8rem; opacity: .85; }
+    .status-doc.ok { background: var(--mp-success-soft); color: #166534; }
+    .status-doc.analise { background: var(--mp-warning-soft); color: #92400e; }
+    .status-doc.erro { background: var(--mp-danger-soft); color: #991b1b; }
+    .status-doc.pendente { background: #f1f5f9; color: var(--mp-text); }
+    .analise { background: #f8fafc; border-radius: 16px; padding: 1.25rem; }
+    .etapa { display: flex; align-items: center; gap: .7rem; padding: .45rem 0; color: #94a3b8; font-weight: 600; }
+    .etapa.feita { color: var(--mp-success); }
+    .etapa.atual { color: var(--mp-primary); }
+    .dicas li { margin-bottom: .25rem; }
+    @@media (min-width: 992px) { .perfil-cartao { position: sticky; top: 88px; } }
+</style>
 
 @code {
-    private bool analisandoDocumento = false;
-    private string mensagemAnalise = "";
-    private string mensagemErro = "";
+    private bool analisando, salvando;
+    private int etapaAtual;
 
-    private string Inicial => string.IsNullOrWhiteSpace(AuthService.UsuarioLogado?.Nome) ? "?" : AuthService.UsuarioLogado.Nome.Trim()[..1].ToUpper();
+    private static readonly string[] Etapas =
+    {
+        "Recebendo a foto",
+        "Conferindo se a foto já foi usada em outra conta",
+        "Lendo nome e número do documento",
+        "Comparando com os dados do cadastro"
+    };
 
     protected override void OnInitialized()
     {
-        if (!AuthService.EstaLogado) Nav.NavigateTo("/login");
+        if (!AuthService.EstaLogado) Nav.NavigateTo("/login?voltar=/perfil");
     }
 
-    // Lê a imagem já reduzida no navegador (evita arquivos enormes no banco)
-    private static async Task<string> LerImagem(IBrowserFile arquivo, int tamanhoMax)
+    private static string ClasseStatus(string s) => s switch { "Aprovado" => "ok", "Em Análise" or "Em Analise" => "analise", "Reprovado" => "erro", _ => "pendente" };
+    private static string IconeStatus(string s) => s switch { "Aprovado" => "bi-patch-check-fill", "Em Análise" or "Em Analise" => "bi-hourglass-split", "Reprovado" => "bi-x-octagon-fill", _ => "bi-shield-exclamation" };
+    private static string TituloStatus(string s) => s switch { "Aprovado" => "Identidade verificada", "Em Análise" or "Em Analise" => "Documento em análise", "Reprovado" => "Documento recusado", _ => "Documento pendente" };
+
+    // Reduz a imagem no navegador antes de enviar (evita arquivos enormes)
+    private static async Task<(byte[] bytes, string tipo)> LerImagem(IBrowserFile arquivo, int tamanhoMax)
     {
         if (!arquivo.ContentType.StartsWith("image/"))
             throw new InvalidOperationException("Envie um arquivo de imagem (JPG ou PNG).");
-        var resized = await arquivo.RequestImageFileAsync(arquivo.ContentType, tamanhoMax, tamanhoMax);
-        using var stream = resized.OpenReadStream(10 * 1024 * 1024);
+        var tipo = arquivo.ContentType == "image/png" ? "image/png" : "image/jpeg";
+        var reduzida = await arquivo.RequestImageFileAsync(tipo, tamanhoMax, tamanhoMax);
+        using var stream = reduzida.OpenReadStream(10 * 1024 * 1024);
         using var ms = new MemoryStream();
-        await stream.CopyToAsync(ms); // lê o arquivo inteiro (o ReadAsync antigo podia ler só um pedaço)
-        return $"data:{arquivo.ContentType};base64,{Convert.ToBase64String(ms.ToArray())}";
+        await stream.CopyToAsync(ms);
+        return (ms.ToArray(), tipo);
     }
 
     private async Task CarregarFotoPerfil(InputFileChangeEventArgs e)
     {
-        mensagemErro = "";
         try
         {
-            AuthService.UsuarioLogado!.FotoPerfilBase64 = await LerImagem(e.File, 400);
-            await SalvarPerfil(silencioso: true); // a foto já fica salva, sem precisar clicar em "Salvar"
+            var (bytes, tipo) = await LerImagem(e.File, 400);
+            AuthService.UsuarioLogado!.FotoPerfilBase64 = $"data:{tipo};base64,{Convert.ToBase64String(bytes)}";
+            await SalvarPerfil(silencioso: true);
+            Toast.Sucesso("Foto atualizada!");
         }
         catch (Exception ex)
         {
-            mensagemErro = "Não foi possível carregar a foto: " + ex.Message;
+            Toast.Erro("Não foi possível carregar a foto: " + ex.Message);
         }
     }
 
     private async Task CarregarFotoDocumento(InputFileChangeEventArgs e)
     {
-        mensagemErro = "";
-        string base64;
+        var usuario = AuthService.UsuarioLogado!;
+        byte[] bytes;
+        string tipo;
         try
         {
-            base64 = await LerImagem(e.File, 1400);
+            (bytes, tipo) = await LerImagem(e.File, 1600);
         }
         catch (Exception ex)
         {
-            mensagemErro = "Não foi possível ler o documento: " + ex.Message;
+            Toast.Erro("Não foi possível ler o documento: " + ex.Message);
             return;
         }
 
-        analisandoDocumento = true;
-        AuthService.UsuarioLogado!.StatusValidacaoDocumento = "Em Analise";
-        
-        mensagemAnalise = "Digitalizando documento enviado...";
+        analisando = true;
+        etapaAtual = 0;
         StateHasChanged();
-        await Task.Delay(1500);
 
-        mensagemAnalise = "Mapeando dados via OCR e extraindo registros...";
-        StateHasChanged();
-        await Task.Delay(2000);
-
-        AuthService.UsuarioLogado!.FotoDocumentoBase64 = base64;
-        AuthService.UsuarioLogado!.StatusValidacaoDocumento = "Aprovado";
-        AuthService.UsuarioLogado!.DataValidacaoDocumento = DateTime.UtcNow;
-        analisandoDocumento = false;
-        
-        await SalvarPerfil(silencioso: true);
-    }
-
-    private async Task SalvarPerfil(bool silencioso = false)
-    {
-        mensagemErro = "";
         try
         {
-            AuthService.UsuarioLogado!.DataUltimaAlteracao = DateTime.UtcNow;
-            AuthService.AtualizarClassificacao(AuthService.UsuarioLogado!);
-            await UsuarioRepository.UpdateAsync(AuthService.UsuarioLogado!);
-            AuthService.NotifyStateChanged();
+            await Task.Delay(400);
+            etapaAtual = 1; StateHasChanged();
 
-            if (!silencioso)
+            // A validação real roda enquanto as etapas avançam na tela
+            var tarefa = Validacao.ValidarAsync(usuario, bytes, tipo);
+            await Task.Delay(500);
+            etapaAtual = 2; StateHasChanged();
+            var resultado = await tarefa;
+            etapaAtual = 3; StateHasChanged();
+            await Task.Delay(400);
+
+            usuario.DocumentoHash = resultado.Hash;
+            usuario.StatusValidacaoDocumento = resultado.Status;
+            usuario.DocumentoObservacao = resultado.Observacao;
+            usuario.DataValidacaoDocumento = DateTime.UtcNow;
+            // Documento recusado não fica guardado
+            usuario.FotoDocumentoBase64 = resultado.Status == "Reprovado" ? null : $"data:{tipo};base64,{Convert.ToBase64String(bytes)}";
+
+            await SalvarPerfil(silencioso: true);
+
+            switch (resultado.Status)
             {
-                await JS.InvokeVoidAsync("alert", "Sucesso! Perfil atualizado.");
+                case "Aprovado": Toast.Sucesso("Identidade verificada! Agora você pode adotar."); break;
+                case "Reprovado": Toast.Erro("Documento recusado. Veja o motivo e envie outra foto."); break;
+                default: Toast.Aviso("Documento recebido e em análise."); break;
             }
         }
         catch (Exception ex)
         {
-            mensagemErro = "Erro ao salvar o perfil: " + (ex.InnerException?.Message ?? ex.Message);
+            Toast.Erro("Erro ao validar o documento: " + ex.Message);
         }
+        finally
+        {
+            analisando = false;
+        }
+    }
+
+    private async Task SalvarPerfil(bool silencioso = false)
+    {
+        salvando = true;
+        try
+        {
+            var u = AuthService.UsuarioLogado!;
+            u.DataUltimaAlteracao = DateTime.UtcNow;
+            AuthService.AtualizarClassificacao(u);
+            await UsuarioRepository.UpdateAsync(u);
+            AuthService.NotifyStateChanged();
+            if (!silencioso) Toast.Sucesso("Perfil atualizado!");
+        }
+        catch (Exception ex)
+        {
+            Toast.Erro("Erro ao salvar o perfil: " + (ex.InnerException?.Message ?? ex.Message));
+        }
+        finally { salvando = false; }
     }
 }

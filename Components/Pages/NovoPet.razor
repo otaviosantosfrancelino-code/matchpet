@@ -1,139 +1,132 @@
 @page "/pets/novo"
-@using crudcomdb.Models
-@using crudcomdb.Interfaces
-@using crudcomdb.Services
-@using crudcomdb.Data
 @inject IPetRepository PetRepository
-@inject AppDbContext Db
+@inject IItemRepository ItemRepository
 @inject AuthService AuthService
 @inject NavigationManager Nav
-@inject IJSRuntime JS
-@rendermode InteractiveServer
+@inject ToastService Toast
 
-<PageTitle>Novo Anúncio | Match-Pet SP</PageTitle>
+<PageTitle>Novo anúncio | Match-Pet SP</PageTitle>
 
-<div class="container py-4 mb-5" style="max-width: 850px;">
+<div class="container py-4 py-md-5" style="max-width: 860px;">
     <div class="text-center mb-4">
-        <h2 class="fw-bold" style="color: #1a73e8;">Central de Publicação Solidária</h2>
-        <p class="text-muted">Divulgue um animal para adoção ou doe suprimentos e acessórios em Franca.</p>
-        
-        <!-- SELETOR DE ABAS (2 TIPOS DE CADASTRO) -->
-        <div class="d-inline-flex flex-wrap justify-content-center p-1 bg-light border rounded-pill shadow-sm mt-2">
-            <button type="button" class="btn btn-sm rounded-pill px-4 py-2 fw-bold transition-all @(tipoCadastro == "pet" ? "btn-primary shadow-sm" : "text-muted")" @onclick='() => tipoCadastro = "pet"'>
-                <i class="bi bi-heart-fill me-2"></i> Cadastrar Animal
-            </button>
-            <button type="button" class="btn btn-sm rounded-pill px-4 py-2 fw-bold transition-all @(tipoCadastro == "item" ? "btn-warning text-dark shadow-sm" : "text-muted")" @onclick='() => tipoCadastro = "item"'>
-                <i class="bi bi-box-seam-fill me-2"></i> Doar Item / Ração
-            </button>
+        <h1 class="h2 mb-1">O que você quer anunciar?</h1>
+        <p class="text-muted">É grátis. O contato só é liberado para quem assina o termo de responsabilidade.</p>
+        <div class="segmentos mt-2">
+            <button type="button" class="@(tipoCadastro == "pet" ? "ativo" : "")" @onclick='() => tipoCadastro = "pet"'><i class="bi bi-heart-fill me-1 text-danger"></i> Um pet para adoção</button>
+            <button type="button" class="@(tipoCadastro == "item" ? "ativo" : "")" @onclick='() => tipoCadastro = "item"'><i class="bi bi-gift-fill me-1 text-warning"></i> Um item / ração</button>
         </div>
     </div>
 
-    @if (!string.IsNullOrEmpty(mensagemErro))
+    @if (!AuthService.DocumentoAprovado)
     {
-        <div class="alert alert-danger small fw-bold d-flex align-items-center rounded-4">
-            <i class="bi bi-exclamation-triangle-fill me-2"></i> @mensagemErro
-            <button type="button" class="btn-close ms-auto" aria-label="Fechar" @onclick='() => mensagemErro = ""'></button>
+        <div class="alert alert-warning d-flex align-items-center gap-3">
+            <i class="bi bi-shield-exclamation fs-4"></i>
+            <div class="small">Para publicar, primeiro <strong>verifique seu documento</strong>. Isso garante que todos os anúncios têm um responsável identificado.</div>
+            <a href="/perfil" class="btn btn-sm btn-warning ms-auto flex-shrink-0">Verificar agora</a>
         </div>
     }
 
     @if (tipoCadastro == "pet")
     {
-        <!-- FORMULÁRIO 1: CADASTRO DE PET -->
-        <div class="card-portal p-4 p-md-5 border shadow-sm rounded-4 bg-white">
-            <div class="d-flex align-items-center mb-4 pb-2 border-bottom">
-                <i class="bi bi-postcard-heart text-primary fs-3 me-2"></i>
-                <h5 class="fw-bold m-0 text-dark">Dados do Animal para Adoção</h5>
-            </div>
-
+        <div class="mp-card p-3 p-sm-4 p-md-5">
             <EditForm Model="@novoPet" OnValidSubmit="SalvarPet">
                 <DataAnnotationsValidator />
-                
-                <div class="bg-light p-4 rounded-4 border mb-4 text-center">
-                    <i class="bi bi-camera-fill fs-1 text-primary mb-2"></i>
-                    <h6 class="fw-bold mb-3">Fotos do Animal (Até 5MB cada)</h6>
-                    <InputFile OnChange="CarregarFotosPet" class="form-control form-control-sm mx-auto" style="max-width: 300px;" multiple accept=".jpg,.jpeg,.png" disabled="@estaCarregando" />
-                    
-                    @if (estaCarregando) { <div class="mt-3 text-primary small"><span class="spinner-border spinner-border-sm me-2"></span>Processando imagens...</div> }
 
-                    <div class="d-flex flex-wrap gap-2 mt-3 justify-content-center">
-                        @foreach (var img in novoPet.Imagens) {
-                            <div class="position-relative">
-                                <img src="@img.Base64Data" style="height: 85px; width: 85px; object-fit: cover;" class="rounded-3 shadow-sm border" />
-                                <button type="button" class="btn btn-danger btn-sm position-absolute top-0 end-0 m-1 rounded-circle" style="padding: 0 5px;" @onclick="() => novoPet.Imagens.Remove(img)">&times;</button>
+                <div class="secao-form mt-0">Fotos (até @MaxFotos)</div>
+                <div class="upload-area">
+                    <InputFile OnChange="CarregarFotosPet" multiple accept="image/jpeg,image/png,image/webp" disabled="@estaCarregando" />
+                    @if (estaCarregando) { <span class="spinner-border text-primary"></span><div class="small mt-2">Processando fotos...</div> }
+                    else { <i class="bi bi-images fs-1 text-primary"></i><div class="fw-bold text-dark mt-1">Toque para adicionar fotos</div><small class="text-muted">A primeira foto vira a capa do anúncio</small> }
+                </div>
+                @if (novoPet.Imagens.Any())
+                {
+                    <div class="miniaturas">
+                        @foreach (var img in novoPet.Imagens)
+                        {
+                            <div class="miniatura">
+                                <img src="@img.Base64Data" alt="" />
+                                <button type="button" aria-label="Remover foto" @onclick="() => novoPet.Imagens.Remove(img)">&times;</button>
+                                @if (img == novoPet.Imagens[0]) { <span class="capa">CAPA</span> }
                             </div>
                         }
                     </div>
-                </div>
+                }
 
-                <h6 class="fw-bold text-muted text-uppercase small mb-3 border-bottom pb-2">Informações Essenciais</h6>
-                <div class="row g-3 mb-4">
-                    <div class="col-md-8">
-                        <label class="form-label small fw-bold">Nome do Pet</label>
-                        <InputText class="form-control" @bind-Value="novoPet.Nome" placeholder="Ex: Pipoca" />
+                <div class="secao-form">Sobre o pet</div>
+                <div class="row g-3">
+                    <div class="col-md-7">
+                        <label class="form-label">Nome</label>
+                        <InputText class="form-control" @bind-Value="novoPet.Nome" placeholder="Ex.: Pipoca" />
                         <ValidationMessage For="@(() => novoPet.Nome)" />
                     </div>
-                    
-                    <!-- Lógica Inteligente para Espécie "Outros" -->
-                    <div class="col-md-4">
-                        <label class="form-label small fw-bold">Espécie</label>
+                    <div class="col-md-5">
+                        <label class="form-label">Espécie</label>
                         <InputSelect class="form-select" @bind-Value="especieSelecionadaPet">
-                            <option value="Cão">Cachorro</option>
-                            <option value="Gato">Gato</option>
-                            <option value="Pássaro">Pássaro</option>
-                            <option value="Peixe">Peixe</option>
-                            <option value="Outros">Outro (Especificar...)</option>
+                            <option value="Cão">🐶 Cachorro</option>
+                            <option value="Gato">🐱 Gato</option>
+                            <option value="Pássaro">🐦 Pássaro</option>
+                            <option value="Peixe">🐟 Peixe</option>
+                            <option value="Hamster">🐹 Hamster</option>
+                            <option value="Coelho">🐰 Coelho</option>
+                            <option value="Outros">Outro...</option>
                         </InputSelect>
                     </div>
-
                     @if (especieSelecionadaPet == "Outros")
                     {
-                        <div class="col-md-12 mt-2">
-                            <input type="text" class="form-control border-primary" placeholder="Por favor, digite a espécie do pet..." @bind="especiePersonalizadaPet" />
+                        <div class="col-12">
+                            <input type="text" class="form-control" placeholder="Qual é a espécie?" @bind="especiePersonalizadaPet" />
                         </div>
                     }
-
-                    <div class="col-md-12 mt-3">
-                        <label class="form-label small fw-bold">Raça</label>
-                        <InputText class="form-control" @bind-Value="novoPet.Raca" placeholder="Ex: SRD (vira-lata), Poodle, Siamês..." />
+                    <div class="col-md-6">
+                        <label class="form-label">Raça</label>
+                        <InputText class="form-control" @bind-Value="novoPet.Raca" placeholder="SRD (vira-lata), Poodle, Siamês..." />
                     </div>
-
-                    <div class="col-md-4 mt-3">
-                        <label class="form-label small fw-bold">Sexo</label>
+                    <div class="col-6 col-md-3">
+                        <label class="form-label">Idade (anos)</label>
+                        <InputNumber class="form-control" min="0" max="40" @bind-Value="novoPet.Idade" />
+                        <div class="form-text">0 = filhote</div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <label class="form-label">Sexo</label>
                         <InputSelect class="form-select" @bind-Value="novoPet.Sexo">
                             <option value="Macho">Macho</option>
                             <option value="Fêmea">Fêmea</option>
                         </InputSelect>
                     </div>
-                    <div class="col-md-4 mt-3">
-                        <label class="form-label small fw-bold">Porte</label>
-                        <InputSelect class="form-select" @bind-Value="novoPet.Porte">
-                            <option value="Pequeno">Pequeno</option>
-                            <option value="Médio">Médio</option>
-                            <option value="Grande">Grande</option>
-                        </InputSelect>
+                    <div class="col-12">
+                        <label class="form-label">Porte</label>
+                        <div class="d-flex gap-2">
+                            @foreach (var porte in new[] { "Pequeno", "Médio", "Grande" })
+                            {
+                                <button type="button" class="opcao-card flex-fill justify-content-center @(novoPet.Porte == porte ? "marcada" : "")" @onclick="() => novoPet.Porte = porte">
+                                    <span class="fw-semibold">@porte</span>
+                                </button>
+                            }
+                        </div>
                     </div>
-                    <div class="col-md-4 mt-3">
-                        <label class="form-label small fw-bold">Idade Aparente (anos)</label>
-                        <InputNumber class="form-control" min="0" max="40" @bind-Value="novoPet.Idade" />
+                    <div class="col-12">
+                        <label class="form-label">História e personalidade</label>
+                        <InputTextArea class="form-control" @bind-Value="novoPet.Descricao" rows="4" placeholder="Como ele é? Gosta de brincar? Convive com outros animais? Por que está para adoção?" />
                     </div>
                 </div>
 
-                <h6 class="fw-bold text-muted text-uppercase small mb-3 border-bottom pb-2">Perfil e Personalidade</h6>
-                <div class="mb-4">
-                    <label class="form-label small fw-bold">Descrição / História</label>
-                    <InputTextArea class="form-control" @bind-Value="novoPet.Descricao" rows="3" placeholder="Conte um pouco sobre a história e temperamento dele..." />
+                <div class="secao-form">Características</div>
+                <div class="row g-2">
+                    <div class="col-md-4">
+                        <label class="opcao-card @(novoPet.Castrado ? "marcada" : "")"><input type="checkbox" @bind="novoPet.Castrado" /><span class="emoji">✂️</span><span class="fw-semibold small">Já é castrado</span></label>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="opcao-card @(novoPet.RecomendadoParaCriancas ? "marcada" : "")"><input type="checkbox" @bind="novoPet.RecomendadoParaCriancas" /><span class="emoji">🍼</span><span class="fw-semibold small">Gosta de crianças</span></label>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="opcao-card @(novoPet.PrecisaDeQuintal ? "marcada" : "")"><input type="checkbox" @bind="novoPet.PrecisaDeQuintal" /><span class="emoji">🌳</span><span class="fw-semibold small">Precisa de quintal</span></label>
+                    </div>
                 </div>
 
-                <div class="d-flex flex-wrap gap-4 mb-5 bg-light p-3 border rounded-3 justify-content-around">
-                    <div class="form-check form-switch"><input class="form-check-input" type="checkbox" @bind="novoPet.Castrado" id="c"><label class="form-check-label fw-bold small text-muted" for="c">Já castrado</label></div>
-                    <div class="form-check form-switch"><input class="form-check-input" type="checkbox" @bind="novoPet.PrecisaDeQuintal" id="q"><label class="form-check-label fw-bold small text-muted" for="q">Precisa de espaço</label></div>
-                    <div class="form-check form-switch"><input class="form-check-input" type="checkbox" @bind="novoPet.RecomendadoParaCriancas" id="k"><label class="form-check-label fw-bold small text-muted" for="k">Gosta de Crianças</label></div>
-                </div>
-
-                <div class="d-flex flex-wrap gap-2 gap-md-3 justify-content-end">
-                    <button type="button" class="btn btn-light fw-bold px-4 rounded-pill" @onclick='() => Nav.NavigateTo("/pets")'>Cancelar</button>
-                    <button type="submit" class="btn btn-primary fw-bold px-5 rounded-pill shadow" disabled="@(estaCarregando || salvando)">
-                        @(salvando ? "Publicando..." : "Publicar Anúncio do Pet")
+                <div class="d-flex flex-column-reverse flex-sm-row gap-2 justify-content-end mt-5">
+                    <a href="/pets" class="btn btn-light px-4">Cancelar</a>
+                    <button type="submit" class="btn btn-primary btn-lg px-5" disabled="@(estaCarregando || salvando)">
+                        @(salvando ? "Publicando..." : "Publicar anúncio")
                     </button>
                 </div>
             </EditForm>
@@ -141,92 +134,74 @@
     }
     else
     {
-        <!-- FORMULÁRIO 2: CADASTRO DE ITEM/DOAÇÃO -->
-        <div class="card-portal p-4 p-md-5 border shadow-sm rounded-4 bg-white">
-            <div class="d-flex align-items-center mb-4 pb-2 border-bottom">
-                <i class="bi bi-gift text-warning fs-3 me-2"></i>
-                <h5 class="fw-bold m-0 text-dark">Dados do Item ou Suprimento para Doação</h5>
-            </div>
-
+        <div class="mp-card p-3 p-sm-4 p-md-5">
             <EditForm Model="@novoItem" OnValidSubmit="SalvarItem">
                 <DataAnnotationsValidator />
-                
-                <div class="bg-light p-4 rounded-4 border mb-4 text-center">
-                    <i class="bi bi-camera-fill fs-1 text-warning mb-2"></i>
-                    <h6 class="fw-bold mb-3">Fotos do Item (Casinha, Ração, Gaiola, etc.)</h6>
-                    <InputFile OnChange="CarregarFotosItem" class="form-control form-control-sm mx-auto" style="max-width: 300px;" multiple accept=".jpg,.jpeg,.png" disabled="@estaCarregando" />
-                    
-                    @if (estaCarregando) { <div class="mt-3 text-warning small"><span class="spinner-border spinner-border-sm me-2"></span>Processando fotos do item...</div> }
 
-                    <div class="d-flex flex-wrap gap-2 mt-3 justify-content-center">
-                        @foreach (var img in novoItem.Imagens) {
-                            <div class="position-relative">
-                                <img src="@img.Base64Data" style="height: 85px; width: 85px; object-fit: cover;" class="rounded-3 shadow-sm border" />
-                                <button type="button" class="btn btn-danger btn-sm position-absolute top-0 end-0 m-1 rounded-circle" style="padding: 0 5px;" @onclick="() => novoItem.Imagens.Remove(img)">&times;</button>
-                            </div>
+                <div class="secao-form mt-0">Fotos (até @MaxFotos)</div>
+                <div class="upload-area">
+                    <InputFile OnChange="CarregarFotosItem" multiple accept="image/jpeg,image/png,image/webp" disabled="@estaCarregando" />
+                    @if (estaCarregando) { <span class="spinner-border text-warning"></span><div class="small mt-2">Processando fotos...</div> }
+                    else { <i class="bi bi-camera fs-1 text-warning"></i><div class="fw-bold text-dark mt-1">Toque para adicionar fotos do item</div><small class="text-muted">Mostre o estado de conservação</small> }
+                </div>
+                @if (novoItem.Imagens.Any())
+                {
+                    <div class="miniaturas">
+                        @foreach (var img in novoItem.Imagens)
+                        {
+                            <div class="miniatura"><img src="@img.Base64Data" alt="" /><button type="button" aria-label="Remover foto" @onclick="() => novoItem.Imagens.Remove(img)">&times;</button></div>
                         }
                     </div>
-                </div>
+                }
 
-                <h6 class="fw-bold text-muted text-uppercase small mb-3 border-bottom pb-2">Detalhes do Item</h6>
-                <div class="row g-3 mb-4">
-                    <div class="col-md-6">
-                        <label class="form-label small fw-bold">Nome do Item</label>
-                        <InputText class="form-control" @bind-Value="novoItem.Nome" placeholder="Ex: Saco de Ração 15kg, Casinha nº 3, Gaiola Grande" />
+                <div class="secao-form">Detalhes do item</div>
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label class="form-label">Nome do item</label>
+                        <InputText class="form-control" @bind-Value="novoItem.Nome" placeholder="Ex.: Saco de ração 15kg, casinha nº 3, gaiola grande" />
                         <ValidationMessage For="@(() => novoItem.Nome)" />
                     </div>
-                    
-                    <!-- Lógica Inteligente para Categoria do Item -->
-                    <div class="col-md-3">
-                        <label class="form-label small fw-bold">Categoria</label>
+                    <div class="col-md-6">
+                        <label class="form-label">Categoria</label>
                         <InputSelect class="form-select" @bind-Value="categoriaSelecionadaItem">
-                            <option value="Ração/Alimento">Ração / Alimento</option>
-                            <option value="Casinha/Cama">Casinha / Cama</option>
-                            <option value="Gaiola/Aquário">Gaiola / Aquário</option>
-                            <option value="Remédio/Higiene">Remédio / Higiene</option>
-                            <option value="Brinquedo/Acessório">Brinquedo / Acessório</option>
-                            <option value="Outros">Outro (Especificar...)</option>
+                            <option value="Ração/Alimento">🦴 Ração / Alimento</option>
+                            <option value="Casinha/Cama">🏠 Casinha / Cama</option>
+                            <option value="Gaiola/Aquário">🐦 Gaiola / Aquário</option>
+                            <option value="Remédio/Higiene">💊 Remédio / Higiene</option>
+                            <option value="Brinquedo/Acessório">🧶 Brinquedo / Acessório</option>
+                            <option value="Outros">Outro...</option>
                         </InputSelect>
                     </div>
-                    
-                    <!-- Lógica Inteligente para Espécie de Destino do Item -->
-                    <div class="col-md-3">
-                        <label class="form-label small fw-bold">Destinado para</label>
+                    <div class="col-md-6">
+                        <label class="form-label">Serve para</label>
                         <InputSelect class="form-select" @bind-Value="especieDestinoItem">
-                            <option value="Todos">Qualquer Pet</option>
+                            <option value="Todos">Qualquer pet</option>
                             <option value="Cão">Cachorros</option>
                             <option value="Gato">Gatos</option>
                             <option value="Pássaro">Pássaros</option>
                             <option value="Peixe">Peixes</option>
-                            <option value="Outros">Outro (Especificar...)</option>
+                            <option value="Outros">Outro...</option>
                         </InputSelect>
                     </div>
-
-                    <!-- Campos Condicionais Ocultos que aparecem se "Outros" for selecionado -->
                     @if (categoriaSelecionadaItem == "Outros")
                     {
-                        <div class="col-md-6 mt-2">
-                            <input type="text" class="form-control border-warning" placeholder="Qual a categoria do item?" @bind="categoriaPersonalizadaItem" />
-                        </div>
+                        <div class="col-md-6"><input type="text" class="form-control" placeholder="Qual a categoria?" @bind="categoriaPersonalizadaItem" /></div>
                     }
                     @if (especieDestinoItem == "Outros")
                     {
-                        <div class="col-md-6 mt-2">
-                            <input type="text" class="form-control border-warning" placeholder="Para qual animal o item serve?" @bind="especieDestinoPersonalizadaItem" />
-                        </div>
+                        <div class="col-md-6"><input type="text" class="form-control" placeholder="Para qual animal?" @bind="especieDestinoPersonalizadaItem" /></div>
                     }
+                    <div class="col-12">
+                        <label class="form-label">Descrição, conservação ou validade</label>
+                        <InputTextArea class="form-control" @bind-Value="novoItem.Descricao" rows="3" placeholder="Ex.: casinha de madeira semi-nova / ração lacrada, validade 12/2027" />
+                        <ValidationMessage For="@(() => novoItem.Descricao)" />
+                    </div>
                 </div>
 
-                <div class="mb-4">
-                    <label class="form-label small fw-bold">Descrição, Estado de Conservação ou Validade</label>
-                    <InputTextArea class="form-control" @bind-Value="novoItem.Descricao" rows="3" placeholder="Ex: Casinha de madeira semi-nova, pouco usada / Pacote de ração lacrado validade 12/2026..." />
-                    <ValidationMessage For="@(() => novoItem.Descricao)" />
-                </div>
-
-                <div class="d-flex flex-wrap gap-2 gap-md-3 justify-content-end">
-                    <button type="button" class="btn btn-light fw-bold px-4 rounded-pill" @onclick='() => Nav.NavigateTo("/pets")'>Cancelar</button>
-                    <button type="submit" class="btn btn-warning fw-bold px-5 rounded-pill shadow text-dark" disabled="@(estaCarregando || salvando)">
-                        @(salvando ? "Publicando..." : "Publicar Doação do Item")
+                <div class="d-flex flex-column-reverse flex-sm-row gap-2 justify-content-end mt-5">
+                    <a href="/bazar" class="btn btn-light px-4">Cancelar</a>
+                    <button type="submit" class="btn btn-accent btn-lg px-5" disabled="@(estaCarregando || salvando)">
+                        @(salvando ? "Publicando..." : "Publicar doação")
                     </button>
                 </div>
             </EditForm>
@@ -235,141 +210,119 @@
 </div>
 
 @code {
-    private string tipoCadastro = "pet"; // "pet" ou "item"
-    // Valores iniciais iguais à 1ª opção dos selects (antes ficavam vazios no banco)
-    private Pet novoPet = new Pet { Sexo = "Macho", Porte = "Pequeno" };
-    private ItemDoacao novoItem = new ItemDoacao();
-    private bool estaCarregando = false;
-    private bool salvando = false;
-    private string mensagemErro = "";
+    [SupplyParameterFromQuery(Name = "tipo")] public string? TipoQuery { get; set; }
+
+    private string tipoCadastro = "pet";
+    // Valores iniciais iguais à 1ª opção (antes ficavam vazios no banco)
+    private Pet novoPet = new() { Sexo = "Macho", Porte = "Pequeno" };
+    private ItemDoacao novoItem = new();
+    private bool estaCarregando, salvando;
 
     private const int MaxFotos = 5;
-    private const long TamanhoMaxFoto = 5 * 1024 * 1024; // 5MB
+    private const long TamanhoMaxFoto = 10 * 1024 * 1024;
 
-    // Variaveis Inteligentes para "Outros" do Pet
-    private string especieSelecionadaPet = "Cão";
-    private string especiePersonalizadaPet = "";
+    private string especieSelecionadaPet = "Cão", especiePersonalizadaPet = "";
+    private string categoriaSelecionadaItem = "Ração/Alimento", categoriaPersonalizadaItem = "";
+    private string especieDestinoItem = "Todos", especieDestinoPersonalizadaItem = "";
 
-    // Variaveis Inteligentes para "Outros" do Item
-    private string categoriaSelecionadaItem = "Ração/Alimento";
-    private string categoriaPersonalizadaItem = "";
-    private string especieDestinoItem = "Todos";
-    private string especieDestinoPersonalizadaItem = "";
-
-    protected override void OnInitialized() 
-    { 
-        if (!AuthService.EstaLogado) 
+    protected override void OnInitialized()
+    {
+        if (!AuthService.EstaLogado)
         {
-            Nav.NavigateTo("/login"); 
+            Toast.Info("Entre na sua conta para anunciar.");
+            Nav.NavigateTo("/login?voltar=/pets/novo");
+            return;
         }
+        if (TipoQuery == "item") tipoCadastro = "item";
     }
 
-    // Lê as fotos escolhidas, reduz para 800px e devolve em Base64. Avisa se algo der errado.
+    // Lê as fotos escolhidas, reduz para 1000px e devolve em Base64
     private async Task<List<string>> LerFotos(InputFileChangeEventArgs e, int jaAdicionadas)
     {
         var resultado = new List<string>();
-        mensagemErro = "";
         var vagas = MaxFotos - jaAdicionadas;
-        if (vagas <= 0) { mensagemErro = $"Limite de {MaxFotos} fotos atingido. Remova alguma para adicionar outra."; return resultado; }
+        if (vagas <= 0) { Toast.Aviso($"Limite de {MaxFotos} fotos. Remova alguma para adicionar outra."); return resultado; }
 
         var arquivos = e.GetMultipleFiles(50).ToList();
-        if (arquivos.Count > vagas) mensagemErro = $"Apenas {vagas} foto(s) foram adicionadas (limite de {MaxFotos}).";
+        if (arquivos.Count > vagas) Toast.Aviso($"Só {vagas} foto(s) foram adicionadas (limite de {MaxFotos}).");
 
         estaCarregando = true;
-        try {
-            foreach (var arquivo in arquivos.Take(vagas)) {
-                if (!arquivo.ContentType.StartsWith("image/")) { mensagemErro = $"\"{arquivo.Name}\" não é uma imagem."; continue; }
-                if (arquivo.Size > TamanhoMaxFoto) { mensagemErro = $"\"{arquivo.Name}\" passa de 5MB."; continue; }
+        try
+        {
+            foreach (var arquivo in arquivos.Take(vagas))
+            {
+                if (!arquivo.ContentType.StartsWith("image/")) { Toast.Erro($"\"{arquivo.Name}\" não é uma imagem."); continue; }
+                if (arquivo.Size > TamanhoMaxFoto) { Toast.Erro($"\"{arquivo.Name}\" passa de 10 MB."); continue; }
 
-                var resized = await arquivo.RequestImageFileAsync(arquivo.ContentType, 800, 800);
-                using var stream = resized.OpenReadStream(TamanhoMaxFoto);
-                using var ms = new MemoryStream(); 
+                var reduzida = await arquivo.RequestImageFileAsync("image/jpeg", 1000, 1000);
+                using var stream = reduzida.OpenReadStream(TamanhoMaxFoto);
+                using var ms = new MemoryStream();
                 await stream.CopyToAsync(ms);
-                resultado.Add($"data:{arquivo.ContentType};base64,{Convert.ToBase64String(ms.ToArray())}");
+                resultado.Add($"data:image/jpeg;base64,{Convert.ToBase64String(ms.ToArray())}");
             }
-        } catch {
-            mensagemErro = "Não foi possível carregar uma das fotos. Tente outra imagem.";
-        } finally {
-            estaCarregando = false;
         }
+        catch { Toast.Erro("Não foi possível carregar uma das fotos. Tente outra imagem."); }
+        finally { estaCarregando = false; }
         return resultado;
     }
 
-    private async Task CarregarFotosPet(InputFileChangeEventArgs e) 
+    private async Task CarregarFotosPet(InputFileChangeEventArgs e)
     {
-        foreach (var base64 in await LerFotos(e, novoPet.Imagens.Count)) {
-            if (string.IsNullOrEmpty(novoPet.FotoUrl)) novoPet.FotoUrl = base64;
-            novoPet.Imagens.Add(new PetImagem { Base64Data = base64 });
-        }
+        foreach (var b64 in await LerFotos(e, novoPet.Imagens.Count)) novoPet.Imagens.Add(new PetImagem { Base64Data = b64 });
     }
 
-    private async Task CarregarFotosItem(InputFileChangeEventArgs e) 
+    private async Task CarregarFotosItem(InputFileChangeEventArgs e)
     {
-        foreach (var base64 in await LerFotos(e, novoItem.Imagens.Count)) {
-            if (string.IsNullOrEmpty(novoItem.FotoUrl)) novoItem.FotoUrl = base64;
-            novoItem.Imagens.Add(new ItemImagem { Base64Data = base64 });
-        }
+        foreach (var b64 in await LerFotos(e, novoItem.Imagens.Count)) novoItem.Imagens.Add(new ItemImagem { Base64Data = b64 });
     }
 
-    private async Task<bool> DocumentoOk(string mensagem)
+    private bool PodePublicar()
     {
-        if (!string.IsNullOrEmpty(AuthService.UsuarioLogado?.FotoDocumentoBase64)) return true;
-        await JS.InvokeVoidAsync("alert", mensagem);
+        if (AuthService.DocumentoAprovado) return true;
+        Toast.Aviso("Verifique seu documento no Perfil para publicar anúncios.");
         Nav.NavigateTo("/perfil");
         return false;
     }
 
-    private async Task SalvarPet() 
+    private async Task SalvarPet()
     {
-        if (salvando) return;
-        if (!await DocumentoOk("🛡️ SEGURANÇA: Para publicar um anúncio, anexe a foto do seu documento no Perfil para validação jurídica.")) return;
+        if (salvando || !PodePublicar()) return;
+        if (!novoPet.Imagens.Any()) { Toast.Aviso("Adicione pelo menos uma foto do pet."); return; }
 
-        // Aplica a lógica "Outros" para a Espécie
-        novoPet.Especie = especieSelecionadaPet == "Outros" && !string.IsNullOrWhiteSpace(especiePersonalizadaPet) 
-            ? especiePersonalizadaPet.Trim() 
-            : especieSelecionadaPet;
+        novoPet.Especie = especieSelecionadaPet == "Outros" && !string.IsNullOrWhiteSpace(especiePersonalizadaPet) ? especiePersonalizadaPet.Trim() : especieSelecionadaPet;
         if (string.IsNullOrWhiteSpace(novoPet.Raca)) novoPet.Raca = "SRD";
         novoPet.Nome = novoPet.Nome.Trim();
-        novoPet.FotoUrl = novoPet.Imagens.FirstOrDefault()?.Base64Data ?? "";
+        novoPet.FotoUrl = novoPet.Imagens.First().Base64Data;
+        novoPet.UsuarioDoadorId = AuthService.UsuarioLogado!.Id;
 
-        novoPet.UsuarioDoadorId = AuthService.UsuarioLogado?.Id ?? 0;
         salvando = true;
-        try {
+        try
+        {
             await PetRepository.AddAsync(novoPet);
+            Toast.Sucesso($"{novoPet.Nome} já está no catálogo! 🎉");
             Nav.NavigateTo("/meus-pets");
-        } catch (Exception ex) {
-            mensagemErro = "Erro ao publicar o anúncio: " + (ex.InnerException?.Message ?? ex.Message);
-        } finally {
-            salvando = false;
         }
+        catch (Exception ex) { Toast.Erro("Erro ao publicar: " + (ex.InnerException?.Message ?? ex.Message)); }
+        finally { salvando = false; }
     }
 
-    private async Task SalvarItem() 
+    private async Task SalvarItem()
     {
-        if (salvando) return;
-        if (!await DocumentoOk("🛡️ SEGURANÇA: Para doar itens e ração, anexe seu documento no Perfil para fins de rastreabilidade.")) return;
+        if (salvando || !PodePublicar()) return;
 
-        // Aplica a lógica "Outros" para a Categoria do Item
-        novoItem.Categoria = categoriaSelecionadaItem == "Outros" && !string.IsNullOrWhiteSpace(categoriaPersonalizadaItem)
-            ? categoriaPersonalizadaItem.Trim()
-            : categoriaSelecionadaItem;
-
-        // Aplica a lógica "Outros" para a Espécie de Destino do Item
-        novoItem.EspecieDestino = especieDestinoItem == "Outros" && !string.IsNullOrWhiteSpace(especieDestinoPersonalizadaItem)
-            ? especieDestinoPersonalizadaItem.Trim()
-            : especieDestinoItem;
+        novoItem.Categoria = categoriaSelecionadaItem == "Outros" && !string.IsNullOrWhiteSpace(categoriaPersonalizadaItem) ? categoriaPersonalizadaItem.Trim() : categoriaSelecionadaItem;
+        novoItem.EspecieDestino = especieDestinoItem == "Outros" && !string.IsNullOrWhiteSpace(especieDestinoPersonalizadaItem) ? especieDestinoPersonalizadaItem.Trim() : especieDestinoItem;
         novoItem.FotoUrl = novoItem.Imagens.FirstOrDefault()?.Base64Data ?? "";
+        novoItem.UsuarioDoadorId = AuthService.UsuarioLogado!.Id;
 
-        novoItem.UsuarioDoadorId = AuthService.UsuarioLogado?.Id ?? 0;
         salvando = true;
-        try {
-            Db.ItensDoacao.Add(novoItem);
-            await Db.SaveChangesAsync();
-            Nav.NavigateTo("/meus-pets");
-        } catch (Exception ex) {
-            mensagemErro = "Erro ao publicar a doação: " + (ex.InnerException?.Message ?? ex.Message);
-        } finally {
-            salvando = false;
+        try
+        {
+            await ItemRepository.AddAsync(novoItem);
+            Toast.Sucesso("Doação publicada no Bazar Solidário! 🎁");
+            Nav.NavigateTo("/meus-pets?aba=itens");
         }
+        catch (Exception ex) { Toast.Erro("Erro ao publicar: " + (ex.InnerException?.Message ?? ex.Message)); }
+        finally { salvando = false; }
     }
 }

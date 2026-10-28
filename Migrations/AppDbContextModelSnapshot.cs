@@ -266,6 +266,12 @@ namespace crudcomdb.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("DocumentoHash")
+                        .HasColumnType("text");
+
+                    b.Property<string>("DocumentoObservacao")
+                        .HasColumnType("text");
+
                     b.Property<bool>("EhOng")
                         .HasColumnType("boolean");
 
@@ -300,6 +306,12 @@ namespace crudcomdb.Migrations
 
                     b.Property<string>("Numero")
                         .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("ResetSenhaExpiraEm")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ResetSenhaTokenHash")
                         .HasColumnType("text");
 
                     b.Property<string>("Senha")

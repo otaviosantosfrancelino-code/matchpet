@@ -1,123 +1,99 @@
-﻿@using crudcomdb.Services
-@inject AuthService AuthService
+﻿@inject AuthService AuthService
 @inject NavigationManager Nav
 @implements IDisposable
 
-<nav class="navbar fixed-top shadow-sm navbar-custom">
-    <div class="container-fluid px-2 d-flex align-items-center justify-content-between" style="height: 60px;">
-        
-        <!-- LOGO À ESQUERDA -->
-        <a class="navbar-brand d-flex align-items-center m-0 p-0" href="/">
-            <img src="/logo-match-pet.png" alt="Match-Pet SP" style="height: 36px; object-fit: contain;" />
+@* ===== BARRA SUPERIOR ===== *@
+<header class="topo">
+    <div class="container-xl d-flex align-items-center gap-3 h-100">
+        <a class="marca" href="/" aria-label="Match-Pet SP - Início">
+            <img src="/logo-match-pet.png" alt="" />
+            <span class="d-none d-sm-inline">Match-Pet <b>SP</b></span>
         </a>
 
-        <!-- BOTÃO "ENTRAR" OU PERFIL (CENTRALIZADO NO MOBILE) -->
-        <div class="d-lg-none d-flex align-items-center justify-content-center flex-grow-1 px-1">
-            @if (AuthService.EstaLogado)
+        <nav class="links d-none d-lg-flex" aria-label="Principal">
+            <NavLink href="/" Match="NavLinkMatch.All">Início</NavLink>
+            <NavLink href="/pets">Adotar</NavLink>
+            <NavLink href="/bazar">Bazar Solidário</NavLink>
+            <NavLink href="/ongs">ONGs</NavLink>
+            <NavLink href="/final-feliz">Final Feliz</NavLink>
+        </nav>
+
+        <div class="ms-auto d-flex align-items-center gap-2">
+            <a href="/pets/novo" class="btn btn-accent btn-sm px-3 d-none d-md-inline-flex align-items-center gap-1">
+                <i class="bi bi-plus-lg"></i> Anunciar
+            </a>
+
+            @if (AuthService.UsuarioLogado is { } u)
             {
-                <a href="/perfil" class="btn btn-light btn-sm rounded-pill px-2 py-1 border d-flex align-items-center shadow-sm text-decoration-none" style="max-width: 140px;">
-                    @if (!string.IsNullOrEmpty(AuthService.UsuarioLogado?.FotoPerfilBase64))
-                    {
-                        <img src="@AuthService.UsuarioLogado.FotoPerfilBase64" class="rounded-circle me-1" style="width: 22px; height: 22px; object-fit: cover; flex-shrink: 0;" />
-                    }
-                    else
-                    {
-                        <i class="bi bi-person-circle text-primary me-1 fs-6 flex-shrink-0"></i>
-                    }
-                    <span class="small fw-bold text-dark text-truncate" style="font-size: 0.8rem;">@AuthService.UsuarioLogado?.Nome</span>
-                </a>
-            }
-            else
-            {
-                <button class="btn btn-primary btn-sm rounded-pill px-3 py-1 fw-bold shadow-sm" @onclick='() => Nav.NavigateTo("/login")' style="font-size: 0.8rem;">
-                    Entrar
+                <button class="usuario" type="button" @onclick="ToggleMenu" aria-label="Abrir menu da conta" aria-expanded="@menuAberto">
+                    <Avatar Usuario="u" Tamanho="34" />
+                    <span class="d-none d-md-inline text-truncate" style="max-width:140px">@PrimeiroNome(u.Nome)</span>
+                    <i class="bi bi-chevron-down small d-none d-md-inline"></i>
                 </button>
             }
-        </div>
-
-        <!-- MENU DESKTOP -->
-        <div class="d-none d-lg-flex align-items-center gap-4">
-            <ul class="navbar-nav d-flex flex-row align-items-center m-0 p-0" style="gap: 1.5rem;">
-                <li class="nav-item"><NavLink class="nav-link nav-link-custom" href="/" Match="NavLinkMatch.All">Início</NavLink></li>
-                <li class="nav-item"><NavLink class="nav-link nav-link-custom" href="/pets">Catálogo</NavLink></li>
-                <li class="nav-item"><NavLink class="nav-link nav-link-custom text-success fw-bold" href="/ongs">ONGs</NavLink></li>
-                <li class="nav-item"><NavLink class="nav-link nav-link-custom text-warning fw-bold" href="/final-feliz">Final Feliz</NavLink></li>
-                @if (AuthService.EstaLogado)
-                {
-                    <li class="nav-item"><NavLink class="nav-link nav-link-custom" href="/meus-pets">Meus Animais</NavLink></li>
-                }
-            </ul>
-
-            <div class="d-flex align-items-center gap-2">
-                <NavLink class="btn btn-outline-primary btn-sm px-3 fw-bold d-flex align-items-center btn-nav-rounded shadow-sm" href="/pets/novo">
-                    <i class="bi bi-plus-lg me-1"></i> Cadastrar
-                </NavLink>
-
-                @if (AuthService.EstaLogado)
-                {
-                    <div class="dropdown">
-                        <button class="btn btn-light btn-sm rounded-pill px-2 py-1 border d-flex align-items-center dropdown-toggle shadow-sm" type="button" data-bs-toggle="dropdown" style="max-width: 210px;">
-                            @if (!string.IsNullOrEmpty(AuthService.UsuarioLogado?.FotoPerfilBase64))
-                            {
-                                <img src="@AuthService.UsuarioLogado.FotoPerfilBase64" class="rounded-circle me-1" style="width: 28px; height: 28px; object-fit: cover; flex-shrink: 0;" />
-                            }
-                            else
-                            {
-                                <i class="bi bi-person-circle text-primary me-1 fs-5 flex-shrink-0"></i>
-                            }
-                            <span class="small fw-bold text-dark text-truncate" style="max-width: 130px;" title="@AuthService.UsuarioLogado?.Nome">
-                                @AuthService.UsuarioLogado?.Nome
-                            </span>
-                        </button>
-                        <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2 rounded-4 p-2">
-                            <li><a class="dropdown-item rounded-3 fw-bold py-2" href="/perfil"><i class="bi bi-person-gear me-2"></i>Meu Perfil</a></li>
-                            <li><a class="dropdown-item rounded-3 fw-bold py-2" href="/meus-pets"><i class="bi bi-collection me-2"></i>Meus Animais</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><button class="dropdown-item rounded-3 text-danger fw-bold py-2" @onclick="ExecutarSair"><i class="bi bi-power me-2"></i>Sair</button></li>
-                        </ul>
-                    </div>
-                }
-                else
-                {
-                    <button class="btn btn-primary btn-sm rounded-pill px-4 fw-bold shadow-sm" @onclick='() => Nav.NavigateTo("/login")'>Entrar</button>
-                }
-            </div>
-        </div>
-
-        <!-- BOTÃO HAMBÚRGUER MOBILE (FORÇADO NA BARRA BRANCA, SEM FLUTUAR) -->
-        <button class="btn btn-primary rounded-circle d-lg-none d-flex align-items-center justify-content-center shadow-sm flex-shrink-0" style="width: 38px; height: 38px; border: none;" @onclick="ToggleMenu" type="button" aria-label="Abrir menu" aria-expanded="@menuAberto">
-            <i class="bi @(menuAberto ? "bi-x-lg" : "bi-list") fs-5 text-white"></i>
-        </button>
-
-    </div>
-</nav>
-
-<!-- MENU LATERAL / OVERLAY MOBILE -->
-<div class="menu-overlay @(menuAberto ? "active" : "")" @onclick="ToggleMenu">
-    <div class="menu-content shadow-lg" @onclick:stopPropagation="true">
-        <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2">
-            <h5 class="fw-bold text-primary m-0">Menu</h5>
-            <button class="btn btn-sm btn-light rounded-circle" @onclick="ToggleMenu" aria-label="Fechar menu"><i class="bi bi-x-lg"></i></button>
-        </div>
-        <ul class="list-unstyled m-0">
-            <li class="mb-3"><a href="/" class="menu-item-overlay" @onclick="FecharMenu"><i class="bi bi-house-door me-2 text-primary"></i> Início</a></li>
-            <li class="mb-3"><a href="/pets" class="menu-item-overlay" @onclick="FecharMenu"><i class="bi bi-search me-2 text-primary"></i> Catálogo Geral</a></li>
-            <li class="mb-3"><a href="/ongs" class="menu-item-overlay text-success fw-bold" @onclick="FecharMenu"><i class="bi bi-building-check me-2"></i> Área de ONGs</a></li>
-            <li class="mb-3"><a href="/final-feliz" class="menu-item-overlay text-warning fw-bold" @onclick="FecharMenu"><i class="bi bi-stars me-2"></i> Final Feliz</a></li>
-            <hr class="my-2">
-            @if (AuthService.EstaLogado)
-            {
-                <li class="mb-2 text-muted small fw-bold px-1">Logado como: @AuthService.UsuarioLogado?.Nome</li>
-                <li class="mb-3"><a href="/meus-pets" class="menu-item-overlay fw-bold" @onclick="FecharMenu"><i class="bi bi-collection me-2 text-primary"></i> Meus Animais</a></li>
-                <li class="mb-3"><a href="/perfil" class="menu-item-overlay" @onclick="FecharMenu"><i class="bi bi-person-vcard me-2 text-primary"></i> Meu Perfil</a></li>
-                <li class="mt-3"><button class="btn btn-outline-danger w-100 rounded-pill fw-bold" @onclick="ExecutarSair"><i class="bi bi-power me-1"></i> Sair</button></li>
-            }
             else
             {
-                <li class="mt-3"><button class="btn btn-primary w-100 rounded-pill fw-bold py-2 shadow-sm" @onclick='() => { FecharMenu(); Nav.NavigateTo("/login"); }'><i class="bi bi-box-arrow-in-right me-1"></i> Fazer Login</button></li>
+                <a href="/login" class="btn btn-ghost btn-sm px-3 d-none d-md-inline-flex">Entrar</a>
+                <a href="/cadastro" class="btn btn-primary btn-sm px-3">Criar conta</a>
             }
-        </ul>
+        </div>
     </div>
+</header>
+
+@* ===== BARRA INFERIOR (CELULAR) ===== *@
+<nav class="barra-inferior d-lg-none" aria-label="Navegação rápida">
+    <NavLink href="/" Match="NavLinkMatch.All"><i class="bi bi-house-door"></i><span>Início</span></NavLink>
+    <NavLink href="/pets"><i class="bi bi-search-heart"></i><span>Adotar</span></NavLink>
+    <a href="/pets/novo" class="central" aria-label="Anunciar"><span class="mais"><i class="bi bi-plus-lg"></i></span></a>
+    <NavLink href="/bazar"><i class="bi bi-gift"></i><span>Bazar</span></NavLink>
+    <button type="button" @onclick="ToggleMenu" class="@(menuAberto ? "active" : "")"><i class="bi bi-list"></i><span>Menu</span></button>
+</nav>
+
+@* ===== MENU LATERAL (conta e demais páginas) ===== *@
+<div class="menu-overlay @(menuAberto ? "active" : "")" @onclick="FecharMenu">
+    <aside class="menu-content" @onclick:stopPropagation="true" aria-label="Menu">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+            <span class="fw-bold text-dark fs-5">Menu</span>
+            <button class="btn btn-light btn-icon" @onclick="FecharMenu" aria-label="Fechar menu"><i class="bi bi-x-lg"></i></button>
+        </div>
+
+        @if (AuthService.UsuarioLogado is { } usuarioMenu)
+        {
+            <a href="/perfil" class="cartao-usuario" @onclick="FecharMenu">
+                <Avatar Usuario="usuarioMenu" Tamanho="48" />
+                <div class="min-w-0">
+                    <div class="fw-bold text-dark text-truncate">@usuarioMenu.Nome</div>
+                    <div class="small @(usuarioMenu.StatusValidacaoDocumento == "Aprovado" ? "text-success" : "text-warning") fw-semibold">
+                        <i class="bi @(usuarioMenu.StatusValidacaoDocumento == "Aprovado" ? "bi-patch-check-fill" : "bi-exclamation-circle-fill")"></i>
+                        @(usuarioMenu.StatusValidacaoDocumento == "Aprovado" ? "Identidade verificada" : "Verificação pendente")
+                    </div>
+                </div>
+            </a>
+        }
+
+        <div class="grupo">Navegar</div>
+        <a href="/" class="item" @onclick="FecharMenu"><i class="bi bi-house-door"></i> Início</a>
+        <a href="/pets" class="item" @onclick="FecharMenu"><i class="bi bi-search-heart"></i> Adotar um pet</a>
+        <a href="/bazar" class="item" @onclick="FecharMenu"><i class="bi bi-gift"></i> Bazar Solidário</a>
+        <a href="/ongs" class="item" @onclick="FecharMenu"><i class="bi bi-building-check"></i> ONGs parceiras</a>
+        <a href="/final-feliz" class="item" @onclick="FecharMenu"><i class="bi bi-stars"></i> Final Feliz</a>
+
+        @if (AuthService.EstaLogado)
+        {
+            <div class="grupo">Minha conta</div>
+            <a href="/pets/novo" class="item" @onclick="FecharMenu"><i class="bi bi-plus-circle"></i> Novo anúncio</a>
+            <a href="/meus-pets" class="item" @onclick="FecharMenu"><i class="bi bi-collection"></i> Meus anúncios</a>
+            <a href="/perfil" class="item" @onclick="FecharMenu"><i class="bi bi-person-gear"></i> Meu perfil</a>
+            <button class="item text-danger mt-2" @onclick="ExecutarSair"><i class="bi bi-box-arrow-right"></i> Sair</button>
+        }
+        else
+        {
+            <div class="mt-4 d-grid gap-2">
+                <a href="/login" class="btn btn-primary" @onclick="FecharMenu">Entrar</a>
+                <a href="/cadastro" class="btn btn-outline-primary" @onclick="FecharMenu">Criar conta grátis</a>
+            </div>
+        }
+    </aside>
 </div>
 
 @code {
@@ -129,10 +105,9 @@
         Nav.LocationChanged += AoNavegar;
     }
 
-    // O aviso pode chegar de outra página, por isso usamos InvokeAsync
     private void AtualizarTela() => InvokeAsync(StateHasChanged);
 
-    // Fecha o menu mobile sempre que o usuário muda de página
+    // Fecha o menu sempre que o usuário muda de página
     private void AoNavegar(object? sender, LocationChangedEventArgs e)
     {
         if (!menuAberto) return;
@@ -143,11 +118,13 @@
     private void ToggleMenu() => menuAberto = !menuAberto;
     private void FecharMenu() => menuAberto = false;
 
-    private void ExecutarSair()
+    private static string PrimeiroNome(string nome) => nome.Trim().Split(' ')[0];
+
+    private async Task ExecutarSair()
     {
         menuAberto = false;
-        AuthService.Logout();
-        Nav.NavigateTo("/", forceLoad: true);
+        await AuthService.LogoutAsync();
+        Nav.NavigateTo("/");
     }
 
     public void Dispose()

@@ -1,4 +1,3 @@
-/* Layout em coluna para acomodar o menu superior */
 .page {
     display: flex;
     flex-direction: column;
@@ -7,49 +6,38 @@
 
 main {
     flex: 1;
-    /* O padding-top garante que o conteúdo não fique 
-       atrás da barra de menu fixa no topo */
-    padding-top: 60px; /* altura do menu fixo */
-    background-color: #f8f9fa; /* Fundo leve do Google */
+    padding-top: 64px; /* altura do menu fixo */
 }
 
-/* Centraliza e dá respiro ao conteúdo principal */
-article.content {
-    max-width: 1400px;
-    margin: 0 auto;
-    width: 100%;
+/* Rodapé */
+.rodape-site {
+    background: #fff;
+    border-top: 1px solid var(--mp-line);
+    padding: 2.5rem 0 1.5rem;
+    margin-top: 4rem;
 }
+.rodape-site .titulo { font-weight: 800; color: var(--mp-ink); margin-bottom: .6rem; font-size: .95rem; }
+.rodape-site a { display: block; color: var(--mp-muted); text-decoration: none; font-size: .9rem; padding: .2rem 0; }
+.rodape-site a:hover { color: var(--mp-primary); }
 
-/* Estilo padrão do Blazor para mensagens de erro */
+/* Mensagem de erro do Blazor */
 #blazor-error-ui {
-    background: #fce8e6;
-    color: #c5221f;
+    background: #fef2f2;
+    color: #991b1b;
     bottom: 0;
-    box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 -1px 8px rgba(0, 0, 0, 0.15);
     box-sizing: border-box;
     display: none;
     left: 0;
-    padding: 0.6rem 1.25rem 0.7rem 1.25rem;
+    padding: 0.8rem 1.25rem;
     position: fixed;
     width: 100%;
-    z-index: 2001; /* Fica acima do menu flutuante */
+    z-index: 4000;
+    font-weight: 600;
 }
+#blazor-error-ui .dismiss { cursor: pointer; position: absolute; right: 0.75rem; top: 0.6rem; }
 
-    #blazor-error-ui .dismiss {
-        cursor: pointer;
-        position: absolute;
-        right: 0.75rem;
-        top: 0.5rem;
-    }
-
-/* Ajustes para telas menores (Celulares) */
-@media (max-width: 640.98px) {
-    main {
-        padding-top: 60px;
-    }
-    
-    article.content {
-        padding-left: 1rem !important;
-        padding-right: 1rem !important;
-    }
+/* Celular: espaço para a barra inferior */
+@media (max-width: 991.98px) {
+    .rodape-site { padding-bottom: calc(90px + env(safe-area-inset-bottom)); }
 }

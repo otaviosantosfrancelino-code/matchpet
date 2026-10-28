@@ -1,265 +1,168 @@
 @page "/pets"
-@using crudcomdb.Interfaces
-@using crudcomdb.Models
-@using crudcomdb.Services
-@using crudcomdb.Data
-@using Microsoft.EntityFrameworkCore
 @inject IPetRepository PetRepository
-@inject AppDbContext Db
-@inject AuthService AuthService
 @inject NavigationManager Nav
-@inject IJSRuntime JS
-@rendermode InteractiveServer
 
-<PageTitle>Catálogo | Match-Pet SP</PageTitle>
+<PageTitle>Adotar um pet | Match-Pet SP</PageTitle>
 
-<div class="container py-4 mb-5">
-    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
-        <div>
-            <h2 class="fw-bold text-dark m-0"><i class="bi bi-search text-primary me-2"></i> Catálogo Geral</h2>
-            <p class="text-muted m-0">Conectando corações e solidariedade na região de Franca/SP</p>
+<div class="container-xl py-4 py-md-5">
+    <div class="page-header">
+        <div class="d-flex align-items-center gap-3">
+            <div class="icone-bolha azul"><i class="bi bi-search-heart"></i></div>
+            <div>
+                <h1>Adote um amigo</h1>
+                <p>Pets de ONGs e tutores verificados em Franca e região.</p>
+            </div>
         </div>
-        
-        <!-- ABAS DE NAVEGAÇÃO DO CATÁLOGO -->
-        <div class="d-inline-flex p-1 bg-light border rounded-pill shadow-sm">
-            <button type="button" class="btn btn-sm rounded-pill px-4 py-2 fw-bold @(tipoCatalogo == "pets" ? "btn-primary shadow-sm" : "text-muted")" @onclick='() => tipoCatalogo = "pets"'>
-                <i class="bi bi-heart-fill me-1"></i> Animais para Adoção
-            </button>
-            <button type="button" class="btn btn-sm rounded-pill px-4 py-2 fw-bold @(tipoCatalogo == "itens" ? "btn-warning text-dark shadow-sm" : "text-muted")" @onclick='() => tipoCatalogo = "itens"'>
-                <i class="bi bi-box-seam-fill me-1"></i> Itens para Adoção
-            </button>
-        </div>
+        <a href="/bazar" class="btn btn-light"><i class="bi bi-gift me-1"></i> Bazar Solidário</a>
     </div>
 
-    @if (tipoCatalogo == "pets")
-    {
-        <!-- Barra de Ferramentas dos Pets -->
-        <div class="bg-white p-3 rounded-4 shadow-sm border mb-4">
-            <div class="row g-2 g-md-3 align-items-center">
-                <div class="col-12 col-md-6 col-lg-3">
-                    <div class="input-group">
-                        <span class="input-group-text bg-light border-0"><i class="bi bi-search text-primary"></i></span>
-                        <input type="search" class="form-control border-0 bg-light fw-medium" placeholder="Nome do pet..." aria-label="Buscar por nome" @bind="filtroNome" @bind:event="oninput" />
-                    </div>
+    @* ===== FILTROS ===== *@
+    <div class="mp-card p-3 p-md-4 mb-4">
+        <div class="row g-2 g-md-3 align-items-center">
+            <div class="col-12 col-md-5">
+                <div class="campo-icone">
+                    <i class="bi bi-search"></i>
+                    <input type="search" class="form-control" placeholder="Buscar pelo nome..." aria-label="Buscar pelo nome" @bind="filtroNome" @bind:event="oninput" />
                 </div>
-
-                <div class="col-12 col-md-6 col-lg-3">
-                    <div class="input-group">
-                        <span class="input-group-text bg-light border-0"><i class="bi bi-geo-alt text-danger"></i></span>
-                        <input type="text" class="form-control border-0 bg-light fw-medium" placeholder="Cidade..." aria-label="Cidade" @bind="filtroCidade" @onkeydown="FiltrarAoApertarEnter" />
-                    </div>
+            </div>
+            <div class="col-8 col-md-4">
+                <div class="campo-icone">
+                    <i class="bi bi-geo-alt"></i>
+                    <input type="text" class="form-control" placeholder="Cidade" aria-label="Cidade" @bind="filtroCidade" @onkeydown="FiltrarAoApertarEnter" @onblur="AplicarFiltro" />
                 </div>
-
-                <div class="col-4 col-lg-2">
-                    <select class="form-select border-0 bg-light fw-medium" aria-label="Espécie" @bind="filtroEspecie" @bind:after="AplicarFiltro">
-                        <option value="">Espécie</option>
-                        <option value="Cão">Cachorros</option>
-                        <option value="Gato">Gatos</option>
-                        <option value="Pássaro">Pássaros</option>
-                        <option value="Peixe">Peixes</option>
-                    </select>
-                </div>
-
-                <div class="col-4 col-lg-2">
-                    <select class="form-select border-0 bg-light fw-medium" aria-label="Porte" @bind="filtroPorte" @bind:after="AplicarFiltro">
-                        <option value="">Porte</option>
-                        <option value="Pequeno">Pequeno</option>
-                        <option value="Médio">Médio</option>
-                        <option value="Grande">Grande</option>
-                    </select>
-                </div>
-
-                <div class="col-4 col-lg-2">
-                    <select class="form-select border-0 bg-light fw-medium" aria-label="Sexo" @bind="filtroSexo" @bind:after="AplicarFiltro">
-                        <option value="">Sexo</option>
-                        <option value="Macho">Macho</option>
-                        <option value="Fêmea">Fêmea</option>
-                    </select>
-                </div>
-
-                <div class="col-12 col-lg-6">
-                    <div class="d-flex gap-3 flex-wrap">
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" @bind="temCriancas" @bind:after="AplicarFiltro" id="chkCrianca">
-                            <label class="form-check-label small fw-bold text-muted" for="chkCrianca">🍼 Tenho crianças</label>
-                        </div>
-                        <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" @bind="moraEmApto" @bind:after="AplicarFiltro" id="chkApto">
-                            <label class="form-check-label small fw-bold text-muted" for="chkApto">🏢 Moro em apartamento</label>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-12 col-lg-6 d-flex gap-2 justify-content-lg-end">
-                     <button class="btn btn-primary flex-grow-1 flex-lg-grow-0 rounded-pill fw-bold shadow-sm px-4" @onclick="AplicarFiltro" disabled="@carregando">
-                         @if (carregando) { <span class="spinner-border spinner-border-sm me-1"></span> } else { <i class="bi bi-funnel me-1"></i> }
-                         Filtrar
-                     </button>
-                     <button class="btn btn-outline-secondary rounded-pill fw-bold px-4" @onclick="LimparFiltros" disabled="@(!TemFiltroAtivo)">Limpar</button>
-                </div>
+            </div>
+            <div class="col-4 col-md-3 d-grid">
+                <button class="btn @(maisFiltros || FiltrosExtrasAtivos > 0 ? "btn-primary" : "btn-light")" @onclick="() => maisFiltros = !maisFiltros" aria-expanded="@maisFiltros">
+                    <i class="bi bi-sliders me-1"></i> Filtros @(FiltrosExtrasAtivos > 0 ? $"({FiltrosExtrasAtivos})" : "")
+                </button>
             </div>
         </div>
 
-        <!-- Lista de Pets -->
-        @if (pets == null)
-        {
-            <div class="text-center py-5"><div class="spinner-border text-primary"></div></div>
-        }
-        else if (!PetsVisiveis.Any())
-        {
-            <div class="text-center py-5 text-muted bg-white rounded-4 border shadow-sm p-4">
-                <i class="bi bi-emoji-frown fs-1"></i>
-                <h5 class="mt-3">@(TemFiltroAtivo ? "Nenhum pet encontrado com esses filtros." : "Nenhum pet disponível no momento.")</h5>
-                @if (TemFiltroAtivo)
-                {
-                    <button class="btn btn-link fw-bold" @onclick="LimparFiltros">Limpar filtros</button>
-                }
-            </div>
-        }
-        else
-        {
-            <p class="text-muted small mb-3"><strong class="text-dark">@PetsVisiveis.Count()</strong> @(PetsVisiveis.Count() == 1 ? "pet disponível" : "pets disponíveis")</p>
-            <div class="row g-4">
-                @foreach (var pet in PetsVisiveis)
-                {
-                    <div class="col-sm-6 col-md-4 col-lg-3">
-                        <div class="card-portal overflow-hidden h-100 d-flex flex-column border rounded-4 bg-white shadow-sm">
-                            <div class="position-relative" style="height: 200px; cursor: pointer;" @onclick="() => VerDetalhes(pet.Id)">
-                                @if (pet.Imagens != null && pet.Imagens.Any())
-                                {
-                                    <img src="@pet.Imagens.First().Base64Data" class="img-cover" alt="Foto de @pet.Nome" loading="lazy">
-                                }
-                                else
-                                {
-                                    <div class="foto-vazia"><i class="bi bi-camera fs-2"></i><span class="small">Sem foto</span></div>
-                                }
-                                <div class="position-absolute top-0 start-0 w-100 p-2 d-flex justify-content-between flex-wrap gap-1">
-                                    <span class="badge bg-white text-dark shadow-sm rounded-pill"><i class="bi bi-geo-alt-fill text-danger me-1"></i>@(pet.UsuarioDoador?.Cidade ?? "Franca")</span>
-                                    
-                                    @if (pet.UsuarioDoador != null && pet.UsuarioDoador.EhOng)
-                                    {
-                                        <span class="badge bg-success text-white shadow-sm rounded-pill border border-white">
-                                            <i class="bi bi-patch-check-fill me-1"></i> ONG
-                                        </span>
-                                    }
-                                </div>
-                            </div>
-                            
-                            <div class="p-3 flex-grow-1">
-                                <h5 class="fw-bold mb-1 text-dark text-truncate" title="@pet.Nome">@pet.Nome</h5>
-                                <p class="small text-muted mb-2">@pet.Especie • @pet.Porte@(string.IsNullOrEmpty(pet.Sexo) ? "" : $" • {pet.Sexo}")</p>
-                                <div class="d-flex flex-wrap gap-1">
-                                    @if (pet.RecomendadoParaCriancas) { <span class="badge badge-neutro rounded-pill">🍼 Crianças</span> }
-                                    @if (!pet.PrecisaDeQuintal) { <span class="badge badge-neutro rounded-pill">🏢 Apto.</span> }
-                                    @if (pet.Castrado) { <span class="badge badge-neutro rounded-pill">✂️ Castrado</span> }
-                                </div>
-                            </div>
+        <div class="chips mt-3">
+            @foreach (var (valor, rotulo) in Especies)
+            {
+                <button class="chip @(filtroEspecie == valor ? "ativo" : "")" @onclick="() => MudarEspecie(valor)">@rotulo</button>
+            }
+        </div>
 
-                            <div class="p-3 border-top bg-light">
-                                <button class="btn btn-primary w-100 fw-bold rounded-pill shadow-sm" @onclick="() => VerDetalhes(pet.Id)">Saber Mais</button>
-                            </div>
-                        </div>
+        @if (maisFiltros)
+        {
+            <div class="row g-3 mt-1 pt-3 border-top">
+                <div class="col-6 col-md-3">
+                    <label class="form-label small">Porte</label>
+                    <select class="form-select" @bind="filtroPorte" @bind:after="AplicarFiltro">
+                        <option value="">Qualquer</option>
+                        <option>Pequeno</option>
+                        <option>Médio</option>
+                        <option>Grande</option>
+                    </select>
+                </div>
+                <div class="col-6 col-md-3">
+                    <label class="form-label small">Sexo</label>
+                    <select class="form-select" @bind="filtroSexo" @bind:after="AplicarFiltro">
+                        <option value="">Qualquer</option>
+                        <option>Macho</option>
+                        <option>Fêmea</option>
+                    </select>
+                </div>
+                <div class="col-12 col-md-6">
+                    <label class="form-label small">Meu estilo de vida</label>
+                    <div class="d-flex gap-2 flex-wrap">
+                        <label class="opcao-card flex-fill @(temCriancas ? "marcada" : "")">
+                            <input type="checkbox" @bind="temCriancas" @bind:after="AplicarFiltro" />
+                            <span class="emoji">🍼</span><span class="fw-semibold small">Tenho crianças</span>
+                        </label>
+                        <label class="opcao-card flex-fill @(moraEmApto ? "marcada" : "")">
+                            <input type="checkbox" @bind="moraEmApto" @bind:after="AplicarFiltro" />
+                            <span class="emoji">🏢</span><span class="fw-semibold small">Moro em apartamento</span>
+                        </label>
                     </div>
-                }
+                </div>
             </div>
         }
+    </div>
+
+    @* ===== RESULTADOS ===== *@
+    @if (pets == null)
+    {
+        <CardsCarregando />
+    }
+    else if (!PetsVisiveis.Any())
+    {
+        <div class="estado-vazio">
+            <div class="emoji">🔎</div>
+            <h5>@(TemFiltroAtivo ? "Nenhum pet com esses filtros" : "Nenhum pet disponível no momento")</h5>
+            <p class="text-muted">@(TemFiltroAtivo ? "Tente remover algum filtro para ver mais opções." : "Volte em breve, novos amigos chegam toda semana!")</p>
+            @if (TemFiltroAtivo)
+            {
+                <button class="btn btn-primary" @onclick="LimparFiltros">Limpar filtros</button>
+            }
+        </div>
     }
     else
     {
-        <!-- BAZAR SOLIDÁRIO (ITENS E RAÇÕES) -->
-        @if (itensDoacao == null)
-        {
-            <div class="text-center py-5"><div class="spinner-border text-warning"></div></div>
-        }
-        else if (!itensDoacao.Any())
-        {
-            <div class="text-center py-5 text-muted bg-white rounded-4 border shadow-sm p-4">
-                <i class="bi bi-box2 fs-1 text-muted"></i>
-                <h5 class="mt-3">Nenhum item ou ração disponível no momento.</h5>
-                <p class="small">Se você tem suprimentos para doar, cadastre na aba de anúncios!</p>
-            </div>
-        }
-        else
-        {
-            <div class="row g-4">
-                @foreach (var item in itensDoacao.Where(i => i.Status == "Disponível"))
-                {
-                    <div class="col-sm-6 col-md-4 col-lg-3">
-                        <div class="card-portal overflow-hidden h-100 d-flex flex-column border rounded-4 bg-white shadow-sm">
-                            <div class="position-relative" style="height: 200px;">
-                                @if (item.Imagens != null && item.Imagens.Any())
-                                {
-                                    <img src="@item.Imagens.First().Base64Data" class="img-cover" alt="Foto de @item.Nome" loading="lazy">
-                                }
-                                else
-                                {
-                                    <div class="foto-vazia"><i class="bi bi-box fs-2"></i><span class="small">Sem foto</span></div>
-                                }
-                                <div class="position-absolute top-0 start-0 w-100 p-2 d-flex justify-content-between">
-                                    <span class="badge bg-warning text-dark shadow-sm rounded-pill fw-bold">@item.Categoria</span>
-                                    <span class="badge bg-white text-dark shadow-sm rounded-pill"><i class="bi bi-geo-alt-fill text-danger me-1"></i>@(item.UsuarioDoador?.Cidade ?? "Franca")</span>
-                                </div>
-                            </div>
-                            
-                            <div class="p-3 flex-grow-1">
-                                <h5 class="fw-bold mb-1 text-dark">@item.Nome</h5>
-                                <p class="small text-muted mb-2">Destinado para: <strong>@item.EspecieDestino</strong></p>
-                                <p class="small text-secondary mb-3 texto-2-linhas">@item.Descricao</p>
-                            </div>
-
-                            <div class="p-3 border-top bg-light">
-                                <button class="btn btn-success w-100 fw-bold rounded-pill shadow-sm" @onclick="() => ContatarDoadorItem(item)">
-                                    <i class="bi bi-whatsapp me-1"></i> Contatar Doador
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                }
-            </div>
-        }
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <p class="text-muted small mb-0"><strong class="text-dark">@PetsVisiveis.Count()</strong> @(PetsVisiveis.Count() == 1 ? "pet encontrado" : "pets encontrados")</p>
+            @if (TemFiltroAtivo)
+            {
+                <button class="btn btn-ghost btn-sm" @onclick="LimparFiltros"><i class="bi bi-x-circle me-1"></i>Limpar filtros</button>
+            }
+        </div>
+        <div class="row g-3 g-md-4">
+            @foreach (var pet in PetsVisiveis)
+            {
+                <div class="col-6 col-md-4 col-lg-3"><PetCard Pet="pet" /></div>
+            }
+        </div>
     }
 </div>
 
 @code {
-    private string tipoCatalogo = "pets"; // "pets" ou "itens"
+    // Filtros vindos da busca da página inicial (/pets?especie=Gato&cidade=Franca)
+    [SupplyParameterFromQuery(Name = "especie")] public string? EspecieQuery { get; set; }
+    [SupplyParameterFromQuery(Name = "cidade")] public string? CidadeQuery { get; set; }
+
     private IEnumerable<Pet>? pets;
-    private List<ItemDoacao>? itensDoacao;
-    private string filtroNome = "";
-    private string filtroCidade = "";
-    private string filtroEspecie = "";
-    private string filtroPorte = "";
-    private string filtroSexo = "";
-    private bool temCriancas = false;
-    private bool moraEmApto = false;
-    private bool carregando = false;
+    private string filtroNome = "", filtroCidade = "", filtroEspecie = "", filtroPorte = "", filtroSexo = "";
+    private bool temCriancas, moraEmApto, maisFiltros;
 
     // Evita duas consultas ao mesmo tempo no banco (ex.: mudar vários filtros rápido)
     private readonly SemaphoreSlim travaConsulta = new(1, 1);
 
-    private bool TemFiltroAtivo =>
-        !string.IsNullOrWhiteSpace(filtroNome) || !string.IsNullOrWhiteSpace(filtroCidade) ||
-        !string.IsNullOrEmpty(filtroEspecie) || !string.IsNullOrEmpty(filtroPorte) ||
-        !string.IsNullOrEmpty(filtroSexo) || temCriancas || moraEmApto;
+    private static readonly (string, string)[] Especies =
+        { ("", "🐾 Todos"), ("Cão", "🐶 Cães"), ("Gato", "🐱 Gatos"), ("Pássaro", "🐦 Aves"), ("Peixe", "🐟 Peixes"), ("Outros", "🐹 Outros") };
 
-    // Só mostra pets disponíveis e aplica a busca por nome na hora (sem ir ao banco)
+    private int FiltrosExtrasAtivos => (string.IsNullOrEmpty(filtroPorte) ? 0 : 1) + (string.IsNullOrEmpty(filtroSexo) ? 0 : 1) + (temCriancas ? 1 : 0) + (moraEmApto ? 1 : 0);
+
+    private bool TemFiltroAtivo => !string.IsNullOrWhiteSpace(filtroNome) || !string.IsNullOrWhiteSpace(filtroCidade) ||
+                                   !string.IsNullOrEmpty(filtroEspecie) || FiltrosExtrasAtivos > 0;
+
+    // Só pets disponíveis; a busca por nome é feita na hora, sem ir ao banco
     private IEnumerable<Pet> PetsVisiveis => (pets ?? Enumerable.Empty<Pet>())
         .Where(p => p.Status == "Disponível")
         .Where(p => string.IsNullOrWhiteSpace(filtroNome) || p.Nome.Contains(filtroNome.Trim(), StringComparison.OrdinalIgnoreCase));
 
     protected override async Task OnInitializedAsync()
     {
-        await CarregarPets();
-        await CarregarItens();
+        filtroEspecie = EspecieQuery ?? "";
+        filtroCidade = CidadeQuery ?? "";
+        await AplicarFiltro();
     }
 
-    private async Task CarregarPets() => await Consultar(async () => pets = await PetRepository.GetAllAsync());
+    private async Task MudarEspecie(string especie)
+    {
+        filtroEspecie = especie;
+        await AplicarFiltro();
+    }
 
-    private async Task Consultar(Func<Task> consulta)
+    private async Task AplicarFiltro()
     {
         await travaConsulta.WaitAsync();
-        carregando = true;
-        try { await consulta(); }
-        finally { carregando = false; travaConsulta.Release(); }
+        try
+        {
+            pets = await PetRepository.GetPetsParaMatch(temCriancas, moraEmApto, filtroEspecie, filtroPorte, filtroSexo, filtroCidade);
+        }
+        finally { travaConsulta.Release(); }
     }
 
     private async Task FiltrarAoApertarEnter(KeyboardEventArgs e)
@@ -267,50 +170,10 @@
         if (e.Key == "Enter") await AplicarFiltro();
     }
 
-    private async Task CarregarItens() => await Consultar(async () =>
-        itensDoacao = await Db.ItensDoacao
-            .Include(i => i.Imagens)
-            .Include(i => i.UsuarioDoador)
-            .Where(i => i.Status == "Disponível")
-            .ToListAsync());
-
-    private async Task AplicarFiltro() => await Consultar(async () =>
-        pets = await PetRepository.GetPetsParaMatch(temCriancas, moraEmApto, filtroEspecie, filtroPorte, filtroSexo, filtroCidade.Trim()));
-    
     private async Task LimparFiltros()
     {
-        filtroNome = ""; filtroCidade = ""; filtroEspecie = ""; filtroPorte = ""; filtroSexo = "";
-        temCriancas = false; moraEmApto = false;
-        await CarregarPets();
-    }
-
-    // Ver detalhes é livre (como diz o FAQ). O documento só é exigido ao clicar em "Quero Conhecer".
-    private void VerDetalhes(int id) => Nav.NavigateTo($"/pets/detalhes/{id}");
-
-    private async Task ContatarDoadorItem(ItemDoacao item)
-    {
-        if (!AuthService.EstaLogado || AuthService.UsuarioLogado == null)
-        {
-            Nav.NavigateTo("/login");
-            return;
-        }
-
-        if (string.IsNullOrEmpty(AuthService.UsuarioLogado.FotoDocumentoBase64))
-        {
-            await JS.InvokeVoidAsync("alert", "🛡️ SEGURANÇA: Para solicitar itens doados, anexe seu documento no Perfil.");
-            Nav.NavigateTo("/perfil");
-            return;
-        }
-
-        var telefoneDoador = item.UsuarioDoador?.Telefone ?? "";
-        if (string.IsNullOrEmpty(telefoneDoador))
-        {
-            await JS.InvokeVoidAsync("alert", "Este doador não cadastrou um número de WhatsApp válido.");
-            return;
-        }
-
-        var texto = $"Olá! Vi no *Match-Pet SP* que você está doando o item: *{item.Nome}* ({item.Categoria}). Ainda está disponível?";
-        var url = $"https://api.whatsapp.com/send?phone=55{telefoneDoador.Replace(" ", "").Replace("-", "").Replace("(", "").Replace(")", "")}&text={Uri.EscapeDataString(texto)}";
-        await JS.InvokeVoidAsync("open", url, "_blank");
+        filtroNome = filtroCidade = filtroEspecie = filtroPorte = filtroSexo = "";
+        temCriancas = moraEmApto = false;
+        await AplicarFiltro();
     }
 }

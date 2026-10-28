@@ -1,0 +1,39 @@
+@* Barrinha que mostra se a senha está fraca, média ou forte *@
+@if (!string.IsNullOrEmpty(Senha))
+{
+    <div class="d-flex gap-1 mt-2" aria-hidden="true">
+        @for (var i = 1; i <= 4; i++)
+        {
+            <div style="height:5px;flex:1;border-radius:4px;background:@(i <= Pontos ? Cor : "#e2e8f0")"></div>
+        }
+    </div>
+    <div class="small fw-semibold mt-1" style="color:@Cor">@Texto</div>
+}
+else
+{
+    <div class="form-text">Mínimo de 8 caracteres, com letras e números.</div>
+}
+
+@code {
+    [Parameter] public string? Senha { get; set; }
+
+    public static bool SenhaAceitavel(string? s) =>
+        !string.IsNullOrEmpty(s) && s.Length >= 8 && s.Any(char.IsLetter) && s.Any(char.IsDigit);
+
+    private int Pontos
+    {
+        get
+        {
+            var s = Senha ?? "";
+            var p = 0;
+            if (s.Length >= 8) p++;
+            if (s.Any(char.IsLetter) && s.Any(char.IsDigit)) p++;
+            if (s.Any(char.IsUpper) && s.Any(char.IsLower)) p++;
+            if (s.Any(c => !char.IsLetterOrDigit(c)) || s.Length >= 12) p++;
+            return SenhaAceitavel(s) ? Math.Max(p, 2) : Math.Min(p, 1);
+        }
+    }
+
+    private string Cor => Pontos switch { <= 1 => "#dc2626", 2 => "#f59e0b", 3 => "#2563eb", _ => "#16a34a" };
+    private string Texto => Pontos switch { <= 1 => "Senha fraca", 2 => "Senha razoável", 3 => "Senha boa", _ => "Senha forte" };
+}

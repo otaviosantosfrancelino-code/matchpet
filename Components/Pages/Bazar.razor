@@ -1,0 +1,93 @@
+@page "/bazar"
+@inject IItemRepository ItemRepository
+@inject AuthService AuthService
+@inject NavigationManager Nav
+@inject ToastService Toast
+@inject IJSRuntime JS
+
+<PageTitle>Bazar Solidário | Match-Pet SP</PageTitle>
+
+<div class="container-xl py-4 py-md-5">
+    <div class="page-header">
+        <div class="d-flex align-items-center gap-3">
+            <div class="icone-bolha laranja"><i class="bi bi-gift"></i></div>
+            <div>
+                <h1>Bazar Solidário</h1>
+                <p>Ração, caminhas, gaiolas e acessórios doados gratuitamente.</p>
+            </div>
+        </div>
+        <a href="/pets/novo?tipo=item" class="btn btn-accent"><i class="bi bi-plus-lg me-1"></i> Doar um item</a>
+    </div>
+
+    <div class="chips mb-4">
+        @foreach (var (valor, rotulo) in Categorias)
+        {
+            <button class="chip @(categoria == valor ? "ativo" : "")" @onclick="() => categoria = valor">@rotulo</button>
+        }
+    </div>
+
+    @if (itens == null)
+    {
+        <CardsCarregando />
+    }
+    else if (!ItensVisiveis.Any())
+    {
+        <div class="estado-vazio">
+            <div class="emoji">📦</div>
+            <h5>Nenhum item @(string.IsNullOrEmpty(categoria) ? "disponível" : "nesta categoria") no momento</h5>
+            <p class="text-muted">Tem algo parado em casa que pode ajudar um pet?</p>
+            <a href="/pets/novo?tipo=item" class="btn btn-accent">Doar um item</a>
+        </div>
+    }
+    else
+    {
+        <p class="text-muted small"><strong class="text-dark">@ItensVisiveis.Count()</strong> itens disponíveis</p>
+        <div class="row g-3 g-md-4">
+            @foreach (var item in ItensVisiveis)
+            {
+                <div class="col-6 col-md-4 col-lg-3"><ItemCard Item="item" OnContatar="Contatar" /></div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private List<ItemDoacao>? itens;
+    private string categoria = "";
+
+    private static readonly (string, string)[] Categorias =
+    {
+        ("", "Todos"), ("Ração/Alimento", "🦴 Ração"), ("Casinha/Cama", "🏠 Casinhas e camas"),
+        ("Brinquedo/Acessório", "🧶 Acessórios"), ("Gaiola/Aquário", "🐦 Gaiolas e aquários"), ("Remédio/Higiene", "💊 Higiene")
+    };
+
+    private IEnumerable<ItemDoacao> ItensVisiveis => (itens ?? new()).Where(i => string.IsNullOrEmpty(categoria) || i.Categoria == categoria);
+
+    protected override async Task OnInitializedAsync() => itens = await ItemRepository.GetDisponiveisAsync();
+
+    private async Task Contatar(ItemDoacao item)
+    {
+        if (!AuthService.EstaLogado)
+        {
+            Toast.Info("Entre na sua conta para falar com o doador.");
+            Nav.NavigateTo("/login");
+            return;
+        }
+        if (!AuthService.DocumentoAprovado)
+        {
+            Toast.Aviso("Por segurança, verifique seu documento no Perfil antes de pedir itens doados.");
+            Nav.NavigateTo("/perfil");
+            return;
+        }
+
+        var fone = new string((item.UsuarioDoador?.Telefone ?? "").Where(char.IsDigit).ToArray());
+        if (fone.Length < 10)
+        {
+            Toast.Erro("Este doador não cadastrou um WhatsApp válido.");
+            return;
+        }
+
+        var texto = $"Olá! Vi no *Match-Pet SP* que você está doando: *{item.Nome}*. Ainda está disponível?";
+        await JS.InvokeVoidAsync("open", $"https://wa.me/55{fone}?text={Uri.EscapeDataString(texto)}", "_blank");
+    }
+}

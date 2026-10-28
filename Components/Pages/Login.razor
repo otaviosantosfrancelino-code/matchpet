@@ -1,88 +1,129 @@
 @page "/login"
-@using crudcomdb.Models
-@using crudcomdb.Interfaces
-@using crudcomdb.Services
 @inject IUsuarioRepository UsuarioRepository
 @inject AuthService AuthService
 @inject NavigationManager Nav
-@rendermode InteractiveServer
+@inject ToastService Toast
 
 <PageTitle>Entrar | Match-Pet SP</PageTitle>
 
-<div class="container py-4 py-md-5 mt-md-4 mb-5">
-    <div class="row justify-content-center">
-        <div class="col-lg-8">
-            <div class="card-portal overflow-hidden d-flex flex-column flex-md-row shadow-lg border-0 rounded-4">
-                <!-- Lado Esquerdo Colorido -->
-                <div class="bg-primary text-white p-4 p-md-5 d-flex flex-column justify-content-center text-center" style="flex: 1; background: linear-gradient(135deg, #1a73e8 0%, #1557b0 100%);">
-                    <i class="bi bi-door-open-fill display-1 mb-3 text-warning"></i>
-                    <h3 class="fw-bold">Bem-vindo de volta!</h3>
-                    <p class="opacity-75">Acesse sua conta para continuar conectando corações e focinhos.</p>
-                </div>
-                
-                <!-- Formulário -->
-                <div class="p-4 p-md-5 bg-white" style="flex: 1.2;">
-                    <h3 class="fw-bold text-dark mb-4 text-center">Fazer Login</h3>
-                    
-                    @if (!string.IsNullOrEmpty(mensagemErro))
-                    {
-                        <div class="alert alert-danger py-2 small fw-bold text-center"><i class="bi bi-x-circle-fill me-1"></i> @mensagemErro</div>
-                    }
+<div class="container-xl py-4 py-md-5">
+    <div class="tela-auth mp-card">
+        <div class="lado-arte d-none d-md-flex">
+            <div>
+                <span class="display-4">🐾</span>
+                <h2 class="text-white mt-3">Que bom te ver de novo!</h2>
+                <p>Entre para acompanhar seus anúncios, adotar com segurança e conversar com os doadores.</p>
+            </div>
+            <ul class="list-unstyled small mb-0">
+                <li><i class="bi bi-check-circle-fill me-2"></i>Cadastros verificados</li>
+                <li><i class="bi bi-check-circle-fill me-2"></i>Termo digital de adoção</li>
+                <li><i class="bi bi-check-circle-fill me-2"></i>Contato direto pelo WhatsApp</li>
+            </ul>
+        </div>
 
-                    <form @onsubmit="ProcessarLogin" @onsubmit:preventDefault>
-                        <div class="mb-3">
-                            <label class="form-label small fw-bold text-muted" for="loginDoc">CPF ou CNPJ</label>
-                            <input id="loginDoc" type="text" inputmode="numeric" autocomplete="username" class="form-control bg-light" @bind="documento" placeholder="Digite seu CPF ou CNPJ" />
-                        </div>
+        <div class="lado-form">
+            <h1 class="h3 mb-1">Entrar</h1>
+            <p class="text-muted mb-4">Use seu CPF/CNPJ ou e-mail e sua senha.</p>
 
-                        <div class="mb-4">
-                            <label class="form-label small fw-bold text-muted" for="loginSenha">Senha</label>
-                            <div class="input-group">
-                                <input id="loginSenha" type="@(mostrarSenha ? "text" : "password")" autocomplete="current-password" class="form-control bg-light" @bind="senha" placeholder="••••••••" />
-                                <button type="button" class="btn btn-light border" @onclick="() => mostrarSenha = !mostrarSenha" aria-label="@(mostrarSenha ? "Esconder senha" : "Mostrar senha")">
-                                    <i class="bi @(mostrarSenha ? "bi-eye-slash" : "bi-eye")"></i>
-                                </button>
-                            </div>
-                        </div>
+            @if (!string.IsNullOrEmpty(mensagemErro))
+            {
+                <div class="alert alert-danger py-2 small"><i class="bi bi-x-circle-fill me-1"></i> @mensagemErro</div>
+            }
 
-                        <button type="submit" class="btn btn-primary w-100 fw-bold py-2 rounded-pill shadow-sm mb-3" disabled="@entrando">
-                            @if (entrando) { <span class="spinner-border spinner-border-sm me-2"></span><span>Entrando...</span> }
-                            else { <span>Entrar no Match-Pet</span> }
-                        </button>
-                    </form>
-
-                    <div class="text-center mt-3 border-top pt-3">
-                        <span class="text-muted small">Novo por aqui?</span> <a href="/cadastro" class="fw-bold small">Crie sua conta</a>
+            <form @onsubmit="ProcessarLogin" @onsubmit:preventDefault>
+                <div class="mb-3">
+                    <label class="form-label" for="loginDoc">CPF, CNPJ ou e-mail</label>
+                    <div class="campo-icone">
+                        <i class="bi bi-person"></i>
+                        <input id="loginDoc" type="text" autocomplete="username" class="form-control" @bind="identificacao" placeholder="000.000.000-00 ou voce@email.com" />
                     </div>
                 </div>
-            </div>
+
+                <div class="mb-2">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <label class="form-label" for="loginSenha">Senha</label>
+                        <a href="/esqueci-senha" class="small fw-semibold mb-1">Esqueci minha senha</a>
+                    </div>
+                    <div class="campo-icone position-relative">
+                        <i class="bi bi-lock"></i>
+                        <input id="loginSenha" type="@(mostrarSenha ? "text" : "password")" autocomplete="current-password" class="form-control pe-5" @bind="senha" placeholder="Sua senha" />
+                        <button type="button" class="btn btn-ghost btn-sm olho" @onclick="() => mostrarSenha = !mostrarSenha" aria-label="@(mostrarSenha ? "Esconder senha" : "Mostrar senha")">
+                            <i class="bi @(mostrarSenha ? "bi-eye-slash" : "bi-eye")"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-lg w-100 mt-3" disabled="@entrando">
+                    @if (entrando) { <span class="spinner-border spinner-border-sm me-2"></span><span>Entrando...</span> }
+                    else { <span>Entrar</span> }
+                </button>
+            </form>
+
+            <p class="text-center text-muted mt-4 mb-0">Ainda não tem conta? <a href="/cadastro" class="fw-bold">Crie grátis</a></p>
         </div>
     </div>
 </div>
 
+<style>
+    .tela-auth { display: flex; max-width: 940px; margin: 0 auto; overflow: hidden; border-radius: 26px; box-shadow: var(--mp-shadow); }
+    .lado-arte { flex: 1; flex-direction: column; justify-content: space-between; gap: 2rem; padding: 2.5rem; color: rgba(255,255,255,.9); background: linear-gradient(150deg, #2563eb 0%, #7c3aed 100%); }
+    .lado-arte li { margin-bottom: .5rem; }
+    .lado-form { flex: 1.15; padding: clamp(1.5rem, 4vw, 3rem); }
+    .olho { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); }
+</style>
+
 @code {
-    private string documento = "", senha = "", mensagemErro = "";
-    private bool mostrarSenha = false, entrando = false;
+    [SupplyParameterFromQuery(Name = "voltar")] public string? Voltar { get; set; }
 
-    protected override void OnInitialized() { if (AuthService.EstaLogado) Nav.NavigateTo("/pets"); }
+    private string identificacao = "", senha = "", mensagemErro = "";
+    private bool mostrarSenha, entrando;
 
-    private async Task ProcessarLogin() {
+    protected override void OnInitialized()
+    {
+        if (AuthService.EstaLogado) Nav.NavigateTo("/pets");
+    }
+
+    private async Task ProcessarLogin()
+    {
         if (entrando) return;
         mensagemErro = "";
-        if (string.IsNullOrWhiteSpace(documento) || string.IsNullOrWhiteSpace(senha)) { mensagemErro = "Preencha todos os campos."; return; }
+        if (string.IsNullOrWhiteSpace(identificacao) || string.IsNullOrWhiteSpace(senha))
+        {
+            mensagemErro = "Preencha todos os campos.";
+            return;
+        }
 
         entrando = true;
-        try {
-            var usuario = await UsuarioRepository.GetByDocumentoAsync(documento.Trim());
-            if (usuario != null && usuario.Senha == senha) {
-                AuthService.Login(usuario);
-                Nav.NavigateTo("/pets");
-            } else {
-                mensagemErro = "CPF/CNPJ ou senha inválidos.";
+        try
+        {
+            var texto = identificacao.Trim();
+            var usuario = texto.Contains('@')
+                ? await UsuarioRepository.GetByEmailAsync(texto)
+                : await UsuarioRepository.GetByDocumentoAsync(texto);
+
+            if (usuario == null || !SenhaService.Verificar(usuario, senha))
+            {
+                mensagemErro = "Dados de acesso inválidos. Confira e tente novamente.";
+                return;
             }
-        } catch (Exception) {
+
+            // Conta antiga com senha em texto puro: converte para hash agora
+            if (!SenhaService.EhHash(usuario.Senha))
+            {
+                usuario.Senha = SenhaService.GerarHash(senha);
+                await UsuarioRepository.UpdateAsync(usuario);
+            }
+
+            await AuthService.LoginAsync(usuario);
+            Toast.Sucesso($"Bem-vindo(a), {usuario.Nome.Split(' ')[0]}!");
+            Nav.NavigateTo(!string.IsNullOrEmpty(Voltar) && Voltar.StartsWith('/') ? Voltar : "/pets");
+        }
+        catch (Exception)
+        {
             mensagemErro = "Não foi possível conectar ao servidor. Tente novamente.";
-        } finally {
+        }
+        finally
+        {
             entrando = false;
         }
     }

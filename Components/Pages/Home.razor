@@ -1,237 +1,260 @@
 ﻿@page "/"
-@using crudcomdb.Services
 @inject NavigationManager Nav
 @inject AuthService AuthService
-@rendermode InteractiveServer
+@inject IPetRepository PetRepository
+@inject IItemRepository ItemRepository
+@inject IUsuarioRepository UsuarioRepository
 
 <PageTitle>Match-Pet SP | Adoção responsável em Franca</PageTitle>
 
-<div class="position-relative overflow-hidden home-hero rounded-4 mt-2 mt-md-3" style="background: linear-gradient(135deg, #1a73e8 0%, #1557b0 100%);">
-    <div class="container text-center text-white position-relative" style="z-index: 2;">
-        
-        <!-- Logo transparente no topo -->
-        <img src="/logo-match-pet.png" alt="Match-Pet SP" class="mb-4 animate-logo home-logo" style="object-fit: contain; filter: drop-shadow(0px 0px 15px rgba(255, 255, 255, 0.7));" />
-        
-        <h1 class="display-4 fw-bold mb-3" style="text-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-            Encontre seu melhor amigo em <span class="text-warning">Franca</span>.
-        </h1>
-        
-        <p class="fs-5 mb-5 mx-auto" style="max-width: 800px; opacity: 0.95; font-weight: 400;">
-            Adoções seguras, rastreáveis e focadas na compatibilidade real. A tecnologia dando oportunidades de conhecer seu novo animalzinho!
-        </p>
-        
-        <div class="d-flex justify-content-center gap-3 flex-wrap">
-            <button class="btn btn-warning btn-lg px-4 px-md-5 fw-bold shadow-lg text-dark home-btn-main" @onclick='() => Nav.NavigateTo("/pets")'>
-                <i class="bi bi-search me-2"></i> Ver Animais
-            </button>
-            @if (!AuthService.EstaLogado)
+@* ===== CAPA ===== *@
+<section class="hero">
+    <div class="container-xl position-relative">
+        <div class="row align-items-center g-5">
+            <div class="col-lg-6">
+                <span class="eyebrow mb-3"><i class="bi bi-heart-fill"></i> Adoção responsável em Franca/SP</span>
+                <h1 class="hero-titulo">Encontre o <span class="destaque">amigo certo</span> para a sua vida.</h1>
+                <p class="hero-texto">Pets de ONGs e tutores verificados, filtrados pelo seu estilo de vida. Contrato digital e contato direto com quem está doando.</p>
+
+                <div class="busca mp-card">
+                    <div class="chips">
+                        @foreach (var (valor, rotulo) in Especies)
+                        {
+                            <button class="chip @(especie == valor ? "ativo" : "")" @onclick="() => especie = valor">@rotulo</button>
+                        }
+                    </div>
+                    <div class="d-flex flex-column flex-sm-row gap-2 mt-3">
+                        <div class="campo-icone flex-grow-1">
+                            <i class="bi bi-geo-alt"></i>
+                            <input class="form-control" placeholder="Sua cidade (ex.: Franca)" @bind="cidade" @onkeydown="Enter" aria-label="Cidade" />
+                        </div>
+                        <button class="btn btn-primary px-4" @onclick="Buscar"><i class="bi bi-search me-1"></i> Buscar pets</button>
+                    </div>
+                </div>
+
+                <div class="numeros">
+                    <div><strong>@(disponiveis?.ToString() ?? "–")</strong><span>pets esperando</span></div>
+                    <div><strong>@(adotados?.ToString() ?? "–")</strong><span>finais felizes</span></div>
+                    <div><strong>@(ongs?.ToString() ?? "–")</strong><span>ONGs parceiras</span></div>
+                </div>
+            </div>
+
+            <div class="col-lg-6 d-none d-lg-block">
+                <div class="hero-imagem">
+                    <img src="/home-match-pet.png" alt="Mascotes do Match-Pet" />
+                    <div class="flutuante f1"><span>🛡️</span><div><b>Cadastro verificado</b><small>Documento conferido</small></div></div>
+                    <div class="flutuante f2"><span>📝</span><div><b>Contrato digital</b><small>Adoção com segurança</small></div></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+@* ===== RECÉM-CHEGADOS ===== *@
+<section class="container-xl py-5">
+    <div class="d-flex align-items-end justify-content-between gap-3 mb-4 flex-wrap">
+        <div>
+            <span class="eyebrow">Novidades</span>
+            <h2 class="secao-titulo mb-0">Recém-chegados</h2>
+        </div>
+        <a href="/pets" class="btn btn-light">Ver todos <i class="bi bi-arrow-right ms-1"></i></a>
+    </div>
+
+    @if (recentes == null)
+    {
+        <CardsCarregando Quantidade="4" />
+    }
+    else if (!recentes.Any())
+    {
+        <div class="estado-vazio"><div class="emoji">🐾</div><p class="text-muted mb-3">Ainda não há pets anunciados.</p><a href="/pets/novo" class="btn btn-primary">Anunciar o primeiro</a></div>
+    }
+    else
+    {
+        <div class="row g-3 g-md-4">
+            @foreach (var pet in recentes)
             {
-                <button class="btn btn-outline-light btn-lg px-4 fw-bold" style="border-radius: 30px; border-width: 2px;" @onclick='() => Nav.NavigateTo("/cadastro")'>
-                    Quero Doar um Pet
-                </button>
+                <div class="col-6 col-md-4 col-lg-3"><PetCard Pet="pet" /></div>
             }
         </div>
-    </div>
+    }
+</section>
 
-    <div class="custom-shape-divider-bottom">
-        <svg data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none">
-            <path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V120H0V95.8C58.47,110,119.64,110,178,95.83,235,82,284.18,65.31,321.39,56.44Z" fill="#f8f9fa"></path>
-        </svg>
-    </div>
-</div>
-
-<div class="container py-5 my-4">
-    <div class="row align-items-center mb-5">
-        <div class="col-lg-6 pe-lg-5">
-            <h2 class="fw-bold mb-4" style="color: #1a73e8; font-size: 2.5rem;">Por que o Match-Pet?</h2>
-            <p class="text-muted fs-5 lh-base mb-4">
-                Nosso propósito é usar o <strong class="text-dark">Match Inteligente</strong> para filtrar animais que se adaptem exatamente ao seu estilo de vida em Franca.
-            </p>
-            <div class="d-flex flex-wrap gap-3 mt-4">
-                <div class="text-center p-3 border rounded-4 bg-white flex-fill shadow-sm card-hover">
-                    <i class="bi bi-shield-check fs-1 text-success"></i>
-                    <h6 class="mt-2 fw-bold mb-0">Segurança</h6>
-                </div>
-                <div class="text-center p-3 border rounded-4 bg-white flex-fill shadow-sm card-hover">
-                    <i class="bi bi-heart-fill fs-1 text-danger"></i>
-                    <h6 class="mt-2 fw-bold mb-0">Consciência</h6>
-                </div>
-                <div class="text-center p-3 border rounded-4 bg-white flex-fill shadow-sm card-hover">
-                    <i class="bi bi-geo-alt-fill fs-1 text-primary"></i>
-                    <h6 class="mt-2 fw-bold mb-0">Regional</h6>
-                </div>
-            </div>
-        </div>
-        <div class="col-lg-6 mt-5 mt-lg-0 text-center">
-            <div class="position-relative">
-                <!-- Imagem do mascote na seção central -->
-                <img src="/home-match-pet.png" alt="Mascote do Match-Pet com um cachorro e um gato" class="img-fluid rounded-5 shadow-lg border border-4 border-white" style="max-height: 400px; object-fit: cover;">
-                <div class="position-absolute top-0 end-0 bg-warning text-dark p-3 rounded-circle shadow fw-bold m-3 d-none d-md-flex align-items-center justify-content-center" style="width: 80px; height: 80px; font-size: 0.8rem; line-height: 1;">
-                    MATCH REAL!
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="container py-5 mb-5">
+@* ===== COMO FUNCIONA ===== *@
+<section class="container-xl py-5">
     <div class="text-center mb-5">
-        <h2 class="fw-bold" style="font-size: 2.2rem;">Como se conectar</h2>
-        <p class="text-muted fs-5">Etapas simples para transformar uma vida.</p>
+        <span class="eyebrow">Passo a passo</span>
+        <h2 class="secao-titulo">Como funciona</h2>
+        <p class="text-muted mx-auto" style="max-width:560px">Do primeiro clique até o pet chegar em casa, em quatro etapas simples.</p>
     </div>
-    
-    <div class="row g-4 text-center">
-        @foreach (var passo in steps)
+    <div class="row g-3 g-md-4">
+        @foreach (var passo in Passos)
         {
-            <div class="col-sm-6 col-md-3">
-                <div class="bg-white p-4 h-100 rounded-4 shadow-sm border card-hover" style="border-top: 4px solid #1a73e8 !important;">
-                    <div class="display-5 fw-bold mb-2" style="color: #1a73e8;">@passo.Numero</div>
-                    <h5 class="fw-bold">@passo.Titulo</h5>
-                    <p class="small text-muted mb-0">@passo.Descricao</p>
+            <div class="col-sm-6 col-lg-3">
+                <div class="mp-card mp-card-hover p-4 h-100">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <div class="icone-bolha @passo.Cor"><i class="bi @passo.Icone"></i></div>
+                        <span class="numero-passo">0@(passo.Numero)</span>
+                    </div>
+                    <h5 class="mb-2">@passo.Titulo</h5>
+                    <p class="text-muted small mb-0">@passo.Descricao</p>
                 </div>
             </div>
         }
     </div>
-</div>
+</section>
 
-<div class="bg-light py-5 border-top border-bottom">
-    <div class="container py-4">
-        <div class="text-center mb-5">
-            <h2 class="fw-bold" style="color: #1557b0; font-size: 2.2rem;">Amparo Legal & Intermediação Segura</h2>
-            <p class="text-muted fs-5 mx-auto" style="max-width: 700px;">
-                Como uma plataforma pioneira na região de Franca, aliamos tecnologia às diretrizes do Direito Civil e Ambiental para garantir o bem-estar animal.
-            </p>
+@* ===== CHAMADAS ===== *@
+<section class="container-xl py-4">
+    <div class="row g-3 g-md-4">
+        <div class="col-lg-6">
+            <div class="chamada azul h-100">
+                <div>
+                    <h3>Precisa doar um pet?</h3>
+                    <p>Anuncie grátis. Os interessados assinam um termo de responsabilidade antes de receber o seu contato.</p>
+                    <a href="/pets/novo" class="btn btn-light">Anunciar agora</a>
+                </div>
+                <span class="emoji">🐶</span>
+            </div>
         </div>
-
-        <div class="row g-4">
-            <div class="col-md-4">
-                <div class="bg-white p-4 h-100 rounded-4 shadow-sm border-0">
-                    <div class="text-primary mb-3 fs-2"><i class="bi bi-file-earmark-lock2"></i></div>
-                    <h5 class="fw-bold text-dark">Validade das Assinaturas</h5>
-                    <p class="small text-muted mb-0 lh-base">
-                        Cada interesse de adoção gera uma minuta contratual vinculando os dados civis do Adotante e do Doador, registrando a assinatura digital via carimbo de data, hora e endereço de IP do dispositivo.
-                    </p>
+        <div class="col-lg-6">
+            <div class="chamada laranja h-100">
+                <div>
+                    <h3>Bazar Solidário</h3>
+                    <p>Ração, caminhas, gaiolas e acessórios doados por quem quer ajudar. @(itens is > 0 ? $"{itens} itens disponíveis agora." : "")</p>
+                    <a href="/bazar" class="btn btn-light">Ver itens</a>
                 </div>
-            </div>
-            <div class="col-md-4">
-                <div class="bg-white p-4 h-100 rounded-4 shadow-sm border-0">
-                    <div class="text-danger mb-3 fs-2"><i class="bi bi-bookmark-star"></i></div>
-                    <h5 class="fw-bold text-dark">Lei Sansão (Nº 14.064/20)</h5>
-                    <p class="small text-muted mb-0 lh-base">
-                        Nossos termos de uso exigem ciência expressa quanto à responsabilidade criminal por atos de abuso, maus-tratos ou abandono de animais domésticos, reforçando o caráter punitivo e pedagógico da legislação nacional.
-                    </p>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="bg-white p-4 h-100 rounded-4 shadow-sm border-0">
-                    <div class="text-success mb-3 fs-2"><i class="bi bi-tree"></i></div>
-                    <h5 class="fw-bold text-dark">Tutela da Fauna Silvestre</h5>
-                    <p class="small text-muted mb-0 lh-base">
-                        Em estrita observância à Lei de Crimes Ambientais (Lei Nº 9.605/98), a plataforma proíbe taxativamente o anúncio ou a intermediação de espécimes da fauna silvestre sem a devida autorização ou criatório legalizado.
-                    </p>
-                </div>
+                <span class="emoji">🎁</span>
             </div>
         </div>
     </div>
-</div>
+</section>
 
-<div class="container py-5 my-5" style="max-width: 900px;">
+@* ===== SEGURANÇA JURÍDICA ===== *@
+<section class="container-xl py-5">
     <div class="text-center mb-5">
-        <h2 class="fw-bold" style="font-size: 2.2rem;">Perguntas Frequentes</h2>
-        <p class="text-muted fs-5">Tudo o que você precisa saber sobre a intermediação.</p>
+        <span class="eyebrow">Confiança</span>
+        <h2 class="secao-titulo">Amparo legal e intermediação segura</h2>
     </div>
-
-    <div class="accordion shadow-sm rounded-4 overflow-hidden border" id="faqAccordion">
-        <div class="accordion-item border-0">
-            <h2 class="accordion-header">
-                <button class="accordion-button fw-bold text-dark bg-white" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
-                    Como funciona o cruzamento de dados (Match)?
-                </button>
-            </h2>
-            <div id="faq1" class="accordion-collapse collapse show" data-bs-parent="#faqAccordion">
-                <div class="accordion-body text-muted lh-base small">
-                    O sistema utiliza filtros inteligentes baseados nas características declaradas pelos doadores e nas necessidades do adotante. Se você indicar que mora em apartamento, por exemplo, o sistema destacará os animais que possuem a tag "Não precisa de quintal", otimizando a compatibilidade urbana.
-                </div>
+    <div class="row g-3 g-md-4">
+        <div class="col-md-4">
+            <div class="mp-card p-4 h-100">
+                <div class="icone-bolha azul mb-3"><i class="bi bi-file-earmark-lock2"></i></div>
+                <h5>Contrato digital</h5>
+                <p class="small text-muted mb-0">Cada interesse gera uma minuta vinculando adotante e doador, registrada com data, hora e IP do dispositivo.</p>
             </div>
         </div>
-
-        <div class="accordion-item border-top">
-            <h2 class="accordion-header">
-                <button class="accordion-button collapsed fw-bold text-dark bg-white" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
-                    Por que preciso anexar uma foto do meu documento pessoal?
-                </button>
-            </h2>
-            <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-                <div class="accordion-body text-muted lh-base small">
-                    Para garantir a segurança jurídica do processo e evitar perfis falsos. A visualização do catálogo é livre, mas a assinatura do termo e a liberação do contato do doador exigem a comprovação de identidade para fins de responsabilidade civil em caso de eventual abandono.
-                </div>
+        <div class="col-md-4">
+            <div class="mp-card p-4 h-100">
+                <div class="icone-bolha vermelho mb-3"><i class="bi bi-bookmark-star"></i></div>
+                <h5>Lei Sansão (14.064/20)</h5>
+                <p class="small text-muted mb-0">Os termos exigem ciência expressa sobre a responsabilidade criminal por maus-tratos ou abandono.</p>
             </div>
         </div>
-
-        <div class="accordion-item border-top">
-            <h2 class="accordion-header">
-                <button class="accordion-button collapsed fw-bold text-dark bg-white" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
-                    O termo assinado digitalmente possui validade jurídica?
-                </button>
-            </h2>
-            <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-                <div class="accordion-body text-muted lh-base small">
-                    Sim. O documento gerado vincula o IP do usuário, data, hora e os dados cadastrais (CPF/RG) informados, caracterizando uma manifestação expressa de vontade e aceitação de encargos de guarda e tutela, servindo como início de prova documental em negócios jurídicos.
-                </div>
+        <div class="col-md-4">
+            <div class="mp-card p-4 h-100">
+                <div class="icone-bolha verde mb-3"><i class="bi bi-tree"></i></div>
+                <h5>Fauna silvestre protegida</h5>
+                <p class="small text-muted mb-0">Seguindo a Lei de Crimes Ambientais (9.605/98), é proibido anunciar animais silvestres sem autorização.</p>
             </div>
         </div>
     </div>
-</div>
+</section>
+
+@* ===== PERGUNTAS FREQUENTES ===== *@
+<section class="container-xl py-4" style="max-width: 860px;">
+    <div class="text-center mb-4">
+        <span class="eyebrow">Dúvidas</span>
+        <h2 class="secao-titulo">Perguntas frequentes</h2>
+    </div>
+    <div class="accordion" id="faq">
+        @for (var i = 0; i < Faq.Length; i++)
+        {
+            var indice = i;
+            <div class="accordion-item">
+                <h3 class="accordion-header">
+                    <button class="accordion-button @(faqAberta == indice ? "" : "collapsed")" type="button" @onclick="() => faqAberta = faqAberta == indice ? -1 : indice">
+                        @Faq[indice].Pergunta
+                    </button>
+                </h3>
+                @if (faqAberta == indice)
+                {
+                    <div class="accordion-collapse"><div class="accordion-body text-muted">@Faq[indice].Resposta</div></div>
+                }
+            </div>
+        }
+    </div>
+</section>
 
 <style>
-    .home-hero { padding: 120px 0 100px 0; }
-    .home-logo { height: 140px; }
-    @@media (max-width: 768px) {
-        .home-hero { padding: 60px 0 90px 0; }
-        .home-logo { height: 90px; }
-    }
-
-    .home-btn-main { border-radius: 30px; transition: 0.3s; }
-    .home-btn-main:hover { transform: scale(1.05); }
-    .card-hover { transition: transform 0.3s ease; }
-    .card-hover:hover { transform: translateY(-8px); }
-
-    .custom-shape-divider-bottom {
-        position: absolute; bottom: 0; left: 0; width: 100%; overflow: hidden; line-height: 0;
-    }
-    .custom-shape-divider-bottom svg {
-        position: relative; display: block; width: calc(100% + 1.3px); height: 80px;
-    }
-    
-    .accordion-button:not(.collapsed) {
-        background-color: #f1f3f4 !important;
-        color: #1a73e8 !important;
-        box-shadow: none;
-    }
-    
-    .animate-logo {
-        animation: floatAnimation 3s ease-in-out infinite;
-    }
-    
-    @@keyframes floatAnimation {
-        0% { transform: translateY(0px); }
-        50% { transform: translateY(-10px); }
-        100% { transform: translateY(0px); }
-    }
+    .hero { position: relative; overflow: hidden; padding: 3.5rem 0 4rem; background: radial-gradient(1200px 500px at 85% -10%, #dbeafe 0%, transparent 60%), radial-gradient(800px 400px at -10% 110%, #ffedd5 0%, transparent 60%), #f8fbff; }
+    .hero-titulo { font-size: clamp(2.2rem, 5vw, 3.6rem); line-height: 1.05; margin: 1rem 0 1.25rem; }
+    .hero-titulo .destaque { background: linear-gradient(120deg, var(--mp-primary), #7c3aed); -webkit-background-clip: text; background-clip: text; color: transparent; }
+    .hero-texto { font-size: 1.12rem; color: var(--mp-muted); max-width: 540px; margin-bottom: 1.75rem; }
+    .busca { padding: 1rem; border-radius: 22px; box-shadow: var(--mp-shadow); max-width: 560px; }
+    .numeros { display: flex; gap: 2rem; margin-top: 2rem; flex-wrap: wrap; }
+    .numeros strong { display: block; font-size: 1.9rem; font-weight: 800; color: var(--mp-ink); line-height: 1; }
+    .numeros span { font-size: .85rem; color: var(--mp-muted); font-weight: 600; }
+    .hero-imagem { position: relative; padding: 1.5rem; }
+    .hero-imagem img { width: 100%; max-height: 480px; object-fit: contain; filter: drop-shadow(0 30px 40px rgba(37, 99, 235, .25)); animation: flutuar 5s ease-in-out infinite; }
+    .flutuante { position: absolute; display: flex; align-items: center; gap: .7rem; background: #fff; padding: .75rem 1rem; border-radius: 16px; box-shadow: var(--mp-shadow); }
+    .flutuante span { font-size: 1.5rem; }
+    .flutuante b { display: block; color: var(--mp-ink); font-size: .9rem; }
+    .flutuante small { color: var(--mp-muted); font-size: .78rem; }
+    .flutuante.f1 { top: 12%; left: -2%; animation: flutuar 6s ease-in-out infinite; }
+    .flutuante.f2 { bottom: 10%; right: 0; animation: flutuar 7s ease-in-out infinite reverse; }
+    @@keyframes flutuar { 50% { transform: translateY(-10px); } }
+    .numero-passo { font-size: 2rem; font-weight: 800; color: #e2e8f0; margin-left: auto; }
+    .chamada { position: relative; overflow: hidden; border-radius: 24px; padding: 2rem; color: #fff; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+    .chamada h3 { color: #fff; font-size: 1.5rem; }
+    .chamada p { opacity: .9; max-width: 380px; }
+    .chamada .emoji { font-size: 5rem; line-height: 1; opacity: .9; }
+    .chamada.azul { background: linear-gradient(135deg, #2563eb, #7c3aed); }
+    .chamada.laranja { background: linear-gradient(135deg, #f97316, #e11d48); }
+    @@media (max-width: 576px) { .chamada .emoji { display: none; } .hero { padding-top: 2rem; } }
 </style>
 
 @code {
-    private List<Step> steps = new()
+    private string especie = "";
+    private string cidade = "";
+    private int faqAberta = 0;
+    private IEnumerable<Pet>? recentes;
+    private int? disponiveis, adotados, ongs, itens;
+
+    private static readonly (string, string)[] Especies =
+        { ("", "🐾 Todos"), ("Cão", "🐶 Cães"), ("Gato", "🐱 Gatos"), ("Pássaro", "🐦 Aves"), ("Outros", "🐹 Outros") };
+
+    protected override async Task OnInitializedAsync()
     {
-        new Step { Numero = "01", Titulo = "Conta", Descricao = "Crie seu perfil com segurança." },
-        new Step { Numero = "02", Titulo = "Match", Descricao = "Filtre pets compatíveis." },
-        new Step { Numero = "03", Titulo = "Termo", Descricao = "Assinatura digital automática." },
-        new Step { Numero = "04", Titulo = "Visita", Descricao = "Agende o encontro final." }
+        // Consultas uma de cada vez (o banco do Blazor não aceita duas ao mesmo tempo)
+        recentes = await PetRepository.GetRecentesAsync(8);
+        (disponiveis, adotados) = await PetRepository.GetEstatisticasAsync();
+        ongs = await UsuarioRepository.ContarOngsAsync();
+        itens = await ItemRepository.ContarDisponiveisAsync();
+    }
+
+    private void Buscar()
+    {
+        var parametros = new Dictionary<string, object?> { ["especie"] = string.IsNullOrEmpty(especie) ? null : especie, ["cidade"] = string.IsNullOrWhiteSpace(cidade) ? null : cidade.Trim() };
+        Nav.NavigateTo(Nav.GetUriWithQueryParameters("/pets", parametros));
+    }
+
+    private void Enter(KeyboardEventArgs e) { if (e.Key == "Enter") Buscar(); }
+
+    private record Passo(int Numero, string Titulo, string Descricao, string Icone, string Cor);
+    private static readonly Passo[] Passos =
+    {
+        new(1, "Crie sua conta", "Cadastro rápido com CPF ou CNPJ e verificação do documento.", "bi-person-check", "azul"),
+        new(2, "Encontre o match", "Filtre por espécie, porte, cidade e pelo seu estilo de vida.", "bi-search-heart", "laranja"),
+        new(3, "Assine o termo", "Contrato digital de responsabilidade em um clique.", "bi-pen", "verde"),
+        new(4, "Conheça o pet", "Fale com o doador pelo WhatsApp e combine a visita.", "bi-house-heart", "vermelho"),
     };
 
-    public class Step {
-        public string Numero { get; set; } = "";
-        public string Titulo { get; set; } = "";
-        public string Descricao { get; set; } = "";
-    }
+    private record ItemFaq(string Pergunta, string Resposta);
+    private static readonly ItemFaq[] Faq =
+    {
+        new("Como funciona o match?", "Você informa o que combina com a sua rotina (crianças em casa, apartamento, espécie, porte) e o sistema mostra apenas os pets compatíveis, com base no que o doador declarou."),
+        new("Por que preciso enviar um documento?", "Para evitar perfis falsos e dar segurança jurídica às adoções. O documento é conferido automaticamente: o nome e o CPF/CNPJ precisam bater com o cadastro, e a mesma foto não pode ser usada em duas contas."),
+        new("O termo assinado digitalmente tem validade?", "Sim. O documento registra IP, data, hora e os dados civis das partes, caracterizando uma manifestação expressa de vontade que serve como início de prova documental."),
+        new("Esqueci minha senha. E agora?", "Na tela de login, clique em \"Esqueci minha senha\". Enviaremos um link para o seu e-mail para você criar uma nova senha."),
+    };
 }

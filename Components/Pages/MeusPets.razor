@@ -1,102 +1,74 @@
 @page "/meus-pets"
-@using crudcomdb.Interfaces
-@using crudcomdb.Models
-@using crudcomdb.Services
-@using crudcomdb.Data
-@using Microsoft.EntityFrameworkCore
 @inject IPetRepository PetRepository
-@inject AppDbContext Db
+@inject IItemRepository ItemRepository
 @inject AuthService AuthService
 @inject NavigationManager Nav
-@inject IJSRuntime JS
-@rendermode InteractiveServer
+@inject ToastService Toast
 
-<PageTitle>Meus Anúncios | Match-Pet SP</PageTitle>
+<PageTitle>Meus anúncios | Match-Pet SP</PageTitle>
 
-<div class="container py-4 mb-5">
-    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
-        <div>
-            <h2 class="fw-bold text-dark m-0">Meus Anúncios e Doações</h2>
-            <p class="text-muted m-0">Gerencie os pets e suprimentos que você publicou em Franca.</p>
+<div class="container-xl py-4 py-md-5">
+    <div class="page-header">
+        <div class="d-flex align-items-center gap-3">
+            <div class="icone-bolha azul"><i class="bi bi-collection"></i></div>
+            <div>
+                <h1>Meus anúncios</h1>
+                <p>Gerencie os pets e itens que você publicou.</p>
+            </div>
         </div>
-        <button class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm" @onclick="IrParaNovoAnuncio">
-            <i class="bi bi-plus-lg me-2"></i>Novo Anúncio
-        </button>
+        <a href="/pets/novo" class="btn btn-accent"><i class="bi bi-plus-lg me-1"></i> Novo anúncio</a>
     </div>
 
-    <!-- ABAS DE NAVEGAÇÃO INTERNA (PETS VS ITENS) -->
-    <div class="d-flex flex-wrap gap-2 mb-4 border-bottom pb-3">
-        <button class="btn rounded-pill px-4 fw-bold @(abaAtiva == "pets" ? "btn-primary shadow-sm" : "btn-light text-muted")" @onclick="MudarParaPets">
-            <i class="bi bi-heart-fill me-2"></i> Meus Animais (@(meusPets?.Count() ?? 0))
-        </button>
-        <button class="btn rounded-pill px-4 fw-bold @(abaAtiva == "itens" ? "btn-warning text-dark shadow-sm" : "btn-light text-muted")" @onclick="MudarParaItens">
-            <i class="bi bi-box-seam-fill me-2"></i> Meus Itens/Rações (@(meusItens?.Count() ?? 0))
-        </button>
+    <div class="segmentos mb-4">
+        <button class="@(abaAtiva == "pets" ? "ativo" : "")" @onclick='() => abaAtiva = "pets"'>🐾 Pets (@(meusPets?.Count() ?? 0))</button>
+        <button class="@(abaAtiva == "itens" ? "ativo" : "")" @onclick='() => abaAtiva = "itens"'>🎁 Itens (@(meusItens?.Count ?? 0))</button>
     </div>
 
     @if (abaAtiva == "pets")
     {
         @if (meusPets == null)
         {
-            <div class="text-center py-5"><div class="spinner-border text-primary"></div></div>
+            <CardsCarregando Quantidade="3" Colunas="col-md-6 col-lg-4" />
         }
         else if (!meusPets.Any())
         {
-            <div class="text-center py-5 bg-white rounded-4 border shadow-sm p-4">
-                <i class="bi bi-patch-question fs-1 text-muted"></i>
-                <h5 class="mt-3">Nenhum animal sob sua responsabilidade.</h5>
-                <button class="btn btn-link fw-bold" @onclick="IrParaNovoAnuncio">Cadastrar pet agora</button>
-            </div>
+            <div class="estado-vazio"><div class="emoji">🐶</div><h5>Você ainda não anunciou nenhum pet</h5><a href="/pets/novo" class="btn btn-primary mt-2">Anunciar um pet</a></div>
         }
         else
         {
-            <div class="row g-4">
+            <div class="row g-3 g-md-4">
                 @foreach (var pet in meusPets)
                 {
                     <div class="col-md-6 col-lg-4">
-                        <div class="card-portal border h-100 d-flex flex-row overflow-hidden shadow-sm rounded-4 bg-white">
-                            <div class="flex-shrink-0" style="width: 120px; min-height: 140px;">
-                                @if (pet.Imagens != null && pet.Imagens.Any())
-                                {
-                                    <img src="@pet.Imagens.First().Base64Data" class="img-cover" alt="Foto de @pet.Nome" loading="lazy">
-                                }
-                                else
-                                {
-                                    <div class="foto-vazia"><i class="bi bi-camera"></i></div>
-                                }
+                        <div class="mp-card overflow-hidden h-100 d-flex flex-column">
+                            <div class="position-relative overflow-hidden" style="aspect-ratio: 16/10;">
+                                @if (pet.Imagens.Any()) { <img src="@pet.Imagens.First().Base64Data" class="img-cover" alt="Foto de @pet.Nome" loading="lazy" /> }
+                                else { <div class="foto-vazia"><i class="bi bi-camera fs-2"></i></div> }
+                                <span class="badge position-absolute top-0 start-0 m-2 @CorStatus(pet.Status)">@pet.Status</span>
                             </div>
-                            <div class="p-3 flex-grow-1 d-flex flex-column justify-content-between" style="min-width: 0;">
-                                <div>
-                                    <div class="d-flex justify-content-between align-items-start gap-2">
-                                        <h5 class="fw-bold mb-1 text-dark text-truncate" title="@pet.Nome">@pet.Nome</h5>
-                                        <div class="d-flex gap-1 flex-shrink-0">
-                                            <button class="btn btn-sm btn-outline-primary px-2" title="Editar" aria-label="Editar @pet.Nome" @onclick="() => EditarPet(pet.Id)">
-                                                <i class="bi bi-pencil-square"></i>
-                                            </button>
-                                            <button class="btn btn-sm btn-outline-danger px-2" title="Excluir" aria-label="Excluir @pet.Nome" @onclick="() => ExcluirPet(pet)">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
-                                        </div>
+                            <div class="p-3 d-flex flex-column gap-2 flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-start gap-2">
+                                    <div class="min-w-0">
+                                        <h3 class="h5 mb-0 text-truncate">@pet.Nome</h3>
+                                        <small class="text-muted">@pet.Especie · @pet.Porte</small>
                                     </div>
-                                    <span class="badge @(pet.Status switch { "Disponível" => "bg-success", "Em Processo" => "bg-primary", _ => "bg-warning text-dark" }) mb-2">@pet.Status</span>
-                                    <p class="small text-muted mb-2">@pet.Especie • @pet.Porte</p>
+                                    <div class="d-flex gap-1 flex-shrink-0">
+                                        <a href="/pets/detalhes/@pet.Id" class="btn btn-light btn-icon" title="Ver anúncio" aria-label="Ver anúncio de @pet.Nome"><i class="bi bi-eye"></i></a>
+                                        <a href="/pets/editar/@pet.Id" class="btn btn-light btn-icon" title="Editar" aria-label="Editar @pet.Nome"><i class="bi bi-pencil"></i></a>
+                                        <button class="btn btn-light btn-icon text-danger" title="Excluir" aria-label="Excluir @pet.Nome" @onclick="() => confirmacao = new(pet.Id, pet.Nome, true, false)"><i class="bi bi-trash"></i></button>
+                                    </div>
                                 </div>
-
                                 @if (pet.Status == "Em Processo")
                                 {
-                                    <p class="small text-primary mb-2"><i class="bi bi-hourglass-split me-1"></i>Alguém assinou o termo. Combine a visita!</p>
+                                    <div class="small text-primary fw-semibold"><i class="bi bi-hourglass-split me-1"></i>Alguém assinou o termo. Combine a visita!</div>
                                 }
                                 @if (pet.Status != "Adotado")
                                 {
-                                    <div class="d-flex gap-2">
-                                        <button class="btn btn-sm btn-warning flex-grow-1 fw-bold rounded-pill text-dark" @onclick="() => MarcarAdotado(pet)">
-                                            <i class="bi bi-heart-fill me-1"></i> Finalizar Adoção
-                                        </button>
+                                    <div class="d-flex gap-2 mt-auto">
+                                        <button class="btn btn-accent btn-sm flex-grow-1" @onclick="() => confirmacao = new(pet.Id, pet.Nome, true, true)"><i class="bi bi-heart-fill me-1"></i> Foi adotado!</button>
                                         @if (pet.Status == "Em Processo")
                                         {
-                                            <button class="btn btn-sm btn-outline-secondary rounded-pill fw-bold" title="Voltar a ficar disponível no catálogo" @onclick="() => ReabrirAnuncio(pet)">
-                                                Reabrir
-                                            </button>
+                                            <button class="btn btn-light btn-sm" title="Voltar a ficar disponível" @onclick='() => MudarStatusPet(pet, "Disponível")'>Reabrir</button>
                                         }
                                     </div>
                                 }
@@ -111,57 +83,36 @@
     {
         @if (meusItens == null)
         {
-            <div class="text-center py-5"><div class="spinner-border text-warning"></div></div>
+            <CardsCarregando Quantidade="3" Colunas="col-md-6 col-lg-4" />
         }
         else if (!meusItens.Any())
         {
-            <div class="text-center py-5 bg-white rounded-4 border shadow-sm p-4">
-                <i class="bi bi-box2 fs-1 text-muted"></i>
-                <h5 class="mt-3">Você ainda não cadastrou itens ou rações para doação.</h5>
-                <button class="btn btn-link fw-bold text-warning" @onclick="IrParaNovoAnuncio">Cadastrar item agora</button>
-            </div>
+            <div class="estado-vazio"><div class="emoji">🎁</div><h5>Você ainda não doou itens</h5><a href="/pets/novo?tipo=item" class="btn btn-accent mt-2">Doar um item</a></div>
         }
         else
         {
-            <div class="row g-4">
+            <div class="row g-3 g-md-4">
                 @foreach (var item in meusItens)
                 {
                     <div class="col-md-6 col-lg-4">
-                        <div class="card-portal border h-100 d-flex flex-row overflow-hidden shadow-sm rounded-4 bg-white">
-                            <div style="width: 130px; min-height: 140px;">
-                                @if (item.Imagens != null && item.Imagens.Any())
-                                {
-                                    <img src="@item.Imagens.First().Base64Data" class="img-cover" alt="Foto de @item.Nome" loading="lazy">
-                                }
-                                else
-                                {
-                                    <div class="foto-vazia"><i class="bi bi-box"></i></div>
-                                }
+                        <div class="mp-card overflow-hidden h-100 d-flex">
+                            <div class="flex-shrink-0" style="width: 120px; min-height: 140px;">
+                                @if (item.Imagens.Any()) { <img src="@item.Imagens.First().Base64Data" class="img-cover" alt="Foto de @item.Nome" loading="lazy" /> }
+                                else { <div class="foto-vazia"><i class="bi bi-box"></i></div> }
                             </div>
-                            <div class="p-3 flex-grow-1 d-flex flex-column justify-content-between">
-                                <div>
-                                    <div class="d-flex justify-content-between align-items-start">
-                                        <h6 class="fw-bold mb-1 text-dark text-truncate" style="max-width: 140px;" title="@item.Nome">@item.Nome</h6>
-                                        <div class="d-flex gap-1">
-                                            <button class="btn btn-sm btn-outline-warning px-2 text-dark" title="Editar Item" @onclick="() => EditarItem(item.Id)">
-                                                <i class="bi bi-pencil-square"></i>
-                                            </button>
-                                            <button class="btn btn-sm btn-outline-danger px-2" title="Excluir Item" @onclick="() => ExcluirItem(item)">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <span class="badge @(item.Status == "Disponível" ? "bg-info text-dark" : "bg-secondary") mb-1">@item.Status</span>
-                                    <p class="small text-muted mb-2">@item.Categoria • Para: @item.EspecieDestino</p>
+                            <div class="p-3 d-flex flex-column gap-2 flex-grow-1 min-w-0">
+                                <div class="d-flex justify-content-between gap-2">
+                                    <h3 class="h6 mb-0 text-truncate" title="@item.Nome">@item.Nome</h3>
+                                    <span class="badge flex-shrink-0 @(item.Status == "Disponível" ? "bg-success" : "bg-secondary")">@item.Status</span>
                                 </div>
-                                
-                                <div class="d-flex gap-2">
+                                <small class="text-muted">@item.Categoria · Para: @item.EspecieDestino</small>
+                                <div class="d-flex gap-1 mt-auto">
                                     @if (item.Status == "Disponível")
                                     {
-                                        <button class="btn btn-sm btn-outline-success w-100 fw-bold rounded-pill py-1" @onclick="() => MarcarItemDoado(item)">
-                                            <i class="bi bi-check2-circle me-1"></i> Doado
-                                        </button>
+                                        <button class="btn btn-success btn-sm flex-grow-1" @onclick="() => MarcarItemDoado(item)"><i class="bi bi-check2 me-1"></i>Doado</button>
                                     }
+                                    <a href="/itens/editar/@item.Id" class="btn btn-light btn-icon" title="Editar" aria-label="Editar @item.Nome"><i class="bi bi-pencil"></i></a>
+                                    <button class="btn btn-light btn-icon text-danger" title="Excluir" aria-label="Excluir @item.Nome" @onclick="() => confirmacao = new(item.Id, item.Nome, false, false)"><i class="bi bi-trash"></i></button>
                                 </div>
                             </div>
                         </div>
@@ -172,88 +123,92 @@
     }
 </div>
 
+@* Janela de confirmação (substitui o "confirm" do navegador) *@
+@if (confirmacao is { } c)
+{
+    <div class="modal fade show d-block modal-blazor" tabindex="-1" role="dialog" aria-modal="true" @onclick="() => confirmacao = null">
+        <div class="modal-dialog modal-dialog-centered" @onclick:stopPropagation="true">
+            <div class="modal-content p-4 text-center">
+                <div class="display-5 mb-2">@(c.Adocao ? "💛" : "🗑️")</div>
+                <h5>@(c.Adocao ? $"{c.Nome} encontrou um lar?" : $"Excluir \"{c.Nome}\"?")</h5>
+                <p class="text-muted small">@(c.Adocao ? "O anúncio sai do catálogo e vai para a galeria Final Feliz." : "Esta ação não pode ser desfeita.")</p>
+                <div class="d-flex gap-2 mt-2">
+                    <button class="btn btn-light flex-fill" @onclick="() => confirmacao = null">Cancelar</button>
+                    <button class="btn flex-fill @(c.Adocao ? "btn-accent" : "btn-danger")" @onclick="Confirmar" disabled="@processando">
+                        @(c.Adocao ? "Sim, foi adotado!" : "Excluir")
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
+    [SupplyParameterFromQuery(Name = "aba")] public string? AbaQuery { get; set; }
+
     private string abaAtiva = "pets";
     private IEnumerable<Pet>? meusPets;
     private List<ItemDoacao>? meusItens;
+    private bool processando;
+
+    private record Confirmacao(int Id, string Nome, bool EhPet, bool Adocao);
+    private Confirmacao? confirmacao;
 
     protected override async Task OnInitializedAsync()
     {
-        if (!AuthService.EstaLogado || AuthService.UsuarioLogado == null) 
-        {
-            Nav.NavigateTo("/login");
-            return;
-        }
+        if (!AuthService.EstaLogado) { Nav.NavigateTo("/login?voltar=/meus-pets"); return; }
+        if (AbaQuery == "itens") abaAtiva = "itens";
         await CarregarDados();
     }
 
     private async Task CarregarDados()
     {
-        if (AuthService.UsuarioLogado == null) return;
-        
-        var usuarioId = AuthService.UsuarioLogado.Id;
-        meusPets = await PetRepository.GetByUserIdAsync(usuarioId);
-        meusItens = await Db.ItensDoacao
-            .Include(i => i.Imagens)
-            .Where(i => i.UsuarioDoadorId == usuarioId)
-            .ToListAsync();
+        var id = AuthService.UsuarioLogado!.Id;
+        meusPets = await PetRepository.GetByUserIdAsync(id);
+        meusItens = await ItemRepository.GetByUserIdAsync(id);
     }
 
-    private void IrParaNovoAnuncio() => Nav.NavigateTo("/pets/novo");
-    private void MudarParaPets() => abaAtiva = "pets";
-    private void MudarParaItens() => abaAtiva = "itens";
-    
-    private void EditarPet(int id) => Nav.NavigateTo($"/pets/editar/{id}");
-    private void EditarItem(int id) => Nav.NavigateTo($"/itens/editar/{id}");
+    private static string CorStatus(string s) => s switch { "Disponível" => "bg-success", "Em Processo" => "bg-primary", _ => "bg-warning" };
 
-    private async Task MarcarAdotado(Pet pet)
+    private async Task MudarStatusPet(Pet pet, string status)
     {
-        var confirmar = await JS.InvokeAsync<bool>("confirm", $"Confirmar que {pet.Nome} encontrou um novo lar?");
-        if (confirmar)
-        {
-            pet.Status = "Adotado";
-            await PetRepository.UpdateAsync(pet);
-            await CarregarDados();
-        }
-    }
-
-    private async Task ReabrirAnuncio(Pet pet)
-    {
-        var confirmar = await JS.InvokeAsync<bool>("confirm", $"A adoção de {pet.Nome} não deu certo? O anúncio voltará para o catálogo.");
-        if (confirmar)
-        {
-            pet.Status = "Disponível";
-            await PetRepository.UpdateAsync(pet);
-            await CarregarDados();
-        }
-    }
-
-    private async Task ExcluirPet(Pet pet)
-    {
-        var confirmar = await JS.InvokeAsync<bool>("confirm", $"Tem certeza que deseja excluir permanentemente o anúncio de {pet.Nome}?");
-        if (confirmar) 
-        { 
-            await PetRepository.DeleteAsync(pet.Id); 
-            await CarregarDados(); 
-        }
+        await PetRepository.AtualizarStatusAsync(pet.Id, status);
+        Toast.Sucesso(status == "Disponível" ? $"{pet.Nome} voltou para o catálogo." : $"Que notícia boa! {pet.Nome} está na galeria Final Feliz. 💛");
+        await CarregarDados();
     }
 
     private async Task MarcarItemDoado(ItemDoacao item)
     {
-        item.Status = "Doado";
-        Db.ItensDoacao.Update(item);
-        await Db.SaveChangesAsync();
+        await ItemRepository.AtualizarStatusAsync(item.Id, "Doado");
+        Toast.Sucesso("Obrigado por ajudar! Item marcado como doado.");
         await CarregarDados();
     }
 
-    private async Task ExcluirItem(ItemDoacao item)
+    private async Task Confirmar()
     {
-        var confirmar = await JS.InvokeAsync<bool>("confirm", $"Tem certeza que deseja excluir o item '{item.Nome}'?");
-        if (confirmar)
+        if (confirmacao is not { } c || processando) return;
+        processando = true;
+        try
         {
-            Db.ItensDoacao.Remove(item);
-            await Db.SaveChangesAsync();
+            if (c.Adocao)
+            {
+                await PetRepository.AtualizarStatusAsync(c.Id, "Adotado");
+                Toast.Sucesso($"Que notícia boa! {c.Nome} está na galeria Final Feliz. 💛");
+            }
+            else if (c.EhPet)
+            {
+                await PetRepository.DeleteAsync(c.Id);
+                Toast.Info($"Anúncio de {c.Nome} excluído.");
+            }
+            else
+            {
+                await ItemRepository.DeleteAsync(c.Id);
+                Toast.Info($"Item \"{c.Nome}\" excluído.");
+            }
+            confirmacao = null;
             await CarregarDados();
         }
+        catch (Exception ex) { Toast.Erro("Não foi possível concluir: " + (ex.InnerException?.Message ?? ex.Message)); }
+        finally { processando = false; }
     }
 }

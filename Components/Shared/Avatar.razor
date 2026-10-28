@@ -1,0 +1,16 @@
+@* Foto do usuário, ou a inicial do nome quando não há foto *@
+@if (!string.IsNullOrEmpty(Usuario?.FotoPerfilBase64))
+{
+    <img src="@Usuario.FotoPerfilBase64" class="avatar" style="width:@(Tamanho)px;height:@(Tamanho)px" alt="Foto de @Usuario.Nome" />
+}
+else
+{
+    <span class="avatar-letra" style="width:@(Tamanho)px;height:@(Tamanho)px;font-size:@(Tamanho * 0.42)px;@(Usuario?.EhOng == true ? "background:linear-gradient(135deg,#16a34a,#0d9488)" : "")">@Inicial</span>
+}
+
+@code {
+    [Parameter] public Usuario? Usuario { get; set; }
+    [Parameter] public int Tamanho { get; set; } = 40;
+
+    private string Inicial => string.IsNullOrWhiteSpace(Usuario?.Nome) ? "?" : Usuario.Nome.Trim()[..1].ToUpper();
+}

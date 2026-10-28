@@ -1,50 +1,73 @@
-/* Barra superior fixa */
-.navbar-custom {
-    background: rgba(255, 255, 255, 0.96);
-    backdrop-filter: blur(8px);
-    height: 60px;
-    border-bottom: 1px solid #eceff1;
+/* ===== Barra superior ===== */
+.topo {
+    position: fixed; top: 0; left: 0; right: 0; height: 64px; z-index: 1030;
+    background: rgba(255, 255, 255, .85); backdrop-filter: saturate(180%) blur(14px);
+    border-bottom: 1px solid rgba(226, 232, 240, .8);
 }
 
-.nav-item ::deep .nav-link-custom {
-    color: #444746 !important;
-    font-weight: 500;
-    font-size: 0.95rem;
-    padding: 6px 4px !important;
-    text-decoration: none !important;
-    white-space: nowrap;
-    border-bottom: 2px solid transparent;
-    transition: color 0.2s, border-color 0.2s;
+.marca { display: flex; align-items: center; gap: .55rem; text-decoration: none; color: var(--mp-ink); font-weight: 800; font-size: 1.1rem; letter-spacing: -.02em; flex-shrink: 0; }
+.marca img { height: 38px; }
+.marca b { color: var(--mp-accent); }
+
+.links { gap: .25rem; margin-left: 1rem; }
+.links ::deep a {
+    text-decoration: none; color: var(--mp-text); font-weight: 600; font-size: .95rem;
+    padding: .5rem .85rem; border-radius: 10px; transition: background .15s, color .15s;
+}
+.links ::deep a:hover { background: #f1f5f9; color: var(--mp-ink); }
+.links ::deep a.active { background: var(--mp-primary-soft); color: var(--mp-primary); }
+
+.usuario {
+    display: flex; align-items: center; gap: .5rem; border: 1px solid var(--mp-line); background: #fff;
+    border-radius: 999px; padding: 3px 12px 3px 3px; font-weight: 700; color: var(--mp-ink); font-size: .9rem;
+}
+.usuario:hover { border-color: #cbd5e1; box-shadow: var(--mp-shadow-sm); }
+
+/* ===== Barra inferior (celular) ===== */
+.barra-inferior {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 1030;
+    display: grid; grid-template-columns: repeat(5, 1fr); align-items: end;
+    background: rgba(255, 255, 255, .95); backdrop-filter: blur(14px);
+    border-top: 1px solid var(--mp-line);
+    padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
+}
+.barra-inferior ::deep a, .barra-inferior button {
+    display: flex; flex-direction: column; align-items: center; gap: 2px; text-decoration: none;
+    color: var(--mp-muted); font-size: .7rem; font-weight: 700; background: none; border: none; padding: 4px 0;
+}
+.barra-inferior ::deep a i, .barra-inferior button i { font-size: 1.3rem; line-height: 1; }
+.barra-inferior ::deep a.active, .barra-inferior button.active { color: var(--mp-primary); }
+.barra-inferior .central .mais {
+    width: 52px; height: 52px; border-radius: 18px; margin-top: -26px;
+    display: flex; align-items: center; justify-content: center; color: #fff; font-size: 1.5rem;
+    background: linear-gradient(135deg, var(--mp-accent), #fb923c);
+    box-shadow: 0 10px 24px -8px rgba(249, 115, 22, .8); border: 4px solid #fff;
 }
 
-.nav-item ::deep .nav-link-custom:hover { color: #1a73e8 !important; }
-
-.nav-item ::deep .nav-link-custom.active {
-    color: #1a73e8 !important;
-    font-weight: 700 !important;
-    border-bottom-color: #1a73e8;
-}
-
-::deep .btn-nav-rounded { border-radius: 20px; border-width: 2px; }
-
-/* Overlay do menu lateral deslizante (mobile) */
+/* ===== Menu lateral ===== */
 .menu-overlay {
-    position: fixed; inset: 0;
-    background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(3px);
-    z-index: 2000; opacity: 0; visibility: hidden; transition: all 0.3s ease;
+    position: fixed; inset: 0; background: rgba(15, 23, 42, .45); backdrop-filter: blur(3px);
+    z-index: 2000; opacity: 0; visibility: hidden; transition: all .25s ease;
 }
 .menu-overlay.active { opacity: 1; visibility: visible; }
-
 .menu-content {
-    position: absolute; top: 0; right: 0; width: 280px; max-width: 85vw; height: 100%;
-    background: white; padding: 20px; box-shadow: -5px 0 25px rgba(0, 0, 0, 0.15);
-    transform: translateX(100%); transition: transform 0.3s ease;
-    display: flex; flex-direction: column; overflow-y: auto;
+    position: absolute; top: 0; right: 0; width: 320px; max-width: 88vw; height: 100%;
+    background: #fff; padding: 20px; box-shadow: -10px 0 40px rgba(15, 23, 42, .15);
+    transform: translateX(100%); transition: transform .3s ease; overflow-y: auto;
+    display: flex; flex-direction: column;
 }
 .menu-overlay.active .menu-content { transform: translateX(0); }
 
-.menu-item-overlay {
-    text-decoration: none; color: #202124; font-weight: 500; display: block;
-    padding: 10px 12px; border-radius: 10px; transition: background 0.2s;
+.cartao-usuario { display: flex; align-items: center; gap: .8rem; padding: .85rem; border-radius: 16px; background: var(--mp-bg); text-decoration: none; margin-bottom: .5rem; }
+.cartao-usuario:hover { background: var(--mp-primary-soft); }
+.min-w-0 { min-width: 0; }
+
+.grupo { font-size: .72rem; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; color: #94a3b8; margin: 1.1rem 0 .4rem .6rem; }
+.item {
+    display: flex; align-items: center; gap: .8rem; width: 100%; text-align: left;
+    text-decoration: none; color: var(--mp-ink); font-weight: 600; padding: .7rem .75rem;
+    border-radius: 12px; background: none; border: none; transition: background .15s;
 }
-.menu-item-overlay:hover { background-color: #f1f3f4; color: #1a73e8; }
+.item i { font-size: 1.15rem; color: var(--mp-muted); width: 22px; text-align: center; }
+.item:hover { background: #f1f5f9; }
+.item.text-danger i { color: inherit; }

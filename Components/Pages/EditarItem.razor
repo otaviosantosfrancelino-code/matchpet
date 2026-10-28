@@ -1,103 +1,75 @@
 @page "/itens/editar/{Id:int}"
-@using crudcomdb.Models
 @using crudcomdb.Data
-@using crudcomdb.Services
-@using Microsoft.EntityFrameworkCore
+@inject IItemRepository ItemRepository
 @inject AppDbContext Db
 @inject AuthService AuthService
 @inject NavigationManager Nav
-@inject IJSRuntime JS
-@rendermode InteractiveServer
+@inject ToastService Toast
 @implements IDisposable
 
-<PageTitle>Editar Item | Match-Pet SP</PageTitle>
+<PageTitle>Editar item | Match-Pet SP</PageTitle>
 
-<div class="container py-4 mb-5" style="max-width: 800px;">
-    <div class="text-center mb-4">
-        <h2 class="fw-bold" style="color: #1a73e8;">Editar Doação de Item</h2>
-        <p class="text-muted">Atualize as informações do acessório ou suprimento.</p>
-    </div>
+<div class="container py-4 py-md-5" style="max-width: 820px;">
+    <button class="btn btn-ghost px-2 mb-3" @onclick="Voltar"><i class="bi bi-arrow-left me-1"></i> Meus anúncios</button>
+    <h1 class="h2 mb-4">Editar doação</h1>
 
-    @if (itemParaEditar == null)
+    @if (item == null)
     {
-        <div class="text-center py-5">
-            <div class="spinner-border text-warning" role="status"></div>
-            <p class="mt-2">Carregando dados do item...</p>
-        </div>
+        <div class="skeleton" style="height: 420px; border-radius: 18px;"></div>
     }
     else
     {
-        <div class="card-portal p-4 p-md-5 shadow-sm bg-white rounded-4 border">
-            <EditForm Model="@itemParaEditar" OnValidSubmit="SalvarAlteracoes">
+        <div class="mp-card p-3 p-sm-4 p-md-5">
+            <EditForm Model="@item" OnValidSubmit="SalvarAlteracoes">
                 <DataAnnotationsValidator />
 
-                <div class="bg-light p-4 rounded-4 border mb-4 text-center">
-                    <i class="bi bi-camera-fill fs-1 text-warning mb-2"></i>
-                    <h6 class="fw-bold mb-3">Gerenciar Fotos do Item</h6>
-                    <InputFile OnChange="AdicionarNovasFotos" class="form-control form-control-sm mx-auto" style="max-width: 300px;" multiple accept=".jpg,.jpeg,.png" disabled="@estaCarregando" />
-                    
-                    @if (estaCarregando) { <div class="mt-3 text-warning small"><span class="spinner-border spinner-border-sm me-2"></span>Processando fotos...</div> }
-
-                    <div class="d-flex flex-wrap gap-2 mt-3 justify-content-center">
-                        @foreach (var img in itemParaEditar.Imagens)
-                        {
-                            <div class="position-relative shadow-sm rounded overflow-hidden" style="width: 85px; height: 85px;">
-                                <img src="@img.Base64Data" style="width: 100%; height: 100%; object-fit: cover;" class="border" />
-                                <button type="button" class="btn btn-danger btn-sm position-absolute top-0 end-0 m-1 rounded-circle" style="padding: 0 5px;" 
-                                        @onclick="() => itemParaEditar.Imagens.Remove(img)">&times;</button>
-                            </div>
-                        }
-                    </div>
+                <div class="secao-form mt-0">Fotos</div>
+                <div class="upload-area">
+                    <InputFile OnChange="AdicionarNovasFotos" multiple accept="image/jpeg,image/png,image/webp" disabled="@estaCarregando" />
+                    @if (estaCarregando) { <span class="spinner-border text-warning"></span> }
+                    else { <i class="bi bi-camera fs-2 text-warning"></i><div class="fw-bold text-dark">Adicionar fotos</div> }
+                </div>
+                <div class="miniaturas">
+                    @foreach (var img in item.Imagens)
+                    {
+                        <div class="miniatura"><img src="@img.Base64Data" alt="" /><button type="button" aria-label="Remover foto" @onclick="() => item.Imagens.Remove(img)">&times;</button></div>
+                    }
                 </div>
 
-                <h6 class="fw-bold text-muted text-uppercase small mb-3 border-bottom pb-2">Informações do Item</h6>
-                <div class="row g-3 mb-4">
-                    <div class="col-md-6">
-                        <label class="form-label small fw-bold">Nome do Item</label>
-                        <InputText class="form-control" @bind-Value="itemParaEditar.Nome" />
+                <div class="secao-form">Informações</div>
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label class="form-label">Nome do item</label>
+                        <InputText class="form-control" @bind-Value="item.Nome" />
+                        <ValidationMessage For="@(() => item.Nome)" />
                     </div>
-                    <div class="col-md-3">
-                        <label class="form-label small fw-bold">Status</label>
-                        <InputSelect class="form-select fw-bold text-success" @bind-Value="itemParaEditar.Status">
+                    <div class="col-md-4">
+                        <label class="form-label">Status</label>
+                        <InputSelect class="form-select" @bind-Value="item.Status">
                             <option value="Disponível">Disponível</option>
                             <option value="Doado">Doado</option>
                         </InputSelect>
                     </div>
-                    <div class="col-md-3">
-                        <label class="form-label small fw-bold">Destinado para</label>
-                        <InputSelect class="form-select" @bind-Value="itemParaEditar.EspecieDestino">
-                            <option value="Cão">Cachorros</option>
-                            <option value="Gato">Gatos</option>
-                            <option value="Pássaro">Pássaros</option>
-                            <option value="Peixe">Peixes</option>
-                            <option value="Todos">Todos</option>
-                        </InputSelect>
-                    </div>
-                </div>
-
-                <div class="row g-3 mb-4">
                     <div class="col-md-4">
-                        <label class="form-label small fw-bold">Categoria</label>
-                        <InputSelect class="form-select" @bind-Value="itemParaEditar.Categoria">
-                            <option value="Ração/Alimento">Ração / Alimento</option>
-                            <option value="Casinha/Cama">Casinha / Cama</option>
-                            <option value="Gaiola/Aquário">Gaiola / Aquário</option>
-                            <option value="Remédio/Higiene">Remédio / Higiene</option>
-                            <option value="Brinquedo/Acessório">Brinquedo / Acessório</option>
-                            <option value="Outros">Outros</option>
-                        </InputSelect>
+                        <label class="form-label">Categoria</label>
+                        <InputText class="form-control" @bind-Value="item.Categoria" list="categorias" />
+                        <datalist id="categorias"><option value="Ração/Alimento" /><option value="Casinha/Cama" /><option value="Gaiola/Aquário" /><option value="Remédio/Higiene" /><option value="Brinquedo/Acessório" /></datalist>
                     </div>
-                    <div class="col-md-8">
-                        <label class="form-label small fw-bold">Descrição / Conservação</label>
-                        <InputTextArea class="form-control" @bind-Value="itemParaEditar.Descricao" rows="3" />
+                    <div class="col-md-4">
+                        <label class="form-label">Serve para</label>
+                        <InputText class="form-control" @bind-Value="item.EspecieDestino" list="destinos" />
+                        <datalist id="destinos"><option value="Todos" /><option value="Cão" /><option value="Gato" /><option value="Pássaro" /><option value="Peixe" /></datalist>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Descrição / conservação</label>
+                        <InputTextArea class="form-control" @bind-Value="item.Descricao" rows="3" />
+                        <ValidationMessage For="@(() => item.Descricao)" />
                     </div>
                 </div>
 
-                <div class="d-flex gap-3 justify-content-end mt-4">
-                    <button type="button" class="btn btn-light fw-bold px-4 rounded-pill" @onclick="VoltarMeusPets">Cancelar</button>
-                    <button type="submit" class="btn btn-warning text-dark fw-bold px-5 rounded-pill shadow" disabled="@(estaCarregando || salvando)">
-                        Salvar Alterações do Item
-                    </button>
+                <div class="d-flex flex-column-reverse flex-sm-row gap-2 justify-content-end mt-5">
+                    <button type="button" class="btn btn-light px-4" @onclick="Voltar">Cancelar</button>
+                    <button type="submit" class="btn btn-accent btn-lg px-5" disabled="@(estaCarregando || salvando)">@(salvando ? "Salvando..." : "Salvar alterações")</button>
                 </div>
             </EditForm>
         </div>
@@ -106,69 +78,52 @@
 
 @code {
     [Parameter] public int Id { get; set; }
-    private ItemDoacao? itemParaEditar;
-    private bool estaCarregando = false;
+    private ItemDoacao? item;
+    private bool estaCarregando, salvando, salvo;
 
     protected override async Task OnInitializedAsync()
     {
-        if (!AuthService.EstaLogado || AuthService.UsuarioLogado == null)
+        if (!AuthService.EstaLogado) { Nav.NavigateTo("/login"); return; }
+
+        var encontrado = await ItemRepository.GetParaEdicaoAsync(Id);
+        if (encontrado == null || encontrado.UsuarioDoadorId != AuthService.UsuarioLogado!.Id)
         {
-            Nav.NavigateTo("/login");
+            Toast.Erro("Item não encontrado.");
+            Nav.NavigateTo("/meus-pets?aba=itens");
             return;
         }
-
-        itemParaEditar = await Db.ItensDoacao
-            .Include(i => i.Imagens)
-            .FirstOrDefaultAsync(i => i.Id == Id);
-
-        if (itemParaEditar == null || itemParaEditar.UsuarioDoadorId != AuthService.UsuarioLogado.Id)
-        {
-            Nav.NavigateTo("/meus-pets");
-            return;
-        }
+        item = encontrado;
     }
 
-    private bool salvo = false;
-    private bool salvando = false;
+    // Sai sem salvar: descarta o que foi alterado na memória
+    private void DescartarAlteracoes() { if (!salvo && item != null) Db.ChangeTracker.Clear(); }
 
-    // Sai sem salvar: descarta o que foi alterado na memória para não aparecer em outras telas
-    private void DescartarAlteracoes()
-    {
-        if (!salvo) Db.ChangeTracker.Clear();
-    }
-
-    private void VoltarMeusPets()
+    private void Voltar()
     {
         DescartarAlteracoes();
-        Nav.NavigateTo("/meus-pets");
+        Nav.NavigateTo("/meus-pets?aba=itens");
     }
 
     public void Dispose() => DescartarAlteracoes();
 
     private async Task AdicionarNovasFotos(InputFileChangeEventArgs e)
     {
+        var vagas = 8 - item!.Imagens.Count;
+        if (vagas <= 0) { Toast.Aviso("Limite de 8 fotos."); return; }
         estaCarregando = true;
-        try 
+        try
         {
-            foreach (var arquivo in e.GetMultipleFiles(5))
+            foreach (var arquivo in e.GetMultipleFiles(50).Take(vagas))
             {
-                var resized = await arquivo.RequestImageFileAsync(arquivo.ContentType, 800, 800);
-                using var stream = resized.OpenReadStream(5 * 1024 * 1024);
-                using var ms = new MemoryStream(); 
+                var reduzida = await arquivo.RequestImageFileAsync("image/jpeg", 1000, 1000);
+                using var stream = reduzida.OpenReadStream(10 * 1024 * 1024);
+                using var ms = new MemoryStream();
                 await stream.CopyToAsync(ms);
-                
-                var base64 = $"data:{arquivo.ContentType};base64,{Convert.ToBase64String(ms.ToArray())}";
-                itemParaEditar!.Imagens.Add(new ItemImagem { Base64Data = base64, ItemDoacaoId = itemParaEditar.Id });
+                item.Imagens.Add(new ItemImagem { Base64Data = $"data:image/jpeg;base64,{Convert.ToBase64String(ms.ToArray())}", ItemDoacaoId = item.Id });
             }
         }
-        catch
-        {
-            await JS.InvokeVoidAsync("alert", "Não foi possível carregar uma das fotos (máx. 5MB cada).");
-        }
-        finally
-        {
-            estaCarregando = false;
-        }
+        catch { Toast.Erro("Não foi possível carregar uma das fotos (máx. 10 MB cada)."); }
+        finally { estaCarregando = false; }
     }
 
     private async Task SalvarAlteracoes()
@@ -177,20 +132,13 @@
         salvando = true;
         try
         {
-            itemParaEditar!.FotoUrl = itemParaEditar.Imagens.FirstOrDefault()?.Base64Data ?? "";
-            Db.ItensDoacao.Update(itemParaEditar);
-            await Db.SaveChangesAsync();
+            item!.FotoUrl = item.Imagens.FirstOrDefault()?.Base64Data ?? "";
+            await ItemRepository.UpdateAsync(item);
             salvo = true;
-            await JS.InvokeVoidAsync("alert", "Item atualizado com sucesso!");
-            Nav.NavigateTo("/meus-pets");
+            Toast.Sucesso("Item atualizado!");
+            Nav.NavigateTo("/meus-pets?aba=itens");
         }
-        catch (Exception ex)
-        {
-            await JS.InvokeVoidAsync("alert", "Erro ao salvar: " + (ex.InnerException?.Message ?? ex.Message));
-        }
-        finally
-        {
-            salvando = false;
-        }
+        catch (Exception ex) { Toast.Erro("Erro ao salvar: " + (ex.InnerException?.Message ?? ex.Message)); }
+        finally { salvando = false; }
     }
 }

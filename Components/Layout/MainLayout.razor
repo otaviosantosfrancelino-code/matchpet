@@ -1,31 +1,83 @@
 @inherits LayoutComponentBase
+@inject AuthService AuthService
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+@implements IDisposable
 
 <div class="page">
     <NavMenu />
+    <Avisos />
 
     <main>
-        <article class="content px-2 px-md-4">
+        @if (!sessaoPronta)
+        {
+            @* Enquanto recupera o login salvo no navegador *@
+            <div class="d-flex justify-content-center py-5 my-5"><div class="spinner-border text-primary"></div></div>
+        }
+        else
+        {
             @Body
-        </article>
-
-        <footer class="bg-white border-top py-4 mt-5">
-            <div class="container text-muted small d-flex flex-column flex-md-row align-items-center justify-content-between gap-3">
-                <div class="text-center text-md-start">
-                    <p class="mb-1 fw-bold" style="color: #1a73e8;">🐾 Match-Pet SP</p>
-                    <i class="bi bi-shield-check text-success"></i> &copy; 2026. Sistema de Gestão de Adoções - Franca/SP.
-                </div>
-                <nav class="d-flex flex-wrap justify-content-center gap-3" aria-label="Links do rodapé">
-                    <a href="/pets" class="text-muted text-decoration-none">Catálogo</a>
-                    <a href="/ongs" class="text-muted text-decoration-none">ONGs</a>
-                    <a href="/final-feliz" class="text-muted text-decoration-none">Final Feliz</a>
-                    <a href="/pets/novo" class="text-muted text-decoration-none">Anunciar</a>
-                </nav>
-            </div>
-        </footer>
+        }
     </main>
+
+    <footer class="rodape-site">
+        <div class="container-xl">
+            <div class="row g-4">
+                <div class="col-lg-5">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <img src="/logo-match-pet.png" alt="" style="height:36px" />
+                        <span class="fw-bold text-dark fs-5">Match-Pet <span style="color:var(--mp-accent)">SP</span></span>
+                    </div>
+                    <p class="small text-muted mb-0" style="max-width:380px">
+                        Adoção responsável e doações solidárias em Franca e região. Cada cadastro é verificado para proteger pessoas e animais.
+                    </p>
+                </div>
+                <div class="col-6 col-lg-2">
+                    <div class="titulo">Adotar</div>
+                    <a href="/pets">Catálogo</a>
+                    <a href="/ongs">ONGs</a>
+                    <a href="/final-feliz">Final Feliz</a>
+                </div>
+                <div class="col-6 col-lg-2">
+                    <div class="titulo">Ajudar</div>
+                    <a href="/pets/novo">Anunciar pet</a>
+                    <a href="/bazar">Bazar Solidário</a>
+                    <a href="/cadastro">Criar conta</a>
+                </div>
+                <div class="col-lg-3">
+                    <div class="titulo">Segurança</div>
+                    <p class="small text-muted mb-0"><i class="bi bi-shield-check text-success me-1"></i>Documentos verificados, contratos digitais e respeito à LGPD.</p>
+                </div>
+            </div>
+            <hr class="my-4" />
+            <div class="small text-muted text-center">&copy; 2026 Match-Pet SP · Sistema de Gestão de Adoções · Franca/SP</div>
+        </div>
+    </footer>
 </div>
 
 <div id="blazor-error-ui">
     Algo deu errado. <a href="" class="reload">Recarregar</a>
     <span class="dismiss">🗙</span>
 </div>
+
+@code {
+    private bool sessaoPronta;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Nav.LocationChanged += AoNavegar;
+        await AuthService.RestaurarSessaoAsync();
+        sessaoPronta = true;
+    }
+
+    // Cada página nova começa do topo
+    private async void AoNavegar(object? sender, LocationChangedEventArgs e)
+    {
+        if (!e.Location.Contains('#'))
+        {
+            try { await JS.InvokeVoidAsync("mpRolarTopo"); } catch { }
+        }
+    }
+
+    public void Dispose() => Nav.LocationChanged -= AoNavegar;
+}

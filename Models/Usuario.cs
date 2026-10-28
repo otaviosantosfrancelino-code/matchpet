@@ -37,9 +37,20 @@ namespace crudcomdb.Models
         public string? FotoPerfilBase64 { get; set; } 
         public string? FotoDocumentoBase64 { get; set; } 
         
-        // SISTEMA DE VALIDAÇÃO DE DOCUMENTO (OCR SIMULADO)
-        public string StatusValidacaoDocumento { get; set; } = "Pendente"; 
+        // SISTEMA DE VALIDAÇÃO DE DOCUMENTO
+        // Status: Pendente, Em Análise, Aprovado, Reprovado
+        public string StatusValidacaoDocumento { get; set; } = "Pendente";
         public DateTime? DataValidacaoDocumento { get; set; }
+
+        // Impressão digital (SHA-256) da foto do documento: detecta a MESMA foto usada em outra conta
+        public string? DocumentoHash { get; set; }
+
+        // Explicação do resultado da validação (mostrada ao usuário no Perfil)
+        public string? DocumentoObservacao { get; set; }
+
+        // RECUPERAÇÃO DE SENHA: guardamos só o hash do código enviado por e-mail, com validade
+        public string? ResetSenhaTokenHash { get; set; }
+        public DateTime? ResetSenhaExpiraEm { get; set; }
 
         public string Classificacao { get; set; } = "Novo Usuário"; 
         

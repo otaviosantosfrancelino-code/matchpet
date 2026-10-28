@@ -1,0 +1,120 @@
+@page "/esqueci-senha"
+@using System.Security.Cryptography
+@inject IUsuarioRepository UsuarioRepository
+@inject EmailService EmailService
+@inject NavigationManager Nav
+@inject IWebHostEnvironment Ambiente
+@inject ILogger<EsqueciSenha> Log
+
+<PageTitle>Recuperar senha | Match-Pet SP</PageTitle>
+
+<div class="container py-4 py-md-5" style="max-width: 520px;">
+    <div class="mp-card p-4 p-md-5">
+        @if (!enviado)
+        {
+            <div class="icone-bolha azul mb-3"><i class="bi bi-key"></i></div>
+            <h1 class="h3">Esqueceu a senha?</h1>
+            <p class="text-muted">Digite o e-mail da sua conta. Enviaremos um link para você criar uma nova senha.</p>
+
+            @if (!string.IsNullOrEmpty(erro))
+            {
+                <div class="alert alert-danger small py-2">@erro</div>
+            }
+
+            <form @onsubmit="Enviar" @onsubmit:preventDefault>
+                <label class="form-label" for="emailRec">E-mail</label>
+                <div class="campo-icone mb-3">
+                    <i class="bi bi-envelope"></i>
+                    <input id="emailRec" type="email" autocomplete="email" class="form-control" placeholder="voce@email.com" @bind="email" />
+                </div>
+                <button type="submit" class="btn btn-primary btn-lg w-100" disabled="@enviando">
+                    @if (enviando) { <span class="spinner-border spinner-border-sm me-2"></span><span>Enviando...</span> }
+                    else { <span>Enviar link de recuperação</span> }
+                </button>
+            </form>
+        }
+        else
+        {
+            <div class="text-center">
+                <div class="display-4 mb-2">📬</div>
+                <h1 class="h4">Confira seu e-mail</h1>
+                <p class="text-muted">Se <strong>@email</strong> estiver cadastrado, você vai receber um link para criar uma nova senha. Ele vale por <strong>1 hora</strong>.</p>
+                <p class="small text-muted">Não chegou? Veja a caixa de spam ou tente de novo em alguns minutos.</p>
+
+                @if (linkDemonstracao != null)
+                {
+                    @* Só aparece rodando no computador (Development) quando o envio de e-mail não está configurado *@
+                    <div class="alert alert-warning text-start small mt-3">
+                        <strong>Modo de teste:</strong> o envio de e-mail não está configurado neste computador. Use o link abaixo:
+                        <a href="@linkDemonstracao" class="d-block mt-1 text-break fw-bold">Criar nova senha</a>
+                    </div>
+                }
+            </div>
+        }
+
+        <div class="text-center mt-4">
+            <a href="/login" class="small fw-semibold"><i class="bi bi-arrow-left me-1"></i>Voltar para o login</a>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string email = "", erro = "";
+    private bool enviando, enviado;
+    private string? linkDemonstracao;
+
+    private async Task Enviar()
+    {
+        erro = "";
+        if (string.IsNullOrWhiteSpace(email) || !email.Contains('@'))
+        {
+            erro = "Digite um e-mail válido.";
+            return;
+        }
+
+        enviando = true;
+        try
+        {
+            var usuario = await UsuarioRepository.GetByEmailAsync(email);
+
+            // Por segurança a resposta é sempre a mesma: não revelamos se o e-mail existe
+            if (usuario != null)
+            {
+                // Código aleatório e forte; no banco fica só o hash dele
+                var token = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32)).Replace('+', '-').Replace('/', '_').TrimEnd('=');
+                usuario.ResetSenhaTokenHash = Convert.ToHexString(SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(token)));
+                usuario.ResetSenhaExpiraEm = DateTime.UtcNow.AddHours(1);
+                await UsuarioRepository.UpdateAsync(usuario);
+
+                var link = Nav.ToAbsoluteUri($"/redefinir-senha?token={token}").ToString();
+                var html = EmailService.Modelo(
+                    "Redefinição de senha",
+                    $"<p>Olá, {System.Net.WebUtility.HtmlEncode(usuario.Nome.Split(' ')[0])}!</p><p>Recebemos um pedido para trocar a senha da sua conta no Match-Pet SP. Clique no botão abaixo para criar uma nova senha. O link vale por <b>1 hora</b>.</p><p>Se não foi você, ignore este e-mail: sua senha continua a mesma.</p>",
+                    "Criar nova senha", link);
+
+                var enviou = await EmailService.EnviarAsync(usuario.Email, usuario.Nome, "Redefinição de senha - Match-Pet SP", html);
+                if (!enviou)
+                {
+                    Log.LogWarning("Link de redefinição (e-mail não enviado): {Link}", link);
+                    if (Ambiente.IsDevelopment()) linkDemonstracao = link;
+                    else if (!EmailService.Configurado)
+                    {
+                        erro = "O envio de e-mails ainda não foi configurado no site. Fale com o administrador.";
+                        return;
+                    }
+                }
+            }
+
+            enviado = true;
+        }
+        catch (Exception ex)
+        {
+            Log.LogError(ex, "Erro ao solicitar redefinição de senha");
+            erro = "Não foi possível processar o pedido agora. Tente novamente.";
+        }
+        finally
+        {
+            enviando = false;
+        }
+    }
+}

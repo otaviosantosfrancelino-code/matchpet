@@ -1,66 +1,69 @@
 @page "/final-feliz"
-@using crudcomdb.Interfaces
-@using crudcomdb.Models
 @inject IPetRepository PetRepository
 
 <PageTitle>Final Feliz | Match-Pet SP</PageTitle>
 
-<div class="container py-4 text-center">
-    <div class="mb-5">
-        <h1 class="fw-bold text-warning display-4"><i class="bi bi-stars"></i> Galeria Final Feliz</h1>
-        <p class="text-muted">Estes amiguinhos já encontraram um lar e agora são muito amados.</p>
-        @if (petsAdotados != null && petsAdotados.Any())
+<div class="container-xl py-4 py-md-5">
+    <div class="text-center mb-5">
+        <div class="display-4 mb-2">💛</div>
+        <h1 style="font-size:clamp(2rem,4vw,2.8rem)">Galeria Final Feliz</h1>
+        <p class="text-muted mx-auto" style="max-width:520px">Estes amigos já encontraram um lar e hoje são muito amados.</p>
+        @if (petsAdotados?.Any() == true)
         {
-            <span class="badge bg-warning text-dark rounded-pill px-3 py-2 fs-6">💛 @petsAdotados.Count() @(petsAdotados.Count() == 1 ? "adoção concluída" : "adoções concluídas")</span>
+            <span class="tag laranja fs-6 px-3 py-2">🎉 @petsAdotados.Count() @(petsAdotados.Count() == 1 ? "adoção concluída" : "adoções concluídas")</span>
         }
     </div>
 
     @if (petsAdotados == null)
     {
-        <div class="text-center py-5"><div class="spinner-border text-warning"></div></div>
+        <CardsCarregando />
     }
     else if (!petsAdotados.Any())
     {
-        <div class="text-center py-5 bg-white rounded-4 border shadow-sm p-4 mx-auto" style="max-width: 600px;">
-            <i class="bi bi-house-heart fs-1 text-warning"></i>
-            <p class="text-muted mt-3">Nossa galeria está começando. Que tal ser o próximo a adotar?</p>
-            <a href="/pets" class="btn btn-primary rounded-pill px-4 fw-bold">Ver pets disponíveis</a>
+        <div class="estado-vazio mx-auto" style="max-width:560px">
+            <div class="emoji">🏡</div>
+            <p class="text-muted">Nossa galeria está começando. Que tal ser o próximo a adotar?</p>
+            <a href="/pets" class="btn btn-primary">Ver pets disponíveis</a>
         </div>
     }
     else
     {
-        <div class="row g-4">
+        <div class="row g-3 g-md-4">
             @foreach (var pet in petsAdotados)
             {
                 <div class="col-6 col-md-4 col-lg-3">
-                    <div class="card-portal p-2 bg-white shadow-sm border-0 transform-hover h-100">
-                        <div class="rounded-4 overflow-hidden foto-final-feliz">
-                            @if (pet.Imagens.Any())
-                            {
-                                <img src="@pet.Imagens.First().Base64Data" class="img-cover" style="filter: sepia(0.2);" alt="Foto de @pet.Nome" loading="lazy">
-                            }
-                            else
-                            {
-                                <div class="foto-vazia"><i class="bi bi-heart-fill fs-1 text-warning"></i></div>
-                            }
+                    <div class="polaroid">
+                        <div class="foto">
+                            @if (pet.Imagens.Any()) { <img src="@pet.Imagens.First().Base64Data" class="img-cover" alt="Foto de @pet.Nome" loading="lazy" /> }
+                            else { <div class="foto-vazia"><span style="font-size:2.5rem">💛</span></div> }
                         </div>
-                        <h6 class="mt-3 fw-bold text-dark mb-1 text-truncate">@pet.Nome</h6>
-                        <span class="badge bg-warning text-dark rounded-pill px-3">ADOTADO</span>
+                        <div class="legenda">
+                            <b>@pet.Nome</b>
+                            <span>adotado 🏡</span>
+                        </div>
                     </div>
                 </div>
             }
         </div>
+
+        <div class="text-center mt-5">
+            <a href="/pets" class="btn btn-primary btn-lg">Quero escrever a próxima história</a>
+        </div>
     }
 </div>
+
+<style>
+    .polaroid { background: #fff; padding: 10px 10px 0; border-radius: 6px; box-shadow: var(--mp-shadow); transition: transform .3s ease; }
+    .polaroid:hover { transform: translateY(-8px) rotate(-1.5deg); }
+    .col-6:nth-child(even) .polaroid:hover { transform: translateY(-8px) rotate(1.5deg); }
+    .polaroid .foto { aspect-ratio: 1; overflow: hidden; border-radius: 3px; }
+    .polaroid .foto img { filter: saturate(1.05) contrast(1.02); }
+    .polaroid .legenda { display: flex; justify-content: space-between; align-items: center; padding: .7rem .2rem .85rem; gap: .5rem; }
+    .polaroid .legenda b { color: var(--mp-ink); font-size: 1.05rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .polaroid .legenda span { font-size: .8rem; color: var(--mp-muted); font-weight: 600; white-space: nowrap; }
+</style>
 
 @code {
     private IEnumerable<Pet>? petsAdotados;
     protected override async Task OnInitializedAsync() => petsAdotados = await PetRepository.GetAdoptedPetsAsync();
 }
-
-<style>
-    .foto-final-feliz { height: 250px; }
-    @@media (max-width: 576px) { .foto-final-feliz { height: 170px; } }
-    .transform-hover { transition: transform 0.3s ease; }
-    .transform-hover:hover { transform: translateY(-10px) rotate(2deg); }
-</style>

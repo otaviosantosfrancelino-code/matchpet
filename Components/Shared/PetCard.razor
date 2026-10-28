@@ -1,0 +1,60 @@
+@* Card de pet usado no Catálogo, Início e ONGs *@
+@inject NavigationManager Nav
+
+<article class="mp-card mp-card-hover pet-card" @onclick="Abrir" role="link" tabindex="0" @onkeydown="Teclado" aria-label="Ver @Pet.Nome">
+    <div class="foto">
+        @if (Pet.Imagens.Any())
+        {
+            <img src="@Pet.Imagens.First().Base64Data" alt="Foto de @Pet.Nome" loading="lazy" />
+        }
+        else
+        {
+            <div class="foto-vazia"><span style="font-size:2.4rem">@Emoji(Pet.Especie)</span><small>Sem foto</small></div>
+        }
+        <div class="selos">
+            <span class="selo"><i class="bi bi-geo-alt-fill text-danger"></i>@(Pet.UsuarioDoador?.Cidade ?? "Franca")</span>
+            @if (Pet.UsuarioDoador?.EhOng == true)
+            {
+                <span class="selo ong"><i class="bi bi-patch-check-fill"></i>ONG</span>
+            }
+        </div>
+    </div>
+    <div class="corpo">
+        <div class="d-flex justify-content-between align-items-start gap-2">
+            <h3 class="nome text-truncate" title="@Pet.Nome">@Pet.Nome</h3>
+            @if (!string.IsNullOrEmpty(Pet.Sexo))
+            {
+                <span class="tag @(Pet.Sexo == "Macho" ? "azul" : "rosa") flex-shrink-0">
+                    <i class="bi @(Pet.Sexo == "Macho" ? "bi-gender-male" : "bi-gender-female")"></i>@Pet.Sexo
+                </span>
+            }
+        </div>
+        <div class="info">@Emoji(Pet.Especie) @Pet.Especie · @Pet.Porte · @Idade(Pet.Idade)</div>
+        <div class="d-flex flex-wrap gap-1">
+            @if (Pet.RecomendadoParaCriancas) { <span class="tag">🍼 Crianças</span> }
+            @if (!Pet.PrecisaDeQuintal) { <span class="tag">🏢 Apto.</span> }
+            @if (Pet.Castrado) { <span class="tag">✂️ Castrado</span> }
+        </div>
+        @if (MostrarBotao)
+        {
+            <div class="rodape">
+                <span class="btn btn-light w-100 btn-sm py-2">Conhecer @Pet.Nome <i class="bi bi-arrow-right ms-1"></i></span>
+            </div>
+        }
+    </div>
+</article>
+
+@code {
+    [Parameter, EditorRequired] public Pet Pet { get; set; } = default!;
+    [Parameter] public bool MostrarBotao { get; set; } = true;
+
+    private void Abrir() => Nav.NavigateTo($"/pets/detalhes/{Pet.Id}");
+    private void Teclado(KeyboardEventArgs e) { if (e.Key == "Enter") Abrir(); }
+
+    public static string Idade(int anos) => anos switch { <= 0 => "Filhote", 1 => "1 ano", _ => $"{anos} anos" };
+
+    public static string Emoji(string? especie) => especie switch
+    {
+        "Cão" => "🐶", "Gato" => "🐱", "Pássaro" => "🐦", "Peixe" => "🐟", "Hamster" => "🐹", "Coelho" => "🐰", _ => "🐾"
+    };
+}

@@ -1,0 +1,33 @@
+@* Card de item doado (ração, casinha, acessórios...) usado no Bazar Solidário *@
+
+<article class="mp-card mp-card-hover pet-card" style="cursor:default">
+    <div class="foto">
+        @if (Item.Imagens.Any())
+        {
+            <img src="@Item.Imagens.First().Base64Data" alt="Foto de @Item.Nome" loading="lazy" />
+        }
+        else
+        {
+            <div class="foto-vazia"><i class="bi bi-box-seam fs-1"></i><small>Sem foto</small></div>
+        }
+        <div class="selos">
+            <span class="selo"><i class="bi bi-tag-fill text-warning"></i>@Item.Categoria</span>
+            <span class="selo"><i class="bi bi-geo-alt-fill text-danger"></i>@(Item.UsuarioDoador?.Cidade ?? "Franca")</span>
+        </div>
+    </div>
+    <div class="corpo">
+        <h3 class="nome text-truncate" title="@Item.Nome">@Item.Nome</h3>
+        <div class="info">Para: <strong>@(Item.EspecieDestino == "Todos" ? "qualquer pet" : Item.EspecieDestino)</strong> · por @(Item.UsuarioDoador?.Nome ?? "doador")</div>
+        <p class="small text-muted mb-0 texto-2-linhas">@Item.Descricao</p>
+        <div class="rodape">
+            <button class="btn btn-success w-100 btn-sm py-2" @onclick="() => OnContatar.InvokeAsync(Item)">
+                <i class="bi bi-whatsapp me-1"></i> Quero este item
+            </button>
+        </div>
+    </div>
+</article>
+
+@code {
+    [Parameter, EditorRequired] public ItemDoacao Item { get; set; } = default!;
+    [Parameter] public EventCallback<ItemDoacao> OnContatar { get; set; }
+}
