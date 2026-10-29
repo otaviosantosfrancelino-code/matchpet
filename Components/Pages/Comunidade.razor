@@ -1,0 +1,289 @@
+@page "/comunidade"
+@inject SocialService Social
+@inject AuthService AuthService
+@inject NavigationManager Nav
+@inject ToastService Toast
+@inject IJSRuntime JS
+
+<PageTitle>Comunidade | Match-Pet SP</PageTitle>
+
+<div class="container-xl py-4 py-md-5">
+    <div class="row g-4">
+        @* ===== COLUNA PRINCIPAL ===== *@
+        <div class="col-lg-8">
+            <div class="d-flex align-items-center justify-content-between gap-2 mb-3 flex-wrap">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="icone-bolha azul"><i class="bi bi-people"></i></div>
+                    <div>
+                        <h1 class="h3 m-0">Comunidade</h1>
+                        <small class="text-muted">Histórias, fotos e vídeos de quem ama os animais</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="segmentos w-100 mb-3">
+                <button class="@(aba == "todos" ? "ativo" : "")" @onclick='() => MudarAba("todos")'><i class="bi bi-house-heart"></i> Para você</button>
+                <button class="@(aba == "amigos" ? "ativo" : "")" @onclick='() => MudarAba("amigos")'><i class="bi bi-people"></i> Amigos</button>
+                <button class="@(aba == "videos" ? "ativo" : "")" @onclick='() => MudarAba("videos")'><i class="bi bi-play-btn"></i> Vídeos</button>
+                <button class="@(aba == "pessoas" ? "ativo" : "")" @onclick='() => MudarAba("pessoas")'><i class="bi bi-search"></i> Pessoas</button>
+            </div>
+
+            @if (aba == "pessoas")
+            {
+                <div class="campo-icone mb-3">
+                    <i class="bi bi-search"></i>
+                    <input class="form-control" placeholder="Buscar pessoas ou ONGs pelo nome ou cidade..." @bind="busca" @bind:event="oninput" @bind:after="Buscar" />
+                </div>
+                @if (pessoas != null)
+                {
+                    @if (!pessoas.Any()) { <div class="estado-vazio"><div class="emoji">🔎</div><p class="text-muted mb-0">Ninguém encontrado.</p></div> }
+                    <div class="row g-2">
+                        @foreach (var p in pessoas)
+                        {
+                            <div class="col-md-6"><CartaoPessoa Usuario="p" /></div>
+                        }
+                    </div>
+                }
+            }
+            else
+            {
+                @* Criar publicação *@
+                @if (AuthService.UsuarioLogado is { } eu && aba != "videos")
+                {
+                    <div class="mp-card p-3 mb-3">
+                        <div class="d-flex gap-2">
+                            <Avatar Usuario="eu" Tamanho="42" />
+                            <textarea class="form-control" rows="@(texto.Length > 0 || midiaPrevia != null ? 3 : 1)" maxlength="2000" placeholder="Compartilhe uma foto, um vídeo ou uma história, @eu.Nome.Split(' ')[0]..." @bind="texto" @bind:event="oninput"></textarea>
+                        </div>
+                        @if (midiaPrevia != null)
+                        {
+                            <div class="position-relative mt-2 previa">
+                                @if (tipoMidia == "video") { <video src="@midiaPrevia" controls playsinline></video> } else { <img src="@midiaPrevia" alt="Prévia" /> }
+                                <button class="btn btn-light btn-icon btn-sm position-absolute top-0 end-0 m-2" @onclick="RemoverMidia" aria-label="Remover"><i class="bi bi-x-lg"></i></button>
+                            </div>
+                        }
+                        <div class="d-flex align-items-center gap-2 mt-2">
+                            <label class="btn btn-light btn-sm mb-0">
+                                @if (enviandoMidia) { <span class="spinner-border spinner-border-sm me-1"></span> } else { <i class="bi bi-image text-success me-1"></i> }
+                                Foto / vídeo
+                                <InputFile OnChange="EscolherMidia" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime" class="d-none" />
+                            </label>
+                            <button class="btn btn-primary btn-sm ms-auto px-4" @onclick="Publicar" disabled="@(publicando || enviandoMidia || (string.IsNullOrWhiteSpace(texto) && midiaUrl == null))">
+                                @(publicando ? "Publicando..." : "Publicar")
+                            </button>
+                        </div>
+                    </div>
+                }
+                else if (!AuthService.EstaLogado)
+                {
+                    <div class="alert alert-info d-flex align-items-center gap-2"><i class="bi bi-info-circle"></i><span class="small">Entre na sua conta para publicar, curtir e comentar.</span><a href="/login?voltar=/comunidade" class="btn btn-primary btn-sm ms-auto">Entrar</a></div>
+                }
+
+                @if (posts == null)
+                {
+                    @for (var i = 0; i < 3; i++) { <div class="mp-card p-3 mb-3"><div class="d-flex gap-2 mb-3"><div class="skeleton rounded-circle" style="width:42px;height:42px"></div><div class="flex-grow-1"><div class="skeleton mb-2" style="height:14px;width:40%"></div><div class="skeleton" style="height:12px;width:25%"></div></div></div><div class="skeleton" style="height:260px"></div></div> }
+                }
+                else if (!posts.Any())
+                {
+                    <div class="estado-vazio">
+                        <div class="emoji">@(aba == "amigos" ? "👋" : "📸")</div>
+                        <p class="text-muted mb-2">@(aba == "amigos" ? "Seus amigos ainda não publicaram nada. Que tal adicionar mais amigos?" : "Nenhuma publicação ainda.")</p>
+                        @if (aba == "amigos") { <a href="/amigos" class="btn btn-primary btn-sm">Encontrar amigos</a> }
+                    </div>
+                }
+                else if (aba == "videos")
+                {
+                    <div class="reels">
+                        @foreach (var p in posts)
+                        {
+                            <div class="reel">
+                                <video src="@p.MidiaUrl" data-auto muted loop playsinline preload="metadata" @onclick="() => AlternarSom(p.Id)"></video>
+                                <div class="reel-info">
+                                    <a href="/u/@p.Autor.Id" class="d-flex align-items-center gap-2 text-white text-decoration-none mb-1">
+                                        <Avatar Usuario="p.Autor" Tamanho="34" /> <b>@p.Autor.Nome</b>
+                                    </a>
+                                    @if (!string.IsNullOrWhiteSpace(p.Texto)) { <div class="small texto-2-linhas">@p.Texto</div> }
+                                </div>
+                                <div class="reel-acoes">
+                                    <PostCurtir Post="p" />
+                                </div>
+                            </div>
+                        }
+                    </div>
+                    <p class="text-center small text-muted mt-2"><i class="bi bi-volume-mute me-1"></i>Toque no vídeo para ligar o som</p>
+                }
+                else
+                {
+                    @foreach (var p in posts)
+                    {
+                        <PostCard @key="p.Id" Post="p" OnExcluido="Removido" />
+                    }
+                }
+
+                @if (posts != null && temMais)
+                {
+                    <div class="text-center my-3">
+                        <button class="btn btn-light px-4" @onclick="CarregarMais" disabled="@carregandoMais">@(carregandoMais ? "Carregando..." : "Ver mais publicações")</button>
+                    </div>
+                }
+            }
+        </div>
+
+        @* ===== LATERAL ===== *@
+        <aside class="col-lg-4 d-none d-lg-block">
+            <div class="lateral">
+                @if (AuthService.UsuarioLogado is { } u)
+                {
+                    <a href="/u/@u.Id" class="mp-card mp-card-hover p-3 d-flex align-items-center gap-3 text-decoration-none mb-3">
+                        <Avatar Usuario="u" Tamanho="52" />
+                        <div class="min-w-0"><div class="fw-bold text-dark text-truncate">@u.Nome</div><small class="text-muted">Ver meu perfil</small></div>
+                    </a>
+                    <div class="mp-card p-3 mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <b>Sugestões de amizade</b>
+                            <a href="/amigos" class="small">Ver tudo</a>
+                        </div>
+                        @if (sugestoes == null) { <div class="skeleton" style="height:120px"></div> }
+                        else
+                        {
+                            @foreach (var s in sugestoes)
+                            {
+                                <CartaoPessoa Usuario="s" Compacto="true" />
+                            }
+                        }
+                    </div>
+                }
+                <div class="mp-card p-3">
+                    <b class="d-block mb-2">Atalhos</b>
+                    <a href="/pets" class="d-block py-1 small"><i class="bi bi-search-heart me-2"></i>Adotar um pet</a>
+                    <a href="/final-feliz" class="d-block py-1 small"><i class="bi bi-stars me-2"></i>Histórias de adoção</a>
+                    <a href="/estatisticas" class="d-block py-1 small"><i class="bi bi-bar-chart me-2"></i>Estatísticas</a>
+                    <a href="/ongs" class="d-block py-1 small"><i class="bi bi-building-check me-2"></i>ONGs parceiras</a>
+                </div>
+            </div>
+        </aside>
+    </div>
+</div>
+
+@code {
+    private string aba = "todos";
+    private List<SocialService.PostagemView>? posts;
+    private List<Usuario>? sugestoes, pessoas;
+    private int pagina;
+    private bool temMais, carregandoMais, publicando, enviandoMidia, observarVideos;
+    private string texto = "", busca = "";
+    private string? midiaUrl, midiaPrevia, tipoMidia;
+
+    private int? Eu => AuthService.UsuarioLogado?.Id;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CarregarFeed();
+        if (AuthService.UsuarioLogado is { } u) sugestoes = await Social.SugestoesAsync(u.Id, u.Cidade, 5);
+    }
+
+    private async Task MudarAba(string nova)
+    {
+        if (nova == "amigos" && !AuthService.EstaLogado) { Toast.Info("Entre na sua conta para ver os amigos."); return; }
+        aba = nova;
+        if (aba == "pessoas") { pessoas ??= await Social.SugestoesAsync(Eu ?? 0, AuthService.UsuarioLogado?.Cidade ?? "Franca", 12); return; }
+        await CarregarFeed();
+    }
+
+    private async Task CarregarFeed()
+    {
+        posts = null;
+        pagina = 0;
+        var lote = await Social.FeedAsync(Eu, aba, 0);
+        posts = lote;
+        temMais = lote.Count == SocialService.PorPagina;
+        observarVideos = aba == "videos";
+    }
+
+    private async Task CarregarMais()
+    {
+        carregandoMais = true;
+        pagina++;
+        var lote = await Social.FeedAsync(Eu, aba, pagina);
+        posts!.AddRange(lote);
+        temMais = lote.Count == SocialService.PorPagina;
+        carregandoMais = false;
+        observarVideos = aba == "videos";
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (observarVideos)
+        {
+            observarVideos = false;
+            try { await JS.InvokeVoidAsync("mpObservarVideos"); } catch { }
+        }
+    }
+
+    private async Task AlternarSom(int postId) =>
+        await JS.InvokeVoidAsync("mpAlternarSom");
+
+    private async Task Buscar()
+    {
+        pessoas = string.IsNullOrWhiteSpace(busca)
+            ? await Social.SugestoesAsync(Eu ?? 0, AuthService.UsuarioLogado?.Cidade ?? "Franca", 12)
+            : await Social.BuscarPessoasAsync(busca);
+    }
+
+    // Foto: reduzida no navegador. Vídeo: até 20 MB.
+    private async Task EscolherMidia(InputFileChangeEventArgs e)
+    {
+        var arquivo = e.File;
+        enviandoMidia = true;
+        try
+        {
+            byte[] bytes;
+            string tipo;
+            if (arquivo.ContentType.StartsWith("video/"))
+            {
+                if (arquivo.Size > 20 * 1024 * 1024) { Toast.Erro("O vídeo pode ter no máximo 20 MB."); return; }
+                using var s = arquivo.OpenReadStream(20 * 1024 * 1024);
+                using var ms = new MemoryStream();
+                await s.CopyToAsync(ms);
+                bytes = ms.ToArray();
+                tipo = arquivo.ContentType == "video/quicktime" ? "video/mp4" : arquivo.ContentType;
+                tipoMidia = "video";
+            }
+            else
+            {
+                var reduzida = await arquivo.RequestImageFileAsync("image/jpeg", 1600, 1600);
+                using var s = reduzida.OpenReadStream(10 * 1024 * 1024);
+                using var ms = new MemoryStream();
+                await s.CopyToAsync(ms);
+                bytes = ms.ToArray();
+                tipo = "image/jpeg";
+                tipoMidia = "imagem";
+            }
+            midiaUrl = await Social.SalvarMidiaAsync(bytes, tipo, Eu!.Value);
+            midiaPrevia = midiaUrl;
+        }
+        catch (Exception ex) { Toast.Erro("Não foi possível carregar o arquivo: " + ex.Message); }
+        finally { enviandoMidia = false; }
+    }
+
+    private void RemoverMidia() { midiaUrl = midiaPrevia = tipoMidia = null; }
+
+    private async Task Publicar()
+    {
+        if (Eu == null || publicando) return;
+        publicando = true;
+        try
+        {
+            await Social.PublicarAsync(Eu.Value, texto, midiaUrl, tipoMidia, null);
+            texto = "";
+            RemoverMidia();
+            Toast.Sucesso("Publicado! 🎉");
+            aba = "todos";
+            await CarregarFeed();
+        }
+        catch (Exception ex) { Toast.Erro("Não foi possível publicar: " + ex.Message); }
+        finally { publicando = false; }
+    }
+
+    private void Removido(int id) => posts?.RemoveAll(p => p.Id == id);
+}

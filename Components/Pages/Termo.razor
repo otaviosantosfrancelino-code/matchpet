@@ -1,0 +1,111 @@
+@page "/termos/{Id:int}"
+@inject ChatService Chat
+@inject AuthService AuthService
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+
+<PageTitle>Termo de adoção @termo?.Codigo | Match-Pet SP</PageTitle>
+
+<div class="container py-4" style="max-width: 860px;">
+    @if (carregando)
+    {
+        <div class="skeleton" style="height:600px;border-radius:18px"></div>
+    }
+    else if (termo == null)
+    {
+        <div class="estado-vazio"><div class="emoji">🔒</div><h5>Termo não encontrado</h5><p class="text-muted">Só o doador e o adotante podem ver este documento.</p><a href="/mensagens" class="btn btn-primary">Ir para Mensagens</a></div>
+    }
+    else
+    {
+        <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-3 no-print">
+            <a href="/mensagens/@termo.ConversaId" class="btn btn-ghost px-2"><i class="bi bi-arrow-left me-1"></i>Voltar à conversa</a>
+            <div class="d-flex gap-2">
+                <button class="btn btn-primary" @onclick="Imprimir"><i class="bi bi-file-earmark-pdf me-1"></i>Salvar PDF / Imprimir</button>
+            </div>
+        </div>
+        <div class="alert alert-info small no-print"><i class="bi bi-info-circle me-1"></i>Para baixar em PDF, clique em <b>Salvar PDF / Imprimir</b> e escolha <b>"Salvar como PDF"</b> no destino da impressão.</div>
+
+        <article class="documento">
+            <header class="doc-topo">
+                <div class="d-flex align-items-center gap-2">
+                    <img src="/logo-match-pet.png" alt="" style="height:44px" />
+                    <div>
+                        <b style="font-size:1.1rem">Match-Pet SP</b>
+                        <div class="small text-muted">Plataforma de adoção responsável</div>
+                    </div>
+                </div>
+                <div class="text-end small">
+                    <div><b>Código:</b> @termo.Codigo</div>
+                    <div class="selo-status @(termo.Status == "Assinado" ? "ok" : termo.Status == "Cancelado" ? "cancelado" : "pendente")">@termo.Status.ToUpper()</div>
+                </div>
+            </header>
+
+            <div class="doc-corpo">@termo.Texto</div>
+
+            <section class="assinaturas">
+                <div class="assinatura">
+                    <div class="linha">@termo.Doador?.Nome</div>
+                    <small>DOADOR(A)</small>
+                    <div class="registro">Assinado eletronicamente em @Consultas.HoraBrasil(termo.DataEnvio).ToString("dd/MM/yyyy HH:mm")<br />IP: @termo.IpDoador</div>
+                </div>
+                <div class="assinatura">
+                    <div class="linha">@(termo.DataAssinatura != null ? termo.Adotante?.Nome : "")</div>
+                    <small>ADOTANTE — @termo.Adotante?.Nome</small>
+                    <div class="registro">
+                        @if (termo.DataAssinatura != null)
+                        {
+                            <span>Assinado eletronicamente em @Consultas.HoraBrasil(termo.DataAssinatura.Value).ToString("dd/MM/yyyy HH:mm")<br />IP: @termo.IpAdotante</span>
+                        }
+                        else
+                        {
+                            <span>@(termo.Status == "Cancelado" ? "Termo cancelado" : "Aguardando assinatura")</span>
+                        }
+                    </div>
+                </div>
+            </section>
+
+            <footer class="doc-rodape">
+                Documento gerado pela plataforma Match-Pet SP. Para conferir a autenticidade, informe o código <b>@termo.Codigo</b> ao doador ou à plataforma.
+            </footer>
+        </article>
+    }
+</div>
+
+<style>
+    .documento { background: #fff; border: 1px solid var(--mp-line); border-radius: 18px; padding: clamp(1.25rem, 4vw, 3rem); box-shadow: var(--mp-shadow); color: #111827; }
+    .doc-topo { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; border-bottom: 2px solid #111827; padding-bottom: 1rem; margin-bottom: 1.5rem; }
+    .selo-status { display: inline-block; margin-top: .3rem; font-weight: 800; font-size: .75rem; letter-spacing: .06em; padding: .2rem .6rem; border-radius: 6px; border: 2px solid; }
+    .selo-status.ok { color: #15803d; border-color: #15803d; }
+    .selo-status.pendente { color: #b45309; border-color: #b45309; }
+    .selo-status.cancelado { color: #b91c1c; border-color: #b91c1c; }
+    .doc-corpo { white-space: pre-wrap; font-family: Georgia, 'Times New Roman', serif; font-size: 1rem; line-height: 1.7; text-align: justify; }
+    .assinaturas { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 3rem; }
+    .assinatura { text-align: center; }
+    .assinatura .linha { border-bottom: 1.5px solid #111827; min-height: 2rem; font-family: 'Brush Script MT', 'Segoe Script', cursive; font-size: 1.4rem; }
+    .assinatura small { display: block; font-weight: 700; margin-top: .3rem; }
+    .assinatura .registro { font-size: .75rem; color: #6b7280; margin-top: .3rem; }
+    .doc-rodape { margin-top: 2.5rem; padding-top: 1rem; border-top: 1px solid #e5e7eb; font-size: .75rem; color: #6b7280; text-align: center; }
+    @@media (max-width: 576px) { .assinaturas { grid-template-columns: 1fr; } }
+    @@media print {
+        .topo, .barra-inferior, .rodape-site, .no-print, .toasts { display: none !important; }
+        main { padding-top: 0 !important; }
+        body { background: #fff; }
+        .documento { border: none; box-shadow: none; padding: 0; }
+        .container { max-width: 100% !important; padding: 0 !important; }
+    }
+</style>
+
+@code {
+    [Parameter] public int Id { get; set; }
+    private TermoAdocao? termo;
+    private bool carregando = true;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!AuthService.EstaLogado) { Nav.NavigateTo($"/login?voltar=/termos/{Id}"); return; }
+        termo = await Chat.ObterTermoAsync(Id, AuthService.UsuarioLogado!.Id);
+        carregando = false;
+    }
+
+    private async Task Imprimir() => await JS.InvokeVoidAsync("mpImprimir");
+}

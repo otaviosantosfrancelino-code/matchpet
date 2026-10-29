@@ -1,0 +1,26 @@
+@* Botão de curtir sobre os vídeos (aba Vídeos da Comunidade) *@
+@inject SocialService Social
+@inject AuthService AuthService
+@inject ToastService Toast
+
+<button class="botao-reel @(curti ? "curtido" : "")" @onclick="Curtir" aria-pressed="@curti" aria-label="Curtir">
+    <i class="bi @(curti ? "bi-heart-fill" : "bi-heart")"></i>
+    <span>@curtidas</span>
+</button>
+<a href="/u/@Post.Autor.Id" class="botao-reel" aria-label="Ver perfil"><i class="bi bi-person-circle"></i><span>Perfil</span></a>
+
+@code {
+    [Parameter, EditorRequired] public SocialService.PostagemView Post { get; set; } = default!;
+    private bool curti;
+    private int curtidas;
+
+    protected override void OnParametersSet() { curti = Post.Curti; curtidas = Post.Curtidas; }
+
+    private async Task Curtir()
+    {
+        if (!AuthService.EstaLogado) { Toast.Info("Entre na sua conta para curtir."); return; }
+        curti = !curti;
+        curtidas += curti ? 1 : -1;
+        (curti, curtidas) = await Social.AlternarCurtidaAsync(Post.Id, AuthService.UsuarioLogado!.Id);
+    }
+}

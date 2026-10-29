@@ -4,7 +4,7 @@
     <div class="foto">
         @if (Item.Imagens.Any())
         {
-            <img src="@Item.Imagens.First().Base64Data" alt="Foto de @Item.Nome" loading="lazy" />
+            <img src="@Url.Item(Item.Imagens.First())" alt="Foto de @Item.Nome" loading="lazy" />
         }
         else
         {
@@ -21,7 +21,7 @@
         <p class="small text-muted mb-0 texto-2-linhas">@Item.Descricao</p>
         <div class="rodape">
             <button class="btn btn-success w-100 btn-sm py-2" @onclick="() => OnContatar.InvokeAsync(Item)">
-                <i class="bi bi-whatsapp me-1"></i> Quero este item
+                <i class="bi bi-chat-dots me-1"></i> Quero este item
             </button>
         </div>
     </div>

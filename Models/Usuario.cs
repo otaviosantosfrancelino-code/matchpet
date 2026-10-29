@@ -54,6 +54,20 @@ namespace crudcomdb.Models
 
         public string Classificacao { get; set; } = "Novo Usuário"; 
         
+        // Nas listagens a foto não é carregada, só este marcador avisando que ela existe
+        public const string FotoPorUrl = "@url";
+
+        // Endereço da foto de perfil para usar no <img> (o navegador baixa e guarda em cache)
+        [NotMapped]
+        public string? UrlFoto => string.IsNullOrEmpty(FotoPerfilBase64) ? null
+            : FotoPerfilBase64.StartsWith("http") ? FotoPerfilBase64
+            : Id > 0 ? $"/imagens/usuario/{Id}?v={(DataUltimaAlteracao ?? DataCadastro).Ticks}"
+            : FotoPerfilBase64;
+
+        // Texto "sobre mim" exibido no perfil público
+        [MaxLength(600)]
+        public string? Bio { get; set; }
+
         // FASE 3 - PERFIL ONG E DOAÇÕES FINANCEIRAS
         public bool EhOng { get; set; } = false; 
         public string? ChavePix { get; set; }

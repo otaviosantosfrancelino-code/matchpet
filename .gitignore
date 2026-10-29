@@ -1,0 +1,9 @@
+# Build
+bin/
+obj/
+
+# Segredos (nunca enviar ao GitHub)
+.env
+*.env
+wwwroot/.env
+appsettings.*.local.json

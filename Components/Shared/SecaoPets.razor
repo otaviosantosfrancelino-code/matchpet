@@ -1,0 +1,24 @@
+@* Bloco de pets com título (usado no perfil público) *@
+<div class="mb-4">
+    <h2 class="h6 fw-bold mb-3">@Emoji @Titulo <span class="text-muted fw-normal">(@Pets.Count)</span></h2>
+    @if (!Pets.Any())
+    {
+        <p class="small text-muted">@Vazio</p>
+    }
+    else
+    {
+        <div class="row g-3">
+            @foreach (var p in Pets)
+            {
+                <div class="col-6 col-md-4 col-lg-3"><PetCard Pet="p" MostrarBotao="false" /></div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string Titulo { get; set; } = "";
+    [Parameter] public string Emoji { get; set; } = "";
+    [Parameter] public string Vazio { get; set; } = "";
+    [Parameter] public List<Pet> Pets { get; set; } = new();
+}

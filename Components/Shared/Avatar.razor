@@ -1,7 +1,7 @@
 @* Foto do usuário, ou a inicial do nome quando não há foto *@
-@if (!string.IsNullOrEmpty(Usuario?.FotoPerfilBase64))
+@if (!string.IsNullOrEmpty(Usuario?.UrlFoto))
 {
-    <img src="@Usuario.FotoPerfilBase64" class="avatar" style="width:@(Tamanho)px;height:@(Tamanho)px" alt="Foto de @Usuario.Nome" />
+    <img src="@Usuario.UrlFoto" class="avatar" style="width:@(Tamanho)px;height:@(Tamanho)px" alt="Foto de @Usuario.Nome" loading="lazy" />
 }
 else
 {

@@ -1,0 +1,456 @@
+@page "/mensagens"
+@page "/mensagens/{ConversaId:int}"
+@inject ChatService Chat
+@inject AuthService AuthService
+@inject NotificacoesService Avisos
+@inject NavigationManager Nav
+@inject ToastService Toast
+@inject IJSRuntime JS
+@implements IDisposable
+
+<PageTitle>Mensagens | Match-Pet SP</PageTitle>
+
+<div class="container-xl py-3 py-md-4">
+    <div class="chat-app mp-card @(ConversaId != null ? "com-conversa" : "")">
+
+        @* ===== LISTA DE CONVERSAS ===== *@
+        <aside class="lista">
+            <div class="lista-topo">
+                <h1 class="h4 m-0">Mensagens</h1>
+            </div>
+            @if (conversas == null)
+            {
+                @for (var i = 0; i < 5; i++) { <div class="d-flex gap-2 p-3"><div class="skeleton rounded-circle" style="width:48px;height:48px"></div><div class="flex-grow-1"><div class="skeleton mb-2" style="height:14px;width:60%"></div><div class="skeleton" style="height:12px;width:85%"></div></div></div> }
+            }
+            else if (!conversas.Any())
+            {
+                <div class="text-center text-muted p-4">
+                    <div class="display-6 mb-2">💬</div>
+                    <p class="small mb-3">Você ainda não tem conversas. Encontre um pet e clique em "Quero adotar" para falar com o doador.</p>
+                    <a href="/pets" class="btn btn-primary btn-sm">Ver pets</a>
+                </div>
+            }
+            else
+            {
+                @foreach (var c in conversas)
+                {
+                    <a href="/mensagens/@c.Id" class="item-conversa @(c.Id == ConversaId ? "ativa" : "")">
+                        <div class="position-relative flex-shrink-0">
+                            <Avatar Usuario="c.Outro" Tamanho="48" />
+                            @if (c.PetFotoId != null)
+                            {
+                                <img src="/imagens/pet/@c.PetFotoId" class="mini-pet" alt="" />
+                            }
+                        </div>
+                        <div class="min-w-0 flex-grow-1">
+                            <div class="d-flex justify-content-between gap-2">
+                                <b class="text-truncate">@c.Outro.Nome</b>
+                                <small class="text-muted flex-shrink-0">@Consultas.TempoRelativo(c.UltimaEm)</small>
+                            </div>
+                            <div class="small text-primary text-truncate fw-semibold">@(c.PetNome != null ? $"🐾 {c.PetNome}" : c.ItemNome != null ? $"🎁 {c.ItemNome}" : "Conversa direta")</div>
+                            <div class="d-flex justify-content-between gap-2">
+                                <span class="small text-truncate @(c.NaoLidas > 0 ? "fw-bold text-dark" : "text-muted")">@c.UltimaMensagem</span>
+                                @if (c.NaoLidas > 0) { <span class="badge bg-primary flex-shrink-0">@c.NaoLidas</span> }
+                            </div>
+                        </div>
+                    </a>
+                }
+            }
+        </aside>
+
+        @* ===== CONVERSA ABERTA ===== *@
+        <section class="conversa">
+            @if (ConversaId == null)
+            {
+                <div class="vazio d-none d-lg-flex">
+                    <div class="text-center text-muted">
+                        <div class="display-4 mb-2">💬</div>
+                        <p>Escolha uma conversa ao lado.</p>
+                    </div>
+                </div>
+            }
+            else if (detalhe == null)
+            {
+                <div class="vazio"><div class="spinner-border text-primary"></div></div>
+            }
+            else
+            {
+                <header class="conversa-topo">
+                    <a href="/mensagens" class="btn btn-ghost btn-icon d-lg-none" aria-label="Voltar"><i class="bi bi-arrow-left"></i></a>
+                    <a href="/u/@detalhe.Outro.Id" class="d-flex align-items-center gap-2 text-decoration-none min-w-0">
+                        <Avatar Usuario="detalhe.Outro" Tamanho="42" />
+                        <div class="min-w-0">
+                            <div class="fw-bold text-dark text-truncate">@detalhe.Outro.Nome @if (detalhe.Outro.EhOng) { <i class="bi bi-patch-check-fill text-success"></i> }</div>
+                            <small class="text-muted">@detalhe.Outro.Cidade · ver perfil</small>
+                        </div>
+                    </a>
+                </header>
+
+                @if (detalhe.Pet is { } pet)
+                {
+                    <div class="contexto">
+                        <a href="/pets/detalhes/@pet.Id" class="d-flex align-items-center gap-2 text-decoration-none min-w-0">
+                            @if (pet.Imagens.Any()) { <img src="@Url.Pet(pet.Imagens[0])" alt="" /> }
+                            <div class="min-w-0">
+                                <div class="fw-bold text-dark text-truncate">@pet.Nome</div>
+                                <small class="text-muted">@pet.Especie · @pet.Raca · <span class="fw-semibold @(pet.Status == "Adotado" ? "text-success" : pet.Status == "Em Processo" ? "text-primary" : "")">@pet.Status</span></small>
+                            </div>
+                        </a>
+                        @if (detalhe.SouDoadorDoPet && pet.Status != "Adotado" && !TemTermoPendente)
+                        {
+                            <button class="btn btn-primary btn-sm ms-auto flex-shrink-0" @onclick="AbrirEnvioTermo"><i class="bi bi-file-earmark-text me-1"></i><span class="d-none d-sm-inline">Enviar termo de adoção</span><span class="d-sm-none">Termo</span></button>
+                        }
+                    </div>
+                }
+                else if (detalhe.Item is { } item)
+                {
+                    <div class="contexto">
+                        @if (item.Imagens.Any()) { <img src="@Url.Item(item.Imagens[0])" alt="" /> }
+                        <div class="min-w-0">
+                            <div class="fw-bold text-dark text-truncate">@item.Nome</div>
+                            <small class="text-muted">@item.Categoria · @item.Status</small>
+                        </div>
+                    </div>
+                }
+
+                <div class="mensagens" id="chat-msgs">
+                    @if (mensagens != null)
+                    {
+                        DateTime? diaAnterior = null;
+                        foreach (var m in mensagens)
+                        {
+                            var dia = Consultas.HoraBrasil(m.DataEnvio).Date;
+                            if (dia != diaAnterior)
+                            {
+                                diaAnterior = dia;
+                                <div class="separador-dia"><span>@(dia == Consultas.HoraBrasil(DateTime.UtcNow).Date ? "Hoje" : dia.ToString("dd/MM/yyyy"))</span></div>
+                            }
+                            var minha = m.RemetenteId == eu;
+
+                            if (m.Tipo == "sistema")
+                            {
+                                <div class="msg-sistema">@m.Texto</div>
+                            }
+                            else if (m.Tipo == "termo" && m.TermoAdocao is { } t)
+                            {
+                                <div class="balao-linha @(minha ? "minha" : "")">
+                                    <div class="cartao-termo">
+                                        <div class="d-flex align-items-center gap-2 mb-2">
+                                            <span class="icone-bolha azul" style="width:38px;height:38px;font-size:1.1rem;border-radius:12px"><i class="bi bi-file-earmark-text"></i></span>
+                                            <div>
+                                                <div class="fw-bold text-dark">Termo de adoção</div>
+                                                <small class="text-muted">Código @t.Codigo</small>
+                                            </div>
+                                        </div>
+                                        <span class="tag @(t.Status == "Assinado" ? "verde" : t.Status == "Cancelado" ? "vermelho" : "laranja") mb-2">
+                                            @(t.Status == "Assinado" ? "✅ Assinado pelas duas partes" : t.Status == "Cancelado" ? "Cancelado" : "⏳ Aguardando assinatura do adotante")
+                                        </span>
+                                        <div class="d-flex flex-wrap gap-2 mt-2">
+                                            <a href="/termos/@t.Id" class="btn btn-light btn-sm"><i class="bi bi-printer me-1"></i>Ver / imprimir / PDF</a>
+                                            @if (t.Status == "Aguardando assinatura" && t.AdotanteId == eu)
+                                            {
+                                                <button class="btn btn-primary btn-sm" @onclick="() => AbrirAssinatura(t)"><i class="bi bi-pen me-1"></i>Ler e assinar</button>
+                                            }
+                                            @if (t.Status == "Aguardando assinatura")
+                                            {
+                                                <button class="btn btn-ghost btn-sm text-danger" @onclick="() => CancelarTermo(t.Id)">Cancelar</button>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="balao-linha @(minha ? "minha" : "")">
+                                    <div class="balao">
+                                        @if (m.MidiaUrl != null)
+                                        {
+                                            <a href="@m.MidiaUrl" target="_blank"><img src="@m.MidiaUrl" class="foto-msg" alt="Foto enviada" loading="lazy" /></a>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(m.Texto)) { <span style="white-space:pre-line">@m.Texto</span> }
+                                        <small class="hora">@Consultas.HoraBrasil(m.DataEnvio).ToString("HH:mm") @if (minha) { <i class="bi @(m.Lida ? "bi-check2-all text-info" : "bi-check2")"></i> }</small>
+                                    </div>
+                                </div>
+                            }
+                        }
+                    }
+                </div>
+
+                @if (detalhe.Pet != null && !detalhe.SouDoadorDoPet && !AuthService.DocumentoAprovado)
+                {
+                    <div class="aviso-doc"><i class="bi bi-shield-exclamation me-1"></i>Para assinar o termo de adoção, <a href="/perfil">verifique seu documento</a>.</div>
+                }
+
+                <form class="composer" @onsubmit="Enviar" @onsubmit:preventDefault>
+                    <label class="btn btn-light btn-icon flex-shrink-0 mb-0" title="Enviar foto" aria-label="Enviar foto">
+                        @if (enviandoFoto) { <span class="spinner-border spinner-border-sm"></span> } else { <i class="bi bi-image"></i> }
+                        <InputFile OnChange="EnviarFoto" accept="image/jpeg,image/png,image/webp" class="d-none" />
+                    </label>
+                    <input class="form-control" placeholder="Escreva uma mensagem..." @bind="texto" @bind:event="oninput" maxlength="2000" aria-label="Mensagem" />
+                    <button type="submit" class="btn btn-primary btn-icon flex-shrink-0" disabled="@(string.IsNullOrWhiteSpace(texto) || enviando)" aria-label="Enviar"><i class="bi bi-send-fill"></i></button>
+                </form>
+            }
+        </section>
+    </div>
+</div>
+
+@* ===== JANELA: ENVIAR TERMO (doador) ===== *@
+@if (previaTermo != null)
+{
+    <div class="modal fade show d-block modal-blazor" tabindex="-1" role="dialog" aria-modal="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg modal-fullscreen-sm-down">
+            <div class="modal-content">
+                <div class="modal-header border-0 px-4 pt-4">
+                    <h5 class="modal-title">Enviar termo de adoção</h5>
+                    <button type="button" class="btn-close" aria-label="Fechar" @onclick="() => previaTermo = null"></button>
+                </div>
+                <div class="modal-body px-4">
+                    <p class="small text-muted">Confira o termo. Ao enviar, <strong>você assina como doador(a)</strong> e ele aparece na conversa para o adotante ler e assinar.</p>
+                    <div class="texto-termo">@previaTermo</div>
+                </div>
+                <div class="modal-footer border-0 px-4 pb-4">
+                    <button class="btn btn-light" @onclick="() => previaTermo = null">Voltar</button>
+                    <button class="btn btn-primary" @onclick="EnviarTermo" disabled="@processando"><i class="bi bi-send me-1"></i>@(processando ? "Enviando..." : "Assinar e enviar")</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@* ===== JANELA: ASSINAR TERMO (adotante) ===== *@
+@if (termoParaAssinar != null)
+{
+    <div class="modal fade show d-block modal-blazor" tabindex="-1" role="dialog" aria-modal="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg modal-fullscreen-sm-down">
+            <div class="modal-content">
+                <div class="modal-header border-0 px-4 pt-4">
+                    <h5 class="modal-title">Assinar termo de adoção</h5>
+                    <button type="button" class="btn-close" aria-label="Fechar" @onclick="() => termoParaAssinar = null"></button>
+                </div>
+                <div class="modal-body px-4">
+                    <div class="texto-termo mb-3">@termoParaAssinar.Texto</div>
+                    <label class="opcao-card @(concordo ? "marcada" : "")">
+                        <input type="checkbox" @bind="concordo" />
+                        <i class="bi @(concordo ? "bi-check-square-fill text-primary" : "bi-square") fs-5"></i>
+                        <span class="small fw-semibold">Li o termo e concordo com todas as cláusulas. Sei que minha assinatura fica registrada com data, hora e IP.</span>
+                    </label>
+                </div>
+                <div class="modal-footer border-0 px-4 pb-4">
+                    <button class="btn btn-light" @onclick="() => termoParaAssinar = null">Voltar</button>
+                    <button class="btn btn-primary" @onclick="Assinar" disabled="@(!concordo || processando)"><i class="bi bi-pen me-1"></i>@(processando ? "Assinando..." : "Assinar termo")</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<style>
+    .chat-app { display: grid; grid-template-columns: 340px 1fr; height: calc(100vh - 64px - 48px); min-height: 520px; overflow: hidden; border-radius: 22px; }
+    .lista { border-right: 1px solid var(--mp-line); overflow-y: auto; }
+    .lista-topo { padding: 1.1rem 1.1rem .75rem; position: sticky; top: 0; background: #fff; z-index: 1; border-bottom: 1px solid var(--mp-line); }
+    .item-conversa { display: flex; gap: .75rem; padding: .85rem 1rem; text-decoration: none; color: inherit; border-bottom: 1px solid #f1f5f9; }
+    .item-conversa:hover { background: #f8fafc; }
+    .item-conversa.ativa { background: var(--mp-primary-soft); }
+    .mini-pet { position: absolute; bottom: -4px; right: -6px; width: 26px; height: 26px; border-radius: 8px; object-fit: cover; border: 2px solid #fff; }
+    .conversa { display: flex; flex-direction: column; min-width: 0; min-height: 0; background: #f8fafc; }
+    .vazio { flex: 1; display: flex; align-items: center; justify-content: center; }
+    .conversa-topo { display: flex; align-items: center; gap: .5rem; padding: .75rem 1rem; background: #fff; border-bottom: 1px solid var(--mp-line); }
+    .contexto { display: flex; align-items: center; gap: .6rem; padding: .6rem 1rem; background: #fff; border-bottom: 1px solid var(--mp-line); }
+    .contexto img { width: 44px; height: 44px; border-radius: 10px; object-fit: cover; }
+    .mensagens { flex: 1; overflow-y: auto; padding: 1rem; display: flex; flex-direction: column; gap: .35rem; }
+    .balao-linha { display: flex; }
+    .balao-linha.minha { justify-content: flex-end; }
+    .balao { max-width: min(75%, 520px); background: #fff; border: 1px solid var(--mp-line); padding: .55rem .8rem .35rem; border-radius: 16px 16px 16px 4px; color: var(--mp-ink); display: flex; flex-direction: column; gap: .2rem; word-break: break-word; }
+    .minha .balao { background: var(--mp-primary); border-color: var(--mp-primary); color: #fff; border-radius: 16px 16px 4px 16px; }
+    .balao .hora { align-self: flex-end; font-size: .7rem; opacity: .7; }
+    .foto-msg { max-width: 240px; max-height: 260px; border-radius: 12px; object-fit: cover; }
+    .msg-sistema { align-self: center; background: #e2e8f0; color: var(--mp-text); font-size: .8rem; font-weight: 600; padding: .35rem .8rem; border-radius: 999px; margin: .4rem 0; text-align: center; }
+    .separador-dia { text-align: center; margin: .6rem 0; }
+    .separador-dia span { font-size: .72rem; font-weight: 700; color: var(--mp-muted); background: #fff; border: 1px solid var(--mp-line); padding: .2rem .7rem; border-radius: 999px; }
+    .cartao-termo { background: #fff; border: 1.5px solid #bfdbfe; border-radius: 16px; padding: .9rem; max-width: 360px; box-shadow: var(--mp-shadow-sm); }
+    .aviso-doc { background: var(--mp-warning-soft); color: #92400e; font-size: .82rem; font-weight: 600; padding: .5rem 1rem; }
+    .composer { display: flex; gap: .5rem; padding: .75rem; background: #fff; border-top: 1px solid var(--mp-line); align-items: center; }
+    .texto-termo { white-space: pre-wrap; font-family: Georgia, 'Times New Roman', serif; font-size: .92rem; line-height: 1.6; background: #fffdf7; border: 1px solid #e7e0cc; border-radius: 14px; padding: 1.25rem; max-height: 52vh; overflow-y: auto; color: #1f2937; }
+    @@media (max-width: 991.98px) {
+        .chat-app { grid-template-columns: 1fr; height: calc(100vh - 64px - 96px - env(safe-area-inset-bottom)); border-radius: 18px; }
+        .chat-app.com-conversa .lista { display: none; }
+        .chat-app:not(.com-conversa) .conversa { display: none; }
+    }
+</style>
+
+@code {
+    [Parameter] public int? ConversaId { get; set; }
+    [CascadingParameter(Name = "IpCliente")] public string IpCliente { get; set; } = "";
+
+    private int eu;
+    private List<ChatService.ResumoConversa>? conversas;
+    private ChatService.DetalheConversa? detalhe;
+    private List<Mensagem>? mensagens;
+    private string texto = "";
+    private bool enviando, enviandoFoto, processando, concordo, rolarParaFim;
+    private string? previaTermo;
+    private TermoAdocao? termoParaAssinar;
+    private readonly SemaphoreSlim trava = new(1, 1);
+
+    private bool TemTermoPendente => mensagens?.Any(m => m.TermoAdocao?.Status == "Aguardando assinatura") == true;
+
+    protected override void OnInitialized()
+    {
+        if (!AuthService.EstaLogado) { Nav.NavigateTo("/login?voltar=/mensagens"); return; }
+        eu = AuthService.UsuarioLogado!.Id;
+        Avisos.OnAviso += AoReceberAviso;
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (eu == 0) return;
+        detalhe = null;
+        mensagens = null;
+        await Recarregar(listaTambem: true);
+    }
+
+    private async Task Recarregar(bool listaTambem)
+    {
+        await trava.WaitAsync();
+        try
+        {
+            if (listaTambem || conversas == null) conversas = await Chat.ListarAsync(eu);
+            if (ConversaId is int id)
+            {
+                detalhe ??= await Chat.ObterAsync(id, eu);
+                if (detalhe == null) { Toast.Erro("Conversa não encontrada."); Nav.NavigateTo("/mensagens"); return; }
+                var qtdAntes = mensagens?.Count ?? -1;
+                mensagens = await Chat.MensagensAsync(id);
+                if (mensagens.Count != qtdAntes) rolarParaFim = true;
+                if (mensagens.Any(m => !m.Lida && m.RemetenteId != eu))
+                {
+                    await Chat.MarcarLidasAsync(id, eu);
+                    var resumo = conversas?.FirstOrDefault(c => c.Id == id);
+                    if (resumo != null && conversas != null) conversas[conversas.IndexOf(resumo)] = resumo with { NaoLidas = 0 };
+                }
+            }
+        }
+        finally { trava.Release(); }
+    }
+
+    // Mensagem nova de outra pessoa: atualiza a tela na hora
+    private void AoReceberAviso(NotificacoesService.Aviso aviso)
+    {
+        if (aviso.UsuarioId != eu || aviso.Tipo != "mensagem") return;
+        _ = InvokeAsync(async () =>
+        {
+            if (aviso.ReferenciaId == ConversaId) detalhe = null; // status do pet pode ter mudado
+            await Recarregar(listaTambem: true);
+            StateHasChanged();
+        });
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (rolarParaFim)
+        {
+            rolarParaFim = false;
+            try { await JS.InvokeVoidAsync("mpRolarFim", "chat-msgs"); } catch { }
+        }
+    }
+
+    private async Task Enviar()
+    {
+        if (string.IsNullOrWhiteSpace(texto) || ConversaId is not int id || enviando) return;
+        enviando = true;
+        var conteudo = texto;
+        texto = "";
+        try
+        {
+            await Chat.EnviarAsync(id, eu, conteudo);
+            await Recarregar(listaTambem: true);
+        }
+        catch (Exception ex) { texto = conteudo; Toast.Erro("Não foi possível enviar: " + ex.Message); }
+        finally { enviando = false; }
+    }
+
+    private async Task EnviarFoto(InputFileChangeEventArgs e)
+    {
+        if (ConversaId is not int id) return;
+        enviandoFoto = true;
+        try
+        {
+            var reduzida = await e.File.RequestImageFileAsync("image/jpeg", 1280, 1280);
+            using var stream = reduzida.OpenReadStream(10 * 1024 * 1024);
+            using var ms = new MemoryStream();
+            await stream.CopyToAsync(ms);
+            var url = await Chat.SalvarFotoAsync(ms.ToArray(), "image/jpeg", eu);
+            await Chat.EnviarAsync(id, eu, texto, url);
+            texto = "";
+            await Recarregar(listaTambem: true);
+        }
+        catch (Exception ex) { Toast.Erro("Não foi possível enviar a foto: " + ex.Message); }
+        finally { enviandoFoto = false; }
+    }
+
+    // ----- Termo -----
+    private async Task AbrirEnvioTermo()
+    {
+        if (ConversaId is not int id) return;
+        if (!AuthService.DocumentoAprovado) { Toast.Aviso("Verifique seu documento no Perfil antes de enviar o termo."); return; }
+        try { previaTermo = await Chat.PreviaTermoAsync(id, eu); }
+        catch (Exception ex) { Toast.Erro(ex.Message); }
+    }
+
+    private async Task EnviarTermo()
+    {
+        if (ConversaId is not int id || processando) return;
+        processando = true;
+        try
+        {
+            await Chat.EnviarTermoAsync(id, eu, IpCliente);
+            previaTermo = null;
+            detalhe = null;
+            Toast.Sucesso("Termo enviado! Agora é só o adotante assinar.");
+            await Recarregar(listaTambem: true);
+        }
+        catch (Exception ex) { Toast.Erro(ex.Message); }
+        finally { processando = false; }
+    }
+
+    private void AbrirAssinatura(TermoAdocao termo)
+    {
+        if (!AuthService.DocumentoAprovado)
+        {
+            Toast.Aviso("Por segurança jurídica, verifique seu documento no Perfil antes de assinar.");
+            Nav.NavigateTo("/perfil");
+            return;
+        }
+        concordo = false;
+        termoParaAssinar = termo;
+    }
+
+    private async Task Assinar()
+    {
+        if (termoParaAssinar == null || processando) return;
+        processando = true;
+        try
+        {
+            await Chat.AssinarTermoAsync(termoParaAssinar.Id, eu, IpCliente);
+            termoParaAssinar = null;
+            detalhe = null;
+            Toast.Sucesso("Termo assinado! Parabéns pela adoção 💛");
+            await Recarregar(listaTambem: true);
+        }
+        catch (Exception ex) { Toast.Erro(ex.Message); }
+        finally { processando = false; }
+    }
+
+    private async Task CancelarTermo(int termoId)
+    {
+        try
+        {
+            await Chat.CancelarTermoAsync(termoId, eu);
+            detalhe = null;
+            await Recarregar(listaTambem: true);
+        }
+        catch (Exception ex) { Toast.Erro(ex.Message); }
+    }
+
+    public void Dispose() => Avisos.OnAviso -= AoReceberAviso;
+}

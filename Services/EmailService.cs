@@ -24,7 +24,10 @@ namespace crudcomdb.Services
             _log = log;
         }
 
-        private string Provedor => (_config["Email:Provedor"] ?? "").Trim();
+        // Se só a chave do Brevo for informada, o provedor é escolhido sozinho
+        private string Provedor => !string.IsNullOrWhiteSpace(_config["Email:Provedor"]) ? _config["Email:Provedor"]!.Trim()
+            : !string.IsNullOrWhiteSpace(_config["Email:BrevoApiKey"]) ? "Brevo"
+            : !string.IsNullOrWhiteSpace(_config["Email:SmtpHost"]) ? "Smtp" : "";
         private string RemetenteEmail => _config["Email:RemetenteEmail"] ?? "";
         private string RemetenteNome => _config["Email:RemetenteNome"] ?? "Match-Pet SP";
 

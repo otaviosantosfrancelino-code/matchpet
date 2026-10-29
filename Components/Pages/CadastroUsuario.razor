@@ -2,9 +2,9 @@
 @inject IUsuarioRepository UsuarioRepository
 @inject AuthService AuthService
 @inject CnpjService CnpjService
+@inject EmailService EmailService
 @inject NavigationManager Nav
 @inject ToastService Toast
-@inject IHttpContextAccessor HttpContextAccessor
 @inject IHttpClientFactory HttpFactory
 
 <PageTitle>Criar conta | Match-Pet SP</PageTitle>
@@ -26,8 +26,8 @@
             <DataAnnotationsValidator />
 
             <div class="segmentos w-100 mb-4">
-                <button type="button" class="flex-fill @(!ehOng ? "ativo" : "")" @onclick="() => MudarTipo(false)"><i class="bi bi-person me-1"></i> Pessoa física</button>
-                <button type="button" class="flex-fill @(ehOng ? "ativo" : "")" @onclick="() => MudarTipo(true)"><i class="bi bi-building me-1"></i> ONG / Instituição</button>
+                <button type="button" class="flex-fill @(!ehOng ? "ativo" : "")" @onclick="() => MudarTipo(false)"><i class="bi bi-person"></i> Pessoa física</button>
+                <button type="button" class="flex-fill @(ehOng ? "ativo" : "")" @onclick="() => MudarTipo(true)"><i class="bi bi-building"></i> <span class="d-none d-sm-inline">ONG / Instituição</span><span class="d-sm-none">ONG</span></button>
             </div>
 
             <div class="secao-form mt-0">@(ehOng ? "Dados da instituição" : "Seus dados")</div>
@@ -137,6 +137,7 @@
 </div>
 
 @code {
+    [CascadingParameter(Name = "IpCliente")] public string IpCliente { get; set; } = "";
     private Usuario novoUsuario = new();
     private string senha = "", confirmarSenha = "";
     private bool ehOng, processando, buscandoCep, consultandoCnpj, documentoOk;
@@ -263,7 +264,7 @@
             novoUsuario.EhOng = ehOng;
             if (ehOng && dadosCnpj != null)
                 novoUsuario.DescricaoOng = string.IsNullOrWhiteSpace(dadosCnpj.NomeFantasia) ? null : $"Nome fantasia: {dadosCnpj.NomeFantasia}";
-            novoUsuario.IpAceite = HttpContextAccessor.HttpContext?.Connection?.RemoteIpAddress?.ToString() ?? "IP Local";
+            novoUsuario.IpAceite = IpCliente;
             novoUsuario.DataAceiteTermos = DateTime.UtcNow;
             novoUsuario.DataCadastro = DateTime.UtcNow;
             novoUsuario.EmailConfirmado = true;
@@ -272,6 +273,13 @@
 
             await UsuarioRepository.AddAsync(novoUsuario);
             await AuthService.LoginAsync(novoUsuario);
+
+            // E-mail de boas-vindas (se o envio não estiver configurado, só fica registrado no log)
+            var nome = novoUsuario.Nome.Split(' ')[0];
+            _ = EmailService.EnviarAsync(novoUsuario.Email, novoUsuario.Nome, "Bem-vindo(a) ao Match-Pet SP! 🐾",
+                EmailService.Modelo($"Olá, {System.Net.WebUtility.HtmlEncode(nome)}!",
+                    "<p>Sua conta foi criada. Agora falta só um passo: <b>verificar seu documento</b> no Perfil para poder adotar, anunciar e assinar termos.</p><p>Qualquer dúvida, é só responder este e-mail.</p>",
+                    "Verificar meu documento", Nav.ToAbsoluteUri("/perfil").ToString()));
 
             Toast.Sucesso("Conta criada! Último passo: verifique seu documento para poder adotar.");
             Nav.NavigateTo("/perfil");

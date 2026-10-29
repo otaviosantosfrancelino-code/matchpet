@@ -41,7 +41,8 @@ namespace crudcomdb.Repositories
             {
                 Id = u.Id, Nome = u.Nome, Cidade = u.Cidade, Estado = u.Estado, Telefone = u.Telefone,
                 EhOng = true, ChavePix = u.ChavePix, DescricaoOng = u.DescricaoOng,
-                FotoPerfilBase64 = u.FotoPerfilBase64, StatusValidacaoDocumento = u.StatusValidacaoDocumento
+                FotoPerfilBase64 = u.FotoPerfilBase64 != null ? Usuario.FotoPorUrl : null, DataUltimaAlteracao = u.DataUltimaAlteracao,
+                StatusValidacaoDocumento = u.StatusValidacaoDocumento
             })
             .ToListAsync();
 

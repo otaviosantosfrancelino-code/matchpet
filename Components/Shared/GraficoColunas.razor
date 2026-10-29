@@ -1,0 +1,47 @@
+@* Gráfico de colunas para série no tempo (ex.: adoções por mês). Uma série, valor sobre a coluna. *@
+
+<div class="mp-card p-3 p-md-4 grafico">
+    <div class="d-flex justify-content-between align-items-start gap-2 mb-3">
+        <div>
+            <h3 class="h6 fw-bold mb-0">@Titulo</h3>
+            @if (!string.IsNullOrEmpty(Subtitulo)) { <small class="text-muted">@Subtitulo</small> }
+        </div>
+        <button class="btn btn-ghost btn-sm flex-shrink-0" @onclick="() => tabela = !tabela" aria-pressed="@tabela">
+            <i class="bi @(tabela ? "bi-bar-chart" : "bi-table")"></i> @(tabela ? "Gráfico" : "Tabela")
+        </button>
+    </div>
+
+    @if (tabela)
+    {
+        <table class="table table-sm small mb-0">
+            <thead><tr><th>Mês</th><th class="text-end">@Unidade</th></tr></thead>
+            <tbody>@foreach (var d in Dados) { <tr><td>@d.Rotulo</td><td class="text-end" style="font-variant-numeric:tabular-nums">@d.Valor</td></tr> }</tbody>
+        </table>
+    }
+    else
+    {
+        var max = Math.Max(1, Dados.Max(d => d.Valor));
+        <div class="colunas" role="list">
+            @foreach (var d in Dados)
+            {
+                var pct = d.Valor * 100.0 / max;
+                <div class="coluna" role="listitem" title="@d.Rotulo: @d.Valor">
+                    <div class="area">
+                        @if (d.Valor > 0) { <span class="valor" style="bottom:calc(@(pct.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture))% + 2px)">@d.Valor</span> }
+                        <span class="col" style="height:@(pct.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture))%"></span>
+                    </div>
+                    <span class="mes">@d.Rotulo.Split('/')[0]</span>
+                    <span class="dica">@d.Rotulo · <b>@d.Valor</b> @Unidade.ToLower()</span>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string Titulo { get; set; } = "";
+    [Parameter] public string? Subtitulo { get; set; }
+    [Parameter] public string Unidade { get; set; } = "Adoções";
+    [Parameter] public List<EstatisticasService.Barra> Dados { get; set; } = new();
+    private bool tabela;
+}

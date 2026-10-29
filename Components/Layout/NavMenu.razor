@@ -1,10 +1,13 @@
 ﻿@inject AuthService AuthService
+@inject ChatService Chat
+@inject SocialService Social
+@inject NotificacoesService Avisos
 @inject NavigationManager Nav
 @implements IDisposable
 
 @* ===== BARRA SUPERIOR ===== *@
 <header class="topo">
-    <div class="container-xl d-flex align-items-center gap-3 h-100">
+    <div class="container-xl d-flex align-items-center gap-2 gap-md-3 h-100">
         <a class="marca" href="/" aria-label="Match-Pet SP - Início">
             <img src="/logo-match-pet.png" alt="" />
             <span class="d-none d-sm-inline">Match-Pet <b>SP</b></span>
@@ -13,18 +16,28 @@
         <nav class="links d-none d-lg-flex" aria-label="Principal">
             <NavLink href="/" Match="NavLinkMatch.All">Início</NavLink>
             <NavLink href="/pets">Adotar</NavLink>
-            <NavLink href="/bazar">Bazar Solidário</NavLink>
-            <NavLink href="/ongs">ONGs</NavLink>
-            <NavLink href="/final-feliz">Final Feliz</NavLink>
+            <NavLink href="/bazar">Bazar</NavLink>
+            <NavLink href="/comunidade">Comunidade</NavLink>
+            <NavLink href="/ongs" class="d-none d-xl-inline">ONGs</NavLink>
+            <NavLink href="/final-feliz" class="d-none d-xl-inline">Final Feliz</NavLink>
+            <NavLink href="/estatisticas" class="d-none d-xxl-inline">Estatísticas</NavLink>
         </nav>
 
-        <div class="ms-auto d-flex align-items-center gap-2">
+        <div class="ms-auto d-flex align-items-center gap-1 gap-md-2">
             <a href="/pets/novo" class="btn btn-accent btn-sm px-3 d-none d-md-inline-flex align-items-center gap-1">
                 <i class="bi bi-plus-lg"></i> Anunciar
             </a>
 
             @if (AuthService.UsuarioLogado is { } u)
             {
+                <a href="/amigos" class="icone-topo d-none d-md-inline-flex" title="Amigos" aria-label="Amigos @(pedidos > 0 ? $"({pedidos} pedidos)" : "")">
+                    <i class="bi bi-people"></i>
+                    @if (pedidos > 0) { <span class="contador">@pedidos</span> }
+                </a>
+                <a href="/mensagens" class="icone-topo" title="Mensagens" aria-label="Mensagens @(naoLidas > 0 ? $"({naoLidas} não lidas)" : "")">
+                    <i class="bi bi-chat-dots"></i>
+                    @if (naoLidas > 0) { <span class="contador">@(naoLidas > 99 ? "99+" : naoLidas)</span> }
+                </a>
                 <button class="usuario" type="button" @onclick="ToggleMenu" aria-label="Abrir menu da conta" aria-expanded="@menuAberto">
                     <Avatar Usuario="u" Tamanho="34" />
                     <span class="d-none d-md-inline text-truncate" style="max-width:140px">@PrimeiroNome(u.Nome)</span>
@@ -35,6 +48,8 @@
             {
                 <a href="/login" class="btn btn-ghost btn-sm px-3 d-none d-md-inline-flex">Entrar</a>
                 <a href="/cadastro" class="btn btn-primary btn-sm px-3">Criar conta</a>
+                @* Em notebooks parte dos links fica no menu lateral *@
+                <button type="button" class="icone-topo border-0 bg-transparent d-none d-lg-inline-flex d-xxl-none" @onclick="ToggleMenu" aria-label="Abrir menu"><i class="bi bi-list"></i></button>
             }
         </div>
     </div>
@@ -45,8 +60,11 @@
     <NavLink href="/" Match="NavLinkMatch.All"><i class="bi bi-house-door"></i><span>Início</span></NavLink>
     <NavLink href="/pets"><i class="bi bi-search-heart"></i><span>Adotar</span></NavLink>
     <a href="/pets/novo" class="central" aria-label="Anunciar"><span class="mais"><i class="bi bi-plus-lg"></i></span></a>
-    <NavLink href="/bazar"><i class="bi bi-gift"></i><span>Bazar</span></NavLink>
-    <button type="button" @onclick="ToggleMenu" class="@(menuAberto ? "active" : "")"><i class="bi bi-list"></i><span>Menu</span></button>
+    <NavLink href="/comunidade"><i class="bi bi-people"></i><span>Comunidade</span></NavLink>
+    <button type="button" @onclick="ToggleMenu" class="@(menuAberto ? "active" : "") position-relative">
+        <i class="bi bi-list"></i><span>Menu</span>
+        @if (pedidos > 0) { <span class="ponto" aria-label="Novos pedidos de amizade"></span> }
+    </button>
 </nav>
 
 @* ===== MENU LATERAL (conta e demais páginas) ===== *@
@@ -59,14 +77,11 @@
 
         @if (AuthService.UsuarioLogado is { } usuarioMenu)
         {
-            <a href="/perfil" class="cartao-usuario" @onclick="FecharMenu">
+            <a href="/u/@usuarioMenu.Id" class="cartao-usuario" @onclick="FecharMenu">
                 <Avatar Usuario="usuarioMenu" Tamanho="48" />
                 <div class="min-w-0">
                     <div class="fw-bold text-dark text-truncate">@usuarioMenu.Nome</div>
-                    <div class="small @(usuarioMenu.StatusValidacaoDocumento == "Aprovado" ? "text-success" : "text-warning") fw-semibold">
-                        <i class="bi @(usuarioMenu.StatusValidacaoDocumento == "Aprovado" ? "bi-patch-check-fill" : "bi-exclamation-circle-fill")"></i>
-                        @(usuarioMenu.StatusValidacaoDocumento == "Aprovado" ? "Identidade verificada" : "Verificação pendente")
-                    </div>
+                    <div class="small text-muted">Ver meu perfil público</div>
                 </div>
             </a>
         }
@@ -75,15 +90,21 @@
         <a href="/" class="item" @onclick="FecharMenu"><i class="bi bi-house-door"></i> Início</a>
         <a href="/pets" class="item" @onclick="FecharMenu"><i class="bi bi-search-heart"></i> Adotar um pet</a>
         <a href="/bazar" class="item" @onclick="FecharMenu"><i class="bi bi-gift"></i> Bazar Solidário</a>
+        <a href="/comunidade" class="item" @onclick="FecharMenu"><i class="bi bi-people"></i> Comunidade</a>
         <a href="/ongs" class="item" @onclick="FecharMenu"><i class="bi bi-building-check"></i> ONGs parceiras</a>
         <a href="/final-feliz" class="item" @onclick="FecharMenu"><i class="bi bi-stars"></i> Final Feliz</a>
+        <a href="/estatisticas" class="item" @onclick="FecharMenu"><i class="bi bi-bar-chart-line"></i> Estatísticas</a>
 
-        @if (AuthService.EstaLogado)
+        @if (AuthService.UsuarioLogado is { } eu)
         {
             <div class="grupo">Minha conta</div>
-            <a href="/pets/novo" class="item" @onclick="FecharMenu"><i class="bi bi-plus-circle"></i> Novo anúncio</a>
+            <a href="/mensagens" class="item" @onclick="FecharMenu"><i class="bi bi-chat-dots"></i> Mensagens @if (naoLidas > 0) { <span class="badge bg-primary ms-auto">@naoLidas</span> }</a>
+            <a href="/amigos" class="item" @onclick="FecharMenu"><i class="bi bi-person-heart"></i> Amigos @if (pedidos > 0) { <span class="badge bg-danger ms-auto">@pedidos</span> }</a>
             <a href="/meus-pets" class="item" @onclick="FecharMenu"><i class="bi bi-collection"></i> Meus anúncios</a>
-            <a href="/perfil" class="item" @onclick="FecharMenu"><i class="bi bi-person-gear"></i> Meu perfil</a>
+            <a href="/perfil" class="item" @onclick="FecharMenu">
+                <i class="bi bi-person-gear"></i> Configurações da conta
+                @if (eu.StatusValidacaoDocumento != "Aprovado") { <span class="badge bg-warning text-dark ms-auto">verificar</span> }
+            </a>
             <button class="item text-danger mt-2" @onclick="ExecutarSair"><i class="bi bi-box-arrow-right"></i> Sair</button>
         }
         else
@@ -98,21 +119,55 @@
 
 @code {
     private bool menuAberto = false;
+    private int naoLidas, pedidos;
+    private int? usuarioContado;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        AuthService.OnChage += AtualizarTela;
+        AuthService.OnChage += AoMudarLogin;
         Nav.LocationChanged += AoNavegar;
+        Avisos.OnAviso += AoReceberAviso;
+        await AtualizarContadores();
     }
 
-    private void AtualizarTela() => InvokeAsync(StateHasChanged);
+    // Contadores de mensagens não lidas e pedidos de amizade
+    private async Task AtualizarContadores()
+    {
+        if (AuthService.UsuarioLogado is { } u)
+        {
+            try
+            {
+                naoLidas = await Chat.ContarNaoLidasAsync(u.Id);
+                pedidos = await Social.ContarPedidosAsync(u.Id);
+            }
+            catch { /* banco indisponível: só não mostra os números */ }
+            usuarioContado = u.Id;
+        }
+        else
+        {
+            naoLidas = pedidos = 0;
+            usuarioContado = null;
+        }
+    }
 
-    // Fecha o menu sempre que o usuário muda de página
+    private void AoMudarLogin() => InvokeAsync(async () =>
+    {
+        if (usuarioContado != AuthService.UsuarioLogado?.Id) await AtualizarContadores();
+        StateHasChanged();
+    });
+
+    // Mensagem ou pedido novo chegando em tempo real
+    private void AoReceberAviso(NotificacoesService.Aviso aviso)
+    {
+        if (aviso.UsuarioId != AuthService.UsuarioLogado?.Id) return;
+        _ = InvokeAsync(async () => { await AtualizarContadores(); StateHasChanged(); });
+    }
+
+    // Fecha o menu e atualiza os contadores a cada troca de página
     private void AoNavegar(object? sender, LocationChangedEventArgs e)
     {
-        if (!menuAberto) return;
         menuAberto = false;
-        InvokeAsync(StateHasChanged);
+        _ = InvokeAsync(async () => { await AtualizarContadores(); StateHasChanged(); });
     }
 
     private void ToggleMenu() => menuAberto = !menuAberto;
@@ -129,7 +184,8 @@
 
     public void Dispose()
     {
-        AuthService.OnChage -= AtualizarTela;
+        AuthService.OnChage -= AoMudarLogin;
         Nav.LocationChanged -= AoNavegar;
+        Avisos.OnAviso -= AoReceberAviso;
     }
 }

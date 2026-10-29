@@ -186,7 +186,7 @@ namespace crudcomdb.Data
         }
 
         // CPF/CNPJ fictícios, mas com dígitos verificadores corretos (passam na validação)
-        private static string GerarCpf(string base9)
+        internal static string GerarCpf(string base9)
         {
             var d = base9.Select(c => c - '0').ToList();
             for (var t = 9; t <= 10; t++)
@@ -199,7 +199,7 @@ namespace crudcomdb.Data
             return DocumentoUtil.Formatar(string.Concat(d));
         }
 
-        private static string GerarCnpj(string base12)
+        internal static string GerarCnpj(string base12)
         {
             var d = base12.Select(c => c - '0').ToList();
             int[][] pesos = { new[] { 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2 }, new[] { 6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2 } };

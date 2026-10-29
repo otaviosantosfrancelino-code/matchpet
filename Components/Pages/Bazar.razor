@@ -3,7 +3,7 @@
 @inject AuthService AuthService
 @inject NavigationManager Nav
 @inject ToastService Toast
-@inject IJSRuntime JS
+@inject ChatService Chat
 
 <PageTitle>Bazar Solidário | Match-Pet SP</PageTitle>
 
@@ -80,14 +80,19 @@
             return;
         }
 
-        var fone = new string((item.UsuarioDoador?.Telefone ?? "").Where(char.IsDigit).ToArray());
-        if (fone.Length < 10)
+        if (item.UsuarioDoadorId == AuthService.UsuarioLogado!.Id)
         {
-            Toast.Erro("Este doador não cadastrou um WhatsApp válido.");
+            Toast.Info("Este item é seu. Gerencie em Meus anúncios.");
             return;
         }
 
-        var texto = $"Olá! Vi no *Match-Pet SP* que você está doando: *{item.Nome}*. Ainda está disponível?";
-        await JS.InvokeVoidAsync("open", $"https://wa.me/55{fone}?text={Uri.EscapeDataString(texto)}", "_blank");
+        // Abre a conversa no chat do site com quem está doando
+        try
+        {
+            var conversaId = await Chat.ObterOuCriarAsync(AuthService.UsuarioLogado.Id, item.UsuarioDoadorId, itemId: item.Id,
+                primeiraMensagem: $"Olá! Vi no Bazar Solidário que você está doando: {item.Nome}. Ainda está disponível?");
+            Nav.NavigateTo($"/mensagens/{conversaId}");
+        }
+        catch (Exception ex) { Toast.Erro(ex.Message); }
     }
 }

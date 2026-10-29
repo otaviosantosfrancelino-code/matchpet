@@ -1,4 +1,5 @@
 using crudcomdb.Data;
+using crudcomdb.Endpoints;
 using crudcomdb.Interfaces;
 using crudcomdb.Repositories;
 using crudcomdb.Services;
@@ -8,9 +9,12 @@ var builder = WebApplication.CreateBuilder(args);
 
 // 1. BANCO DE DADOS
 // O Neon "dorme" quando fica parado e derruba conexões antigas: a nova tentativa automática evita erros aleatórios
-builder.Services.AddDbContext<AppDbContext>(options =>
+// Fábrica: cada operação do chat/rede social abre o seu próprio contexto (seguro com mensagens em tempo real)
+builder.Services.AddDbContextFactory<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"),
         npgsql => npgsql.EnableRetryOnFailure(maxRetryCount: 3, maxRetryDelay: TimeSpan.FromSeconds(3), errorCodesToAdd: null)));
+// As telas antigas continuam recebendo um contexto por conexão do usuário
+builder.Services.AddScoped(sp => sp.GetRequiredService<IDbContextFactory<AppDbContext>>().CreateDbContext());
 
 // 2. INJEÇÃO DE DEPENDÊNCIA
 builder.Services.AddScoped<IPetRepository, PetRepository>();
@@ -22,7 +26,21 @@ builder.Services.AddScoped<ToastService>();
 builder.Services.AddScoped<EmailService>();
 builder.Services.AddScoped<CnpjService>();
 builder.Services.AddScoped<DocumentoValidacaoService>();
+builder.Services.AddScoped<ChatService>();
+builder.Services.AddScoped<SocialService>();
+builder.Services.AddScoped<EstatisticasService>();
+builder.Services.AddSingleton<NotificacoesService>();   // avisa em tempo real (nova mensagem, pedido de amizade)
+builder.Services.AddSingleton<GeoService>();            // coordenadas das cidades para o mapa
 builder.Services.AddHttpClient();
+builder.Services.AddResponseCompression(o => o.EnableForHttps = true);
+
+// No Render o site fica atrás de um proxy: estes cabeçalhos trazem o IP real de quem acessa
+builder.Services.Configure<Microsoft.AspNetCore.Builder.ForwardedHeadersOptions>(o =>
+{
+    o.ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor | Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto;
+    o.KnownNetworks.Clear();
+    o.KnownProxies.Clear();
+});
 builder.Services.AddHttpContextAccessor();
 
 // 3. INTERATIVIDADE E LIMITES DE UPLOAD
@@ -31,7 +49,8 @@ builder.Services.AddRazorComponents()
     .AddHubOptions(options =>
     {
         options.MaximumReceiveMessageSize = 10 * 1024 * 1024; // 10MB para fotos
-    });
+    })
+    .AddCircuitOptions(o => o.DisconnectedCircuitRetentionPeriod = TimeSpan.FromMinutes(5)); // celular que troca de rede não perde a tela
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -48,7 +67,10 @@ using (var escopo = app.Services.CreateScope())
     {
         await db.Database.MigrateAsync();
         if (app.Configuration.GetValue("SeedDemo", true))
+        {
             await DadosDemonstracao.CriarAsync(db, log);
+            await DadosDemonstracaoComunidade.CriarAsync(db, log);
+        }
     }
     catch (Exception ex)
     {
@@ -57,6 +79,7 @@ using (var escopo = app.Services.CreateScope())
 }
 
 // 5. PIPELINE
+app.UseForwardedHeaders();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -73,10 +96,18 @@ app.UseWhen(ctx => !ctx.Request.Path.StartsWithSegments("/api"),
     site => site.UseStatusCodePagesWithReExecute("/nao-encontrado"));
 
 app.UseHttpsRedirection();
-app.UseStaticFiles();
+app.UseResponseCompression();
 app.UseRouting(); // depois do UseStatusCodePages, para a página 404 conseguir ser encontrada
 app.UseAntiforgery();
 
+// Arquivos do site (CSS, JS, imagens) já comprimidos e com cache longo:
+// o navegador baixa uma vez e reaproveita nas próximas visitas
+app.MapStaticAssets();
+
+// Usado por um serviço de "ping" para o Render não dormir (ver GUIA_PUBLICACAO.md)
+app.MapGet("/health", () => Results.Text("ok"));
+
+app.MapImagens();
 app.MapControllers();
 app.MapRazorComponents<crudcomdb.Components.App>()
     .AddInteractiveServerRenderMode();

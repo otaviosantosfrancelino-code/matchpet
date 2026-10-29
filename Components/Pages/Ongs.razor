@@ -2,6 +2,9 @@
 @inject IPetRepository PetRepository
 @inject IUsuarioRepository UsuarioRepository
 @inject ToastService Toast
+@inject ChatService Chat
+@inject AuthService AuthService
+@inject NavigationManager Nav
 @inject IJSRuntime JS
 
 <PageTitle>ONGs parceiras | Match-Pet SP</PageTitle>
@@ -110,11 +113,12 @@
                 }
                 else
                 {
-                    <div class="alert alert-info small mb-0">Esta ONG ainda não cadastrou uma chave Pix. Fale com ela pelo WhatsApp.</div>
+                    <div class="alert alert-info small mb-0">Esta ONG ainda não cadastrou uma chave Pix. Mande uma mensagem pelo chat.</div>
                 }
 
                 <div class="d-grid gap-2 mt-4">
-                    <button class="btn btn-success" @onclick="() => ContatarWhatsAppOng(o)"><i class="bi bi-whatsapp me-2"></i>Combinar doação de ração / itens</button>
+                    <button class="btn btn-success" @onclick="() => ConversarComOng(o)"><i class="bi bi-chat-dots me-2"></i>Mandar mensagem para a ONG</button>
+                    <a href="/u/@o.Id" class="btn btn-light">Ver perfil da ONG</a>
                     <a href="/pets/novo?tipo=item" class="btn btn-light">Anunciar no Bazar Solidário</a>
                 </div>
             </div>
@@ -163,11 +167,17 @@
         else await JS.InvokeVoidAsync("prompt", "Copie a chave Pix abaixo:", chave);
     }
 
-    private async Task ContatarWhatsAppOng(Usuario ong)
+    // Conversa pelo chat do site
+    private async Task ConversarComOng(Usuario ong)
     {
-        var fone = new string(ong.Telefone.Where(char.IsDigit).ToArray());
-        var texto = $"Olá, {ong.Nome}! Vi o perfil de vocês no *Match-Pet SP* e gostaria de doar ração/itens. Como podemos combinar?";
-        await JS.InvokeVoidAsync("open", $"https://wa.me/55{fone}?text={Uri.EscapeDataString(texto)}", "_blank");
-        ongModal = null;
+        if (!AuthService.EstaLogado) { Toast.Info("Entre na sua conta para falar com a ONG."); Nav.NavigateTo("/login?voltar=/ongs"); return; }
+        if (AuthService.UsuarioLogado!.Id == ong.Id) { Toast.Info("Este é o seu perfil."); return; }
+        try
+        {
+            var id = await Chat.ObterOuCriarAsync(AuthService.UsuarioLogado.Id, ong.Id,
+                primeiraMensagem: $"Olá, {ong.Nome}! Vi o perfil de vocês no Match-Pet e gostaria de ajudar com doações. Como podemos combinar?");
+            Nav.NavigateTo($"/mensagens/{id}");
+        }
+        catch (Exception ex) { Toast.Erro(ex.Message); }
     }
 }

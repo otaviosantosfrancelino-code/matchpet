@@ -42,7 +42,7 @@
                     <div class="col-md-6 col-lg-4">
                         <div class="mp-card overflow-hidden h-100 d-flex flex-column">
                             <div class="position-relative overflow-hidden" style="aspect-ratio: 16/10;">
-                                @if (pet.Imagens.Any()) { <img src="@pet.Imagens.First().Base64Data" class="img-cover" alt="Foto de @pet.Nome" loading="lazy" /> }
+                                @if (pet.Imagens.Any()) { <img src="@Url.Pet(pet.Imagens.First())" class="img-cover" alt="Foto de @pet.Nome" loading="lazy" /> }
                                 else { <div class="foto-vazia"><i class="bi bi-camera fs-2"></i></div> }
                                 <span class="badge position-absolute top-0 start-0 m-2 @CorStatus(pet.Status)">@pet.Status</span>
                             </div>
@@ -97,7 +97,7 @@
                     <div class="col-md-6 col-lg-4">
                         <div class="mp-card overflow-hidden h-100 d-flex">
                             <div class="flex-shrink-0" style="width: 120px; min-height: 140px;">
-                                @if (item.Imagens.Any()) { <img src="@item.Imagens.First().Base64Data" class="img-cover" alt="Foto de @item.Nome" loading="lazy" /> }
+                                @if (item.Imagens.Any()) { <img src="@Url.Item(item.Imagens.First())" class="img-cover" alt="Foto de @item.Nome" loading="lazy" /> }
                                 else { <div class="foto-vazia"><i class="bi bi-box"></i></div> }
                             </div>
                             <div class="p-3 d-flex flex-column gap-2 flex-grow-1 min-w-0">

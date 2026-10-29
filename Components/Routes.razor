@@ -1,11 +1,18 @@
-﻿<Router AppAssembly="typeof(Program).Assembly">
-    <Found Context="routeData">
-        <RouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)" />
-        <FocusOnNavigate RouteData="routeData" Selector="h1" />
-    </Found>
-    <NotFound>
-        <LayoutView Layout="typeof(Layout.MainLayout)">
-            <crudcomdb.Components.Pages.NaoEncontrado />
-        </LayoutView>
-    </NotFound>
-</Router>
+@* IP de quem abriu o site: registrado nas assinaturas de termos e no aceite da LGPD *@
+<CascadingValue Name="IpCliente" Value="@(IpCliente ?? "IP não identificado")">
+    <Router AppAssembly="typeof(Program).Assembly">
+        <Found Context="routeData">
+            <RouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)" />
+            <FocusOnNavigate RouteData="routeData" Selector="h1" />
+        </Found>
+        <NotFound>
+            <LayoutView Layout="typeof(Layout.MainLayout)">
+                <crudcomdb.Components.Pages.NaoEncontrado />
+            </LayoutView>
+        </NotFound>
+    </Router>
+</CascadingValue>
+
+@code {
+    [Parameter] public string? IpCliente { get; set; }
+}

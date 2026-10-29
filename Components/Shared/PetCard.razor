@@ -5,7 +5,7 @@
     <div class="foto">
         @if (Pet.Imagens.Any())
         {
-            <img src="@Pet.Imagens.First().Base64Data" alt="Foto de @Pet.Nome" loading="lazy" />
+            <img src="@Url.Pet(Pet.Imagens.First())" alt="Foto de @Pet.Nome" loading="lazy" />
         }
         else
         {

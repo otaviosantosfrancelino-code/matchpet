@@ -292,7 +292,7 @@
         novoPet.Especie = especieSelecionadaPet == "Outros" && !string.IsNullOrWhiteSpace(especiePersonalizadaPet) ? especiePersonalizadaPet.Trim() : especieSelecionadaPet;
         if (string.IsNullOrWhiteSpace(novoPet.Raca)) novoPet.Raca = "SRD";
         novoPet.Nome = novoPet.Nome.Trim();
-        novoPet.FotoUrl = novoPet.Imagens.First().Base64Data;
+        novoPet.FotoUrl = ""; // a capa é a 1ª imagem (não duplicamos a foto no banco)
         novoPet.UsuarioDoadorId = AuthService.UsuarioLogado!.Id;
 
         salvando = true;
@@ -312,7 +312,7 @@
 
         novoItem.Categoria = categoriaSelecionadaItem == "Outros" && !string.IsNullOrWhiteSpace(categoriaPersonalizadaItem) ? categoriaPersonalizadaItem.Trim() : categoriaSelecionadaItem;
         novoItem.EspecieDestino = especieDestinoItem == "Outros" && !string.IsNullOrWhiteSpace(especieDestinoPersonalizadaItem) ? especieDestinoPersonalizadaItem.Trim() : especieDestinoItem;
-        novoItem.FotoUrl = novoItem.Imagens.FirstOrDefault()?.Base64Data ?? "";
+        novoItem.FotoUrl = "";
         novoItem.UsuarioDoadorId = AuthService.UsuarioLogado!.Id;
 
         salvando = true;

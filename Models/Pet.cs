@@ -33,5 +33,14 @@ namespace crudcomdb.Models
         public Usuario? UsuarioDoador { get; set; } 
 
         public List<PetImagem> Imagens { get; set; } = new List<PetImagem>();
+
+        // Datas usadas nas estatísticas (tempo até a adoção, adoções por mês)
+        public DateTime DataCadastro { get; set; } = DateTime.UtcNow;
+        public DateTime? DataAdocao { get; set; }
+
+        // Quem adotou (preenchido quando o termo é assinado)
+        public int? AdotanteId { get; set; }
+        [ForeignKey("AdotanteId")]
+        public Usuario? Adotante { get; set; }
     }
 }

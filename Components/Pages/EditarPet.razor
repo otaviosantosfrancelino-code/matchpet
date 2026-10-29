@@ -33,7 +33,7 @@
                     @foreach (var img in petParaEditar.Imagens)
                     {
                         <div class="miniatura">
-                            <img src="@img.Base64Data" alt="" />
+                            <img src="@Url.Pet(img)" alt="" />
                             <button type="button" aria-label="Remover foto" @onclick="() => petParaEditar.Imagens.Remove(img)">&times;</button>
                             @if (img == petParaEditar.Imagens[0]) { <span class="capa">CAPA</span> }
                         </div>
@@ -162,7 +162,7 @@
         salvando = true;
         try
         {
-            petParaEditar.FotoUrl = petParaEditar.Imagens.First().Base64Data;
+            petParaEditar.FotoUrl = ""; // a capa é a 1ª imagem (não duplicamos a foto no banco)
             await PetRepository.UpdateAsync(petParaEditar);
             salvo = true;
             Toast.Sucesso("Anúncio atualizado!");

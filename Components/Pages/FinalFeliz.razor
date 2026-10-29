@@ -1,69 +1,201 @@
 @page "/final-feliz"
 @inject IPetRepository PetRepository
+@inject SocialService Social
+@inject AuthService AuthService
+@inject ToastService Toast
 
 <PageTitle>Final Feliz | Match-Pet SP</PageTitle>
 
 <div class="container-xl py-4 py-md-5">
-    <div class="text-center mb-5">
+    <div class="text-center mb-4">
         <div class="display-4 mb-2">💛</div>
-        <h1 style="font-size:clamp(2rem,4vw,2.8rem)">Galeria Final Feliz</h1>
-        <p class="text-muted mx-auto" style="max-width:520px">Estes amigos já encontraram um lar e hoje são muito amados.</p>
+        <h1 style="font-size:clamp(2rem,4vw,2.8rem)">Final Feliz</h1>
+        <p class="text-muted mx-auto" style="max-width:560px">Estes amigos encontraram um lar. Leia as histórias de quem adotou e conte a sua!</p>
         @if (petsAdotados?.Any() == true)
         {
             <span class="tag laranja fs-6 px-3 py-2">🎉 @petsAdotados.Count() @(petsAdotados.Count() == 1 ? "adoção concluída" : "adoções concluídas")</span>
         }
     </div>
 
-    @if (petsAdotados == null)
+    <div class="segmentos mx-auto d-flex mb-4" style="max-width:480px">
+        <button class="@(aba == "historias" ? "ativo" : "")" @onclick='() => aba = "historias"'><i class="bi bi-chat-heart"></i> Histórias</button>
+        <button class="@(aba == "galeria" ? "ativo" : "")" @onclick='() => aba = "galeria"'><i class="bi bi-images"></i> Galeria</button>
+    </div>
+
+    @if (aba == "historias")
     {
-        <CardsCarregando />
-    }
-    else if (!petsAdotados.Any())
-    {
-        <div class="estado-vazio mx-auto" style="max-width:560px">
-            <div class="emoji">🏡</div>
-            <p class="text-muted">Nossa galeria está começando. Que tal ser o próximo a adotar?</p>
-            <a href="/pets" class="btn btn-primary">Ver pets disponíveis</a>
+        <div class="row g-4">
+            <div class="col-lg-4 order-lg-2">
+                <div class="mp-card p-4 escrever">
+                    <h2 class="h5 mb-1">Conte a sua história</h2>
+                    <p class="small text-muted">Como a adoção mudou a sua vida? Como o seu pet está hoje?</p>
+                    @if (!AuthService.EstaLogado)
+                    {
+                        <a href="/login?voltar=/final-feliz" class="btn btn-primary w-100">Entrar para escrever</a>
+                    }
+                    else
+                    {
+                        <label class="form-label small">Título</label>
+                        <input class="form-control mb-2" maxlength="120" placeholder="Ex.: O Thor mudou nossa rotina!" @bind="titulo" />
+                        @if (meusAdotados?.Any() == true)
+                        {
+                            <label class="form-label small">Pet adotado</label>
+                            <select class="form-select mb-2" @bind="petId">
+                                <option value="0">Nenhum / outro pet</option>
+                                @foreach (var p in meusAdotados) { <option value="@p.Id">@p.Nome</option> }
+                            </select>
+                        }
+                        <label class="form-label small">Sua história</label>
+                        <textarea class="form-control mb-2" rows="5" maxlength="3000" placeholder="Escreva aqui..." @bind="texto" @bind:event="oninput"></textarea>
+                        <div class="d-flex justify-content-between small text-muted mb-2"><span>@texto.Length/3000</span></div>
+
+                        <label class="btn btn-light btn-sm w-100 mb-2">
+                            @if (enviandoFoto) { <span class="spinner-border spinner-border-sm me-1"></span> } else { <i class="bi bi-camera me-1"></i> }
+                            @(fotoUrl == null ? "Adicionar uma foto (opcional)" : "Trocar foto")
+                            <InputFile OnChange="EscolherFoto" accept="image/jpeg,image/png,image/webp" class="d-none" />
+                        </label>
+                        @if (fotoUrl != null) { <img src="@fotoUrl" class="w-100 rounded-4 mb-2" style="max-height:180px;object-fit:cover" alt="Prévia" /> }
+
+                        <button class="btn btn-accent w-100" @onclick="Publicar" disabled="@(publicando || texto.Trim().Length < 20 || string.IsNullOrWhiteSpace(titulo))">
+                            @(publicando ? "Publicando..." : "Publicar minha história")
+                        </button>
+                        <div class="form-text">Mínimo de 20 caracteres.</div>
+                    }
+                </div>
+            </div>
+
+            <div class="col-lg-8 order-lg-1">
+                @if (depoimentos == null)
+                {
+                    @for (var i = 0; i < 3; i++) { <div class="skeleton mb-3" style="height:180px;border-radius:18px"></div> }
+                }
+                else if (!depoimentos.Any())
+                {
+                    <div class="estado-vazio"><div class="emoji">✍️</div><p class="text-muted mb-0">Ainda não há histórias. Seja o primeiro a contar a sua!</p></div>
+                }
+                else
+                {
+                    @foreach (var d in depoimentos)
+                    {
+                        <article class="mp-card historia mb-3">
+                            @if (d.FotoUrl != null || d.PetFotoId != null)
+                            {
+                                <img src="@(d.FotoUrl ?? $"/imagens/pet/{d.PetFotoId}")" class="foto" alt="Foto da história" loading="lazy" />
+                            }
+                            <div class="p-3 p-md-4 flex-grow-1 min-w-0">
+                                <h3 class="h5 mb-2">“@d.Titulo”</h3>
+                                <p class="mb-3 text-muted" style="white-space:pre-line">@d.Texto</p>
+                                <div class="d-flex align-items-center gap-2 flex-wrap">
+                                    <a href="/u/@d.Autor.Id" class="d-flex align-items-center gap-2 text-decoration-none">
+                                        <Avatar Usuario="d.Autor" Tamanho="32" />
+                                        <span class="small fw-bold text-dark">@d.Autor.Nome</span>
+                                    </a>
+                                    <span class="small text-muted">· @d.Autor.Cidade · @Consultas.TempoRelativo(d.Data)</span>
+                                    @if (d.PetNome != null) { <a href="/pets/detalhes/@d.PetId" class="tag laranja ms-auto text-decoration-none">🏡 @d.PetNome</a> }
+                                    @if (d.Autor.Id == AuthService.UsuarioLogado?.Id)
+                                    {
+                                        <button class="btn btn-ghost btn-sm text-danger @(d.PetNome == null ? "ms-auto" : "")" @onclick="() => Excluir(d.Id)" aria-label="Excluir história"><i class="bi bi-trash"></i></button>
+                                    }
+                                </div>
+                            </div>
+                        </article>
+                    }
+                }
+            </div>
         </div>
     }
     else
     {
-        <div class="row g-3 g-md-4">
-            @foreach (var pet in petsAdotados)
-            {
-                <div class="col-6 col-md-4 col-lg-3">
-                    <div class="polaroid">
-                        <div class="foto">
-                            @if (pet.Imagens.Any()) { <img src="@pet.Imagens.First().Base64Data" class="img-cover" alt="Foto de @pet.Nome" loading="lazy" /> }
-                            else { <div class="foto-vazia"><span style="font-size:2.5rem">💛</span></div> }
-                        </div>
-                        <div class="legenda">
-                            <b>@pet.Nome</b>
-                            <span>adotado 🏡</span>
-                        </div>
+        @if (petsAdotados == null) { <CardsCarregando /> }
+        else if (!petsAdotados.Any())
+        {
+            <div class="estado-vazio mx-auto" style="max-width:560px"><div class="emoji">🏡</div><p class="text-muted">Nossa galeria está começando.</p><a href="/pets" class="btn btn-primary">Ver pets disponíveis</a></div>
+        }
+        else
+        {
+            <div class="row g-3 g-md-4">
+                @foreach (var pet in petsAdotados)
+                {
+                    <div class="col-6 col-md-4 col-lg-3">
+                        <a href="/pets/detalhes/@pet.Id" class="polaroid d-block text-decoration-none">
+                            <div class="foto">
+                                @if (pet.Imagens.Any()) { <img src="@Url.Pet(pet.Imagens.First())" class="img-cover" alt="Foto de @pet.Nome" loading="lazy" /> }
+                                else { <div class="foto-vazia"><span style="font-size:2.5rem">💛</span></div> }
+                            </div>
+                            <div class="legenda"><b>@pet.Nome</b><span>@(pet.UsuarioDoador?.Cidade ?? "") 🏡</span></div>
+                        </a>
                     </div>
-                </div>
-            }
-        </div>
-
-        <div class="text-center mt-5">
-            <a href="/pets" class="btn btn-primary btn-lg">Quero escrever a próxima história</a>
-        </div>
+                }
+            </div>
+        }
     }
 </div>
 
 <style>
+    .escrever { position: sticky; top: 88px; }
+    .historia { display: flex; overflow: hidden; }
+    .historia .foto { width: 220px; object-fit: cover; flex-shrink: 0; }
+    @@media (max-width: 576px) { .historia { flex-direction: column; } .historia .foto { width: 100%; height: 220px; } .escrever { position: static; } }
     .polaroid { background: #fff; padding: 10px 10px 0; border-radius: 6px; box-shadow: var(--mp-shadow); transition: transform .3s ease; }
     .polaroid:hover { transform: translateY(-8px) rotate(-1.5deg); }
-    .col-6:nth-child(even) .polaroid:hover { transform: translateY(-8px) rotate(1.5deg); }
     .polaroid .foto { aspect-ratio: 1; overflow: hidden; border-radius: 3px; }
-    .polaroid .foto img { filter: saturate(1.05) contrast(1.02); }
     .polaroid .legenda { display: flex; justify-content: space-between; align-items: center; padding: .7rem .2rem .85rem; gap: .5rem; }
     .polaroid .legenda b { color: var(--mp-ink); font-size: 1.05rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .polaroid .legenda span { font-size: .8rem; color: var(--mp-muted); font-weight: 600; white-space: nowrap; }
+    .polaroid .legenda span { font-size: .78rem; color: var(--mp-muted); font-weight: 600; white-space: nowrap; }
 </style>
 
 @code {
+    private string aba = "historias";
     private IEnumerable<Pet>? petsAdotados;
-    protected override async Task OnInitializedAsync() => petsAdotados = await PetRepository.GetAdoptedPetsAsync();
+    private List<SocialService.DepoimentoView>? depoimentos;
+    private List<Pet>? meusAdotados;
+    private string titulo = "", texto = "";
+    private int petId;
+    private string? fotoUrl;
+    private bool publicando, enviandoFoto;
+
+    protected override async Task OnInitializedAsync()
+    {
+        depoimentos = await Social.DepoimentosAsync();
+        petsAdotados = await PetRepository.GetAdoptedPetsAsync();
+        if (AuthService.UsuarioLogado is { } u) meusAdotados = await Social.PetsAdotadosPorAsync(u.Id);
+    }
+
+    private async Task EscolherFoto(InputFileChangeEventArgs e)
+    {
+        enviandoFoto = true;
+        try
+        {
+            var reduzida = await e.File.RequestImageFileAsync("image/jpeg", 1400, 1400);
+            using var s = reduzida.OpenReadStream(10 * 1024 * 1024);
+            using var ms = new MemoryStream();
+            await s.CopyToAsync(ms);
+            fotoUrl = await Social.SalvarMidiaAsync(ms.ToArray(), "image/jpeg", AuthService.UsuarioLogado!.Id);
+        }
+        catch (Exception ex) { Toast.Erro("Não foi possível carregar a foto: " + ex.Message); }
+        finally { enviandoFoto = false; }
+    }
+
+    private async Task Publicar()
+    {
+        if (publicando) return;
+        publicando = true;
+        try
+        {
+            await Social.PublicarDepoimentoAsync(AuthService.UsuarioLogado!.Id, titulo, texto, petId == 0 ? null : petId, fotoUrl);
+            titulo = texto = "";
+            fotoUrl = null;
+            petId = 0;
+            Toast.Sucesso("Sua história foi publicada! Obrigado por compartilhar 💛");
+            depoimentos = await Social.DepoimentosAsync();
+        }
+        catch (Exception ex) { Toast.Erro("Não foi possível publicar: " + ex.Message); }
+        finally { publicando = false; }
+    }
+
+    private async Task Excluir(int id)
+    {
+        await Social.ExcluirDepoimentoAsync(id, AuthService.UsuarioLogado!.Id);
+        depoimentos = await Social.DepoimentosAsync();
+    }
 }

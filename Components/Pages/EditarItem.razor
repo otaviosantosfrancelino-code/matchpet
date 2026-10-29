@@ -32,7 +32,7 @@
                 <div class="miniaturas">
                     @foreach (var img in item.Imagens)
                     {
-                        <div class="miniatura"><img src="@img.Base64Data" alt="" /><button type="button" aria-label="Remover foto" @onclick="() => item.Imagens.Remove(img)">&times;</button></div>
+                        <div class="miniatura"><img src="@Url.Item(img)" alt="" /><button type="button" aria-label="Remover foto" @onclick="() => item.Imagens.Remove(img)">&times;</button></div>
                     }
                 </div>
 
@@ -132,7 +132,7 @@
         salvando = true;
         try
         {
-            item!.FotoUrl = item.Imagens.FirstOrDefault()?.Base64Data ?? "";
+            item!.FotoUrl = ""; // a capa é a 1ª imagem (não duplicamos a foto no banco)
             await ItemRepository.UpdateAsync(item);
             salvo = true;
             Toast.Sucesso("Item atualizado!");

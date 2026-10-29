@@ -1,0 +1,72 @@
+@page "/estatisticas"
+@inject EstatisticasService Servico
+
+<PageTitle>Estatísticas | Match-Pet SP</PageTitle>
+
+<div class="container-xl py-4 py-md-5">
+    <div class="page-header">
+        <div class="d-flex align-items-center gap-3">
+            <div class="icone-bolha azul"><i class="bi bi-bar-chart-line"></i></div>
+            <div>
+                <h1>Estatísticas</h1>
+                <p>Os números da adoção responsável em Franca e região, atualizados em tempo real.</p>
+            </div>
+        </div>
+    </div>
+
+    @if (r == null)
+    {
+        <div class="row g-3 mb-4">@for (var i = 0; i < 4; i++) { <div class="col-6 col-lg-3"><div class="skeleton" style="height:110px;border-radius:18px"></div></div> }</div>
+        <div class="row g-3">@for (var i = 0; i < 4; i++) { <div class="col-lg-6"><div class="skeleton" style="height:300px;border-radius:18px"></div></div> }</div>
+    }
+    else
+    {
+        @* ===== NÚMEROS PRINCIPAIS ===== *@
+        <div class="row g-3 mb-4">
+            <div class="col-6 col-lg-3"><div class="mp-card kpi"><span class="rotulo"><i class="bi bi-house-heart"></i> Adoções concluídas</span><b>@r.Adotados</b></div></div>
+            <div class="col-6 col-lg-3"><div class="mp-card kpi"><span class="rotulo"><i class="bi bi-search-heart"></i> Pets esperando um lar</span><b>@r.Disponiveis</b><small>@r.EmProcesso em processo de adoção</small></div></div>
+            <div class="col-6 col-lg-3"><div class="mp-card kpi"><span class="rotulo"><i class="bi bi-hourglass-split"></i> Tempo médio até a adoção</span><b>@(r.DiasMedioAteAdocao?.ToString("0") ?? "–") <span class="unid">dias</span></b></div></div>
+            <div class="col-6 col-lg-3"><div class="mp-card kpi"><span class="rotulo"><i class="bi bi-people"></i> Pessoas e ONGs</span><b>@r.Usuarios</b><small>@r.Ongs ONGs parceiras</small></div></div>
+        </div>
+
+        <div class="row g-3 g-md-4">
+            <div class="col-12">
+                <GraficoColunas Titulo="Adoções por mês" Subtitulo="Últimos 12 meses" Dados="r.AdocoesPorMes" />
+            </div>
+            <div class="col-lg-6">
+                <GraficoBarras Titulo="Cidades com mais adoções" Subtitulo="Cidade de quem doou o pet" Coluna="Cidade" Dados="r.AdocoesPorCidade" />
+            </div>
+            <div class="col-lg-6">
+                <GraficoBarras Titulo="Cidades com mais pets esperando" Subtitulo="Pets disponíveis agora" Coluna="Cidade" Unidade="Pets" Dados="r.DisponiveisPorCidade" />
+            </div>
+            <div class="col-md-6 col-lg-4">
+                <GraficoBarras Titulo="Adoções por espécie" Coluna="Espécie" Dados="r.AdocoesPorEspecie" />
+            </div>
+            <div class="col-md-6 col-lg-4">
+                <GraficoBarras Titulo="Adoções por porte" Coluna="Porte" Dados="r.AdocoesPorPorte" />
+            </div>
+            <div class="col-md-6 col-lg-4">
+                <GraficoBarras Titulo="Adoções por idade" Coluna="Faixa de idade" Dados="r.AdocoesPorIdade" />
+            </div>
+            <div class="col-md-6">
+                <GraficoBarras Titulo="ONGs que mais encontraram lares" Coluna="ONG" Dados="r.OngsQueMaisDoaram" />
+            </div>
+            <div class="col-md-6">
+                <GraficoBarras Titulo="Bazar Solidário por categoria" Subtitulo="Itens anunciados (disponíveis e já doados)" Coluna="Categoria" Unidade="Itens" Dados="r.ItensPorCategoria" />
+            </div>
+        </div>
+
+        @* ===== COMUNIDADE ===== *@
+        <div class="row g-3 mt-2">
+            <div class="col-6 col-lg-3"><div class="mp-card kpi pequeno"><span class="rotulo"><i class="bi bi-gift"></i> Itens já doados</span><b>@r.ItensDoados</b><small>@r.ItensDisponiveis disponíveis agora</small></div></div>
+            <div class="col-6 col-lg-3"><div class="mp-card kpi pequeno"><span class="rotulo"><i class="bi bi-chat-dots"></i> Conversas iniciadas</span><b>@r.Conversas</b></div></div>
+            <div class="col-6 col-lg-3"><div class="mp-card kpi pequeno"><span class="rotulo"><i class="bi bi-images"></i> Publicações</span><b>@r.Postagens</b></div></div>
+            <div class="col-6 col-lg-3"><div class="mp-card kpi pequeno"><span class="rotulo"><i class="bi bi-chat-heart"></i> Histórias de adoção</span><b>@r.Depoimentos</b></div></div>
+        </div>
+    }
+</div>
+
+@code {
+    private EstatisticasService.Resumo? r;
+    protected override async Task OnInitializedAsync() => r = await Servico.CalcularAsync();
+}

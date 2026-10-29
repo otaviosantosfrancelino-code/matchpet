@@ -1,0 +1,99 @@
+@page "/amigos"
+@inject SocialService Social
+@inject AuthService AuthService
+@inject NavigationManager Nav
+@inject ToastService Toast
+
+<PageTitle>Amigos | Match-Pet SP</PageTitle>
+
+<div class="container-xl py-4 py-md-5" style="max-width: 980px;">
+    <div class="page-header">
+        <div class="d-flex align-items-center gap-3">
+            <div class="icone-bolha azul"><i class="bi bi-people"></i></div>
+            <div><h1>Amigos</h1><p>Conecte-se com pessoas e ONGs da sua região.</p></div>
+        </div>
+        <a href="/comunidade" class="btn btn-light"><i class="bi bi-house-heart me-1"></i>Comunidade</a>
+    </div>
+
+    @if (recebidos?.Any() == true)
+    {
+        <div class="mp-card p-3 p-md-4 mb-4">
+            <h2 class="h6 fw-bold mb-3">Pedidos de amizade <span class="badge bg-danger">@recebidos.Count</span></h2>
+            <div class="row g-2">
+                @foreach (var (amizadeId, u) in recebidos)
+                {
+                    <div class="col-md-6">
+                        <div class="d-flex align-items-center gap-2 p-2 rounded-4" style="background:#f8fafc">
+                            <a href="/u/@u.Id" class="d-flex align-items-center gap-2 text-decoration-none min-w-0 flex-grow-1">
+                                <Avatar Usuario="u" Tamanho="44" />
+                                <div class="min-w-0"><div class="fw-bold text-dark small text-truncate">@u.Nome</div><div class="text-muted" style="font-size:.78rem">@u.Cidade</div></div>
+                            </a>
+                            <button class="btn btn-primary btn-sm" @onclick="() => Responder(amizadeId, true)">Aceitar</button>
+                            <button class="btn btn-light btn-sm" @onclick="() => Responder(amizadeId, false)" aria-label="Recusar"><i class="bi bi-x-lg"></i></button>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+    <div class="row g-4">
+        <div class="col-lg-7">
+            <div class="mp-card p-3 p-md-4">
+                <h2 class="h6 fw-bold mb-3">Meus amigos (@(amigos?.Count ?? 0))</h2>
+                @if (amigos == null) { <div class="skeleton" style="height:160px"></div> }
+                else if (!amigos.Any()) { <p class="text-muted small mb-0">Você ainda não tem amigos. Veja as sugestões ao lado! 👉</p> }
+                else
+                {
+                    <div class="d-flex flex-column gap-2">
+                        @foreach (var a in amigos) { <CartaoPessoa @key="a.Id" Usuario="a" /> }
+                    </div>
+                }
+                @if (enviados?.Any() == true)
+                {
+                    <h3 class="h6 fw-bold mt-4 mb-2 text-muted">Pedidos enviados</h3>
+                    <div class="d-flex flex-column gap-2">
+                        @foreach (var e in enviados) { <CartaoPessoa @key="e.Id" Usuario="e" /> }
+                    </div>
+                }
+            </div>
+        </div>
+        <div class="col-lg-5">
+            <div class="mp-card p-3 p-md-4">
+                <h2 class="h6 fw-bold mb-3">Sugestões para você</h2>
+                @if (sugestoes == null) { <div class="skeleton" style="height:160px"></div> }
+                else
+                {
+                    @foreach (var s in sugestoes) { <CartaoPessoa @key="s.Id" Usuario="s" Compacto="true" /> }
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<(int, Usuario)>? recebidos;
+    private List<Usuario>? amigos, enviados, sugestoes;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!AuthService.EstaLogado) { Nav.NavigateTo("/login?voltar=/amigos"); return; }
+        await Carregar();
+    }
+
+    private async Task Carregar()
+    {
+        var eu = AuthService.UsuarioLogado!;
+        recebidos = await Social.PedidosRecebidosAsync(eu.Id);
+        amigos = await Social.AmigosAsync(eu.Id);
+        enviados = await Social.PedidosEnviadosAsync(eu.Id);
+        sugestoes = await Social.SugestoesAsync(eu.Id, eu.Cidade, 10);
+    }
+
+    private async Task Responder(int amizadeId, bool aceitar)
+    {
+        await Social.ResponderAmizadeAsync(amizadeId, AuthService.UsuarioLogado!.Id, aceitar);
+        Toast.Sucesso(aceitar ? "Pedido aceito! 🎉" : "Pedido recusado.");
+        await Carregar();
+    }
+}

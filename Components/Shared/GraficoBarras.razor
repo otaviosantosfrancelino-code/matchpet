@@ -1,0 +1,56 @@
+@* Gráfico de barras horizontais (uma série só: o título já diz o que é, sem legenda).
+   Valor na ponta da barra, dica ao passar o mouse e opção de ver como tabela. *@
+
+<div class="mp-card p-3 p-md-4 h-100 grafico">
+    <div class="d-flex justify-content-between align-items-start gap-2 mb-3">
+        <div>
+            <h3 class="h6 fw-bold mb-0">@Titulo</h3>
+            @if (!string.IsNullOrEmpty(Subtitulo)) { <small class="text-muted">@Subtitulo</small> }
+        </div>
+        <button class="btn btn-ghost btn-sm flex-shrink-0" @onclick="() => tabela = !tabela" aria-pressed="@tabela">
+            <i class="bi @(tabela ? "bi-bar-chart" : "bi-table")"></i> @(tabela ? "Gráfico" : "Tabela")
+        </button>
+    </div>
+
+    @if (!Dados.Any(d => d.Valor > 0))
+    {
+        <p class="small text-muted mb-0">Ainda não há dados suficientes.</p>
+    }
+    else if (tabela)
+    {
+        <table class="table table-sm small mb-0">
+            <thead><tr><th>@Coluna</th><th class="text-end">@Unidade</th></tr></thead>
+            <tbody>
+                @foreach (var d in Dados) { <tr><td>@d.Rotulo</td><td class="text-end" style="font-variant-numeric:tabular-nums">@d.Valor</td></tr> }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        var max = Math.Max(1, Dados.Max(d => d.Valor));
+        <ul class="barras" role="list">
+            @foreach (var d in Dados)
+            {
+                var pct = d.Valor * 100.0 / max;
+                <li class="linha" title="@d.Rotulo: @d.Valor @Unidade.ToLower()">
+                    <span class="rotulo text-truncate">@d.Rotulo</span>
+                    <span class="trilho">
+                        <span class="barra" style="width:@(pct.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture))%"></span>
+                        <span class="valor">@d.Valor</span>
+                    </span>
+                    <span class="dica">@d.Rotulo · <b>@d.Valor</b> @Unidade.ToLower()</span>
+                </li>
+            }
+        </ul>
+    }
+</div>
+
+@code {
+    [Parameter] public string Titulo { get; set; } = "";
+    [Parameter] public string? Subtitulo { get; set; }
+    [Parameter] public string Coluna { get; set; } = "Categoria";
+    [Parameter] public string Unidade { get; set; } = "Adoções";
+    [Parameter] public List<EstatisticasService.Barra> Dados { get; set; } = new();
+
+    private bool tabela;
+}

@@ -1,0 +1,138 @@
+@* Uma publicação da Comunidade: autor, texto, foto/vídeo, curtidas e comentários *@
+@inject SocialService Social
+@inject AuthService AuthService
+@inject NavigationManager Nav
+@inject ToastService Toast
+
+<article class="mp-card post">
+    <header class="d-flex align-items-center gap-2 p-3 pb-2">
+        <a href="/u/@Post.Autor.Id"><Avatar Usuario="Post.Autor" Tamanho="42" /></a>
+        <div class="min-w-0 flex-grow-1">
+            <a href="/u/@Post.Autor.Id" class="fw-bold text-dark text-decoration-none text-truncate d-inline-block" style="max-width:100%">
+                @Post.Autor.Nome @if (Post.Autor.EhOng) { <i class="bi bi-patch-check-fill text-success"></i> }
+            </a>
+            <div class="small text-muted">@Post.Autor.Cidade · @Consultas.TempoRelativo(Post.Data)</div>
+        </div>
+        @if (Post.Autor.Id == AuthService.UsuarioLogado?.Id)
+        {
+            <button class="btn btn-ghost btn-icon btn-sm" title="Excluir publicação" aria-label="Excluir publicação" @onclick="Excluir"><i class="bi bi-trash"></i></button>
+        }
+    </header>
+
+    @if (!string.IsNullOrWhiteSpace(Post.Texto))
+    {
+        <p class="px-3 mb-2" style="white-space:pre-line">@Post.Texto</p>
+    }
+    @if (Post.PetId != null)
+    {
+        <a href="/pets/detalhes/@Post.PetId" class="tag azul mx-3 mb-2 text-decoration-none">🐾 @Post.PetNome</a>
+    }
+
+    @if (Post.MidiaUrl != null)
+    {
+        <div class="midia">
+            @if (Post.TipoMidia == "video")
+            {
+                <video src="@Post.MidiaUrl" controls playsinline preload="metadata"></video>
+            }
+            else
+            {
+                <img src="@Post.MidiaUrl" alt="Foto publicada por @Post.Autor.Nome" loading="lazy" @ondblclick="Curtir" />
+            }
+        </div>
+    }
+
+    <footer class="px-2 py-1 d-flex align-items-center gap-1 border-top">
+        <button class="btn btn-ghost btn-sm acao @(curti ? "curtido" : "")" @onclick="Curtir" aria-pressed="@curti">
+            <i class="bi @(curti ? "bi-heart-fill" : "bi-heart")"></i> @curtidas
+        </button>
+        <button class="btn btn-ghost btn-sm acao" @onclick="AlternarComentarios">
+            <i class="bi bi-chat"></i> @totalComentarios
+        </button>
+    </footer>
+
+    @if (mostrarComentarios)
+    {
+        <div class="comentarios px-3 pb-3">
+            @if (comentarios == null)
+            {
+                <div class="text-center py-2"><span class="spinner-border spinner-border-sm text-primary"></span></div>
+            }
+            else
+            {
+                @foreach (var c in comentarios)
+                {
+                    <div class="d-flex gap-2 mb-2">
+                        <a href="/u/@c.Autor.Id"><Avatar Usuario="c.Autor" Tamanho="30" /></a>
+                        <div class="bolha">
+                            <a href="/u/@c.Autor.Id" class="fw-bold text-dark text-decoration-none small">@c.Autor.Nome</a>
+                            <div class="small">@c.Texto</div>
+                            <div class="text-muted" style="font-size:.7rem">@Consultas.TempoRelativo(c.Data)</div>
+                        </div>
+                    </div>
+                }
+                @if (AuthService.EstaLogado)
+                {
+                    <form class="d-flex gap-2 mt-2" @onsubmit="Comentar" @onsubmit:preventDefault>
+                        <input class="form-control form-control-sm" placeholder="Escreva um comentário..." maxlength="1000" @bind="novoComentario" @bind:event="oninput" aria-label="Comentário" />
+                        <button class="btn btn-primary btn-sm" disabled="@string.IsNullOrWhiteSpace(novoComentario)">Enviar</button>
+                    </form>
+                }
+                else
+                {
+                    <a href="/login" class="small">Entre para comentar</a>
+                }
+            }
+        </div>
+    }
+</article>
+
+@code {
+    [Parameter, EditorRequired] public SocialService.PostagemView Post { get; set; } = default!;
+    [Parameter] public EventCallback<int> OnExcluido { get; set; }
+
+    private bool curti, mostrarComentarios;
+    private int curtidas, totalComentarios;
+    private List<SocialService.ComentarioView>? comentarios;
+    private string novoComentario = "";
+
+    protected override void OnParametersSet()
+    {
+        curti = Post.Curti;
+        curtidas = Post.Curtidas;
+        totalComentarios = Post.Comentarios;
+    }
+
+    private async Task Curtir()
+    {
+        if (!AuthService.EstaLogado) { Toast.Info("Entre na sua conta para curtir."); return; }
+        // Atualiza na hora e confirma com o servidor
+        curti = !curti;
+        curtidas += curti ? 1 : -1;
+        try { (curti, curtidas) = await Social.AlternarCurtidaAsync(Post.Id, AuthService.UsuarioLogado!.Id); }
+        catch { Toast.Erro("Não foi possível curtir agora."); }
+    }
+
+    private async Task AlternarComentarios()
+    {
+        mostrarComentarios = !mostrarComentarios;
+        if (mostrarComentarios && comentarios == null) comentarios = await Social.ComentariosAsync(Post.Id);
+    }
+
+    private async Task Comentar()
+    {
+        if (string.IsNullOrWhiteSpace(novoComentario) || !AuthService.EstaLogado) return;
+        var texto = novoComentario;
+        novoComentario = "";
+        await Social.ComentarAsync(Post.Id, AuthService.UsuarioLogado!.Id, texto);
+        comentarios = await Social.ComentariosAsync(Post.Id);
+        totalComentarios = comentarios.Count;
+    }
+
+    private async Task Excluir()
+    {
+        await Social.ExcluirPostagemAsync(Post.Id, AuthService.UsuarioLogado!.Id);
+        Toast.Info("Publicação excluída.");
+        await OnExcluido.InvokeAsync(Post.Id);
+    }
+}

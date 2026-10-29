@@ -28,7 +28,13 @@
             <div class="col-8 col-md-4">
                 <div class="campo-icone">
                     <i class="bi bi-geo-alt"></i>
-                    <input type="text" class="form-control" placeholder="Cidade" aria-label="Cidade" @bind="filtroCidade" @onkeydown="FiltrarAoApertarEnter" @onblur="AplicarFiltro" />
+                    <select class="form-select" aria-label="Cidade" @bind="filtro.Cidade" @bind:after="AplicarFiltro">
+                        <option value="">Todas as cidades</option>
+                        @foreach (var c in cidades)
+                        {
+                            <option value="@c">@c</option>
+                        }
+                    </select>
                 </div>
             </div>
             <div class="col-4 col-md-3 d-grid">
@@ -41,7 +47,7 @@
         <div class="chips mt-3">
             @foreach (var (valor, rotulo) in Especies)
             {
-                <button class="chip @(filtroEspecie == valor ? "ativo" : "")" @onclick="() => MudarEspecie(valor)">@rotulo</button>
+                <button class="chip @((filtro.Especie ?? "") == valor ? "ativo" : "")" @onclick="() => MudarEspecie(valor)">@rotulo</button>
             }
         </div>
 
@@ -49,8 +55,18 @@
         {
             <div class="row g-3 mt-1 pt-3 border-top">
                 <div class="col-6 col-md-3">
+                    <label class="form-label small">Idade</label>
+                    <select class="form-select" @bind="filtro.FaixaIdade" @bind:after="AplicarFiltro">
+                        <option value="">Qualquer</option>
+                        <option value="filhote">Filhote (até 1 ano)</option>
+                        <option value="jovem">Jovem (2 a 4 anos)</option>
+                        <option value="adulto">Adulto (5 a 8 anos)</option>
+                        <option value="idoso">Idoso (9+ anos)</option>
+                    </select>
+                </div>
+                <div class="col-6 col-md-3">
                     <label class="form-label small">Porte</label>
-                    <select class="form-select" @bind="filtroPorte" @bind:after="AplicarFiltro">
+                    <select class="form-select" @bind="filtro.Porte" @bind:after="AplicarFiltro">
                         <option value="">Qualquer</option>
                         <option>Pequeno</option>
                         <option>Médio</option>
@@ -59,23 +75,29 @@
                 </div>
                 <div class="col-6 col-md-3">
                     <label class="form-label small">Sexo</label>
-                    <select class="form-select" @bind="filtroSexo" @bind:after="AplicarFiltro">
+                    <select class="form-select" @bind="filtro.Sexo" @bind:after="AplicarFiltro">
                         <option value="">Qualquer</option>
                         <option>Macho</option>
                         <option>Fêmea</option>
                     </select>
                 </div>
-                <div class="col-12 col-md-6">
-                    <label class="form-label small">Meu estilo de vida</label>
-                    <div class="d-flex gap-2 flex-wrap">
-                        <label class="opcao-card flex-fill @(temCriancas ? "marcada" : "")">
-                            <input type="checkbox" @bind="temCriancas" @bind:after="AplicarFiltro" />
-                            <span class="emoji">🍼</span><span class="fw-semibold small">Tenho crianças</span>
-                        </label>
-                        <label class="opcao-card flex-fill @(moraEmApto ? "marcada" : "")">
-                            <input type="checkbox" @bind="moraEmApto" @bind:after="AplicarFiltro" />
-                            <span class="emoji">🏢</span><span class="fw-semibold small">Moro em apartamento</span>
-                        </label>
+                <div class="col-6 col-md-3">
+                    <label class="form-label small">Raça</label>
+                    <input class="form-control" placeholder="Ex.: SRD, Poodle" @bind="filtro.Raca" @bind:after="AplicarFiltro" />
+                </div>
+
+                <div class="col-12">
+                    <label class="form-label small">Combina com</label>
+                    <div class="row g-2">
+                        @foreach (var op in Opcoes)
+                        {
+                            <div class="col-6 col-md-3">
+                                <label class="opcao-card @(op.Ler(filtro) ? "marcada" : "")">
+                                    <input type="checkbox" checked="@op.Ler(filtro)" @onchange="e => MarcarOpcao(op, (bool)e.Value!)" />
+                                    <span class="emoji">@op.Emoji</span><span class="fw-semibold small">@op.Rotulo</span>
+                                </label>
+                            </div>
+                        }
                     </div>
                 </div>
             </div>
@@ -101,12 +123,20 @@
     }
     else
     {
-        <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="d-flex justify-content-between align-items-center mb-3 gap-2 flex-wrap">
             <p class="text-muted small mb-0"><strong class="text-dark">@PetsVisiveis.Count()</strong> @(PetsVisiveis.Count() == 1 ? "pet encontrado" : "pets encontrados")</p>
-            @if (TemFiltroAtivo)
-            {
-                <button class="btn btn-ghost btn-sm" @onclick="LimparFiltros"><i class="bi bi-x-circle me-1"></i>Limpar filtros</button>
-            }
+            <div class="d-flex align-items-center gap-2">
+                @if (TemFiltroAtivo)
+                {
+                    <button class="btn btn-ghost btn-sm" @onclick="LimparFiltros"><i class="bi bi-x-circle me-1"></i>Limpar</button>
+                }
+                <select class="form-select form-select-sm" style="width:auto" aria-label="Ordenar" @bind="filtro.Ordem" @bind:after="AplicarFiltro">
+                    <option value="recentes">Mais recentes</option>
+                    <option value="antigos">Esperando há mais tempo</option>
+                    <option value="novos">Mais novos primeiro</option>
+                    <option value="nome">Nome (A–Z)</option>
+                </select>
+            </div>
         </div>
         <div class="row g-3 g-md-4">
             @foreach (var pet in PetsVisiveis)
@@ -123,8 +153,10 @@
     [SupplyParameterFromQuery(Name = "cidade")] public string? CidadeQuery { get; set; }
 
     private IEnumerable<Pet>? pets;
-    private string filtroNome = "", filtroCidade = "", filtroEspecie = "", filtroPorte = "", filtroSexo = "";
-    private bool temCriancas, moraEmApto, maisFiltros;
+    private List<string> cidades = new();
+    private FiltroPets filtro = new();
+    private string filtroNome = "";
+    private bool maisFiltros;
 
     // Evita duas consultas ao mesmo tempo no banco (ex.: mudar vários filtros rápido)
     private readonly SemaphoreSlim travaConsulta = new(1, 1);
@@ -132,48 +164,59 @@
     private static readonly (string, string)[] Especies =
         { ("", "🐾 Todos"), ("Cão", "🐶 Cães"), ("Gato", "🐱 Gatos"), ("Pássaro", "🐦 Aves"), ("Peixe", "🐟 Peixes"), ("Outros", "🐹 Outros") };
 
-    private int FiltrosExtrasAtivos => (string.IsNullOrEmpty(filtroPorte) ? 0 : 1) + (string.IsNullOrEmpty(filtroSexo) ? 0 : 1) + (temCriancas ? 1 : 0) + (moraEmApto ? 1 : 0);
+    private record Opcao(string Emoji, string Rotulo, Func<FiltroPets, bool> Ler, Action<FiltroPets, bool> Gravar);
+    private static readonly Opcao[] Opcoes =
+    {
+        new("🍼", "Tenho crianças", f => f.TemCriancas, (f, v) => f.TemCriancas = v),
+        new("🏢", "Moro em apartamento", f => f.MoraEmApto, (f, v) => f.MoraEmApto = v),
+        new("✂️", "Só castrados", f => f.SoCastrados, (f, v) => f.SoCastrados = v),
+        new("🏠", "Só de ONGs", f => f.SoOngs, (f, v) => f.SoOngs = v),
+    };
 
-    private bool TemFiltroAtivo => !string.IsNullOrWhiteSpace(filtroNome) || !string.IsNullOrWhiteSpace(filtroCidade) ||
-                                   !string.IsNullOrEmpty(filtroEspecie) || FiltrosExtrasAtivos > 0;
+    private int FiltrosExtrasAtivos =>
+        new[] { filtro.Porte, filtro.Sexo, filtro.FaixaIdade, filtro.Raca }.Count(v => !string.IsNullOrWhiteSpace(v)) +
+        Opcoes.Count(o => o.Ler(filtro));
 
-    // Só pets disponíveis; a busca por nome é feita na hora, sem ir ao banco
+    private bool TemFiltroAtivo => !string.IsNullOrWhiteSpace(filtroNome) || !string.IsNullOrWhiteSpace(filtro.Cidade) ||
+                                   !string.IsNullOrEmpty(filtro.Especie) || FiltrosExtrasAtivos > 0;
+
+    // A busca por nome é feita na hora, sem ir ao banco
     private IEnumerable<Pet> PetsVisiveis => (pets ?? Enumerable.Empty<Pet>())
-        .Where(p => p.Status == "Disponível")
         .Where(p => string.IsNullOrWhiteSpace(filtroNome) || p.Nome.Contains(filtroNome.Trim(), StringComparison.OrdinalIgnoreCase));
 
     protected override async Task OnInitializedAsync()
     {
-        filtroEspecie = EspecieQuery ?? "";
-        filtroCidade = CidadeQuery ?? "";
+        filtro.Especie = EspecieQuery;
+        cidades = await PetRepository.CidadesComPetsAsync();
+        // Cidade digitada na página inicial: usa a da lista que combinar
+        if (!string.IsNullOrWhiteSpace(CidadeQuery))
+            filtro.Cidade = cidades.FirstOrDefault(c => DocumentoUtil.NormalizarNome(c).Contains(DocumentoUtil.NormalizarNome(CidadeQuery))) ?? CidadeQuery;
         await AplicarFiltro();
     }
 
     private async Task MudarEspecie(string especie)
     {
-        filtroEspecie = especie;
+        filtro.Especie = especie;
+        await AplicarFiltro();
+    }
+
+    private async Task MarcarOpcao(Opcao op, bool valor)
+    {
+        op.Gravar(filtro, valor);
         await AplicarFiltro();
     }
 
     private async Task AplicarFiltro()
     {
         await travaConsulta.WaitAsync();
-        try
-        {
-            pets = await PetRepository.GetPetsParaMatch(temCriancas, moraEmApto, filtroEspecie, filtroPorte, filtroSexo, filtroCidade);
-        }
+        try { pets = await PetRepository.BuscarAsync(filtro); }
         finally { travaConsulta.Release(); }
-    }
-
-    private async Task FiltrarAoApertarEnter(KeyboardEventArgs e)
-    {
-        if (e.Key == "Enter") await AplicarFiltro();
     }
 
     private async Task LimparFiltros()
     {
-        filtroNome = filtroCidade = filtroEspecie = filtroPorte = filtroSexo = "";
-        temCriancas = moraEmApto = false;
+        filtroNome = "";
+        filtro = new FiltroPets { Ordem = filtro.Ordem };
         await AplicarFiltro();
     }
 }

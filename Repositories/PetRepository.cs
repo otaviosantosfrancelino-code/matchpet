@@ -29,7 +29,7 @@ namespace crudcomdb.Repositories
                 RecomendadoParaCriancas = p.RecomendadoParaCriancas,
                 Status = p.Status,
                 UsuarioDoadorId = p.UsuarioDoadorId,
-                Imagens = p.Imagens.OrderBy(i => i.Id).Take(1).ToList(),
+                Imagens = p.Imagens.OrderBy(i => i.Id).Take(1).Select(i => new PetImagem { Id = i.Id, PetId = i.PetId }).ToList(),
                 UsuarioDoador = new Usuario
                 {
                     Id = p.UsuarioDoador!.Id,
@@ -43,29 +43,64 @@ namespace crudcomdb.Repositories
         public async Task<IEnumerable<Pet>> GetAllAsync() =>
             await Leve(_context.Pets.OrderByDescending(p => p.Id)).ToListAsync();
 
-        public async Task<IEnumerable<Pet>> GetPetsParaMatch(bool temCriancas, bool moraEmApartamento, string? especie, string? porte, string? sexo, string? cidade)
-        {
-            var query = _context.Pets.AsQueryable();
+        public Task<IEnumerable<Pet>> GetPetsParaMatch(bool temCriancas, bool moraEmApartamento, string? especie, string? porte, string? sexo, string? cidade) =>
+            BuscarAsync(new FiltroPets { TemCriancas = temCriancas, MoraEmApto = moraEmApartamento, Especie = especie, Porte = porte, Sexo = sexo, Cidade = cidade });
 
-            if (temCriancas) query = query.Where(p => p.RecomendadoParaCriancas);
-            if (moraEmApartamento) query = query.Where(p => !p.PrecisaDeQuintal);
-            if (!string.IsNullOrEmpty(especie))
+        // Busca do Catálogo com todos os filtros
+        public async Task<IEnumerable<Pet>> BuscarAsync(FiltroPets f)
+        {
+            var query = _context.Pets.Where(p => p.Status == "Disponível");
+
+            if (f.TemCriancas) query = query.Where(p => p.RecomendadoParaCriancas);
+            if (f.MoraEmApto) query = query.Where(p => !p.PrecisaDeQuintal);
+            if (f.SoCastrados) query = query.Where(p => p.Castrado);
+            if (f.SoOngs) query = query.Where(p => p.UsuarioDoador != null && p.UsuarioDoador.EhOng);
+            if (!string.IsNullOrEmpty(f.Especie))
             {
                 // "Outros" = qualquer espécie fora das principais
-                query = especie == "Outros"
+                query = f.Especie == "Outros"
                     ? query.Where(p => p.Especie != "Cão" && p.Especie != "Gato" && p.Especie != "Pássaro" && p.Especie != "Peixe")
-                    : query.Where(p => p.Especie == especie);
+                    : query.Where(p => p.Especie == f.Especie);
             }
-            if (!string.IsNullOrEmpty(porte)) query = query.Where(p => p.Porte == porte);
-            if (!string.IsNullOrEmpty(sexo)) query = query.Where(p => p.Sexo == sexo);
-            if (!string.IsNullOrWhiteSpace(cidade))
+            if (!string.IsNullOrEmpty(f.Porte)) query = query.Where(p => p.Porte == f.Porte);
+            if (!string.IsNullOrEmpty(f.Sexo)) query = query.Where(p => p.Sexo == f.Sexo);
+            query = f.FaixaIdade switch
             {
-                var c = cidade.Trim().ToLower();
+                "filhote" => query.Where(p => p.Idade <= 1),
+                "jovem" => query.Where(p => p.Idade >= 2 && p.Idade <= 4),
+                "adulto" => query.Where(p => p.Idade >= 5 && p.Idade <= 8),
+                "idoso" => query.Where(p => p.Idade >= 9),
+                _ => query
+            };
+            if (!string.IsNullOrWhiteSpace(f.Cidade))
+            {
+                var c = f.Cidade.Trim().ToLower();
                 query = query.Where(p => p.UsuarioDoador != null && p.UsuarioDoador.Cidade.ToLower().Contains(c));
             }
+            if (!string.IsNullOrWhiteSpace(f.Raca))
+            {
+                var r = f.Raca.Trim().ToLower();
+                query = query.Where(p => p.Raca.ToLower().Contains(r));
+            }
 
-            return await Leve(query.OrderByDescending(p => p.Id)).ToListAsync();
+            query = f.Ordem switch
+            {
+                "nome" => query.OrderBy(p => p.Nome),
+                "novos" => query.OrderBy(p => p.Idade).ThenByDescending(p => p.Id),
+                "antigos" => query.OrderBy(p => p.DataCadastro), // há mais tempo esperando um lar
+                _ => query.OrderByDescending(p => p.Id)
+            };
+
+            return await Leve(query).ToListAsync();
         }
+
+        // Cidades que têm pets disponíveis (para a lista de cidades do filtro)
+        public async Task<List<string>> CidadesComPetsAsync() => await _context.Pets
+            .Where(p => p.Status == "Disponível" && p.UsuarioDoador != null)
+            .Select(p => p.UsuarioDoador!.Cidade)
+            .Distinct()
+            .OrderBy(c => c)
+            .ToListAsync();
 
         public async Task<IEnumerable<Pet>> GetByUserIdAsync(int userId) =>
             await Leve(_context.Pets.Where(p => p.UsuarioDoadorId == userId).OrderByDescending(p => p.Id)).ToListAsync();
@@ -111,7 +146,7 @@ namespace crudcomdb.Repositories
                 RecomendadoParaCriancas = p.RecomendadoParaCriancas,
                 Status = p.Status,
                 UsuarioDoadorId = p.UsuarioDoadorId,
-                Imagens = p.Imagens.OrderBy(i => i.Id).ToList(),
+                Imagens = p.Imagens.OrderBy(i => i.Id).Select(i => new PetImagem { Id = i.Id, PetId = i.PetId }).ToList(),
                 UsuarioDoador = new Usuario
                 {
                     Id = p.UsuarioDoador!.Id,
@@ -121,7 +156,9 @@ namespace crudcomdb.Repositories
                     Cidade = p.UsuarioDoador.Cidade,
                     Estado = p.UsuarioDoador.Estado,
                     EhOng = p.UsuarioDoador.EhOng,
-                    FotoPerfilBase64 = p.UsuarioDoador.FotoPerfilBase64
+                    FotoPerfilBase64 = p.UsuarioDoador.FotoPerfilBase64 != null ? Usuario.FotoPorUrl : null,
+                    DataUltimaAlteracao = p.UsuarioDoador.DataUltimaAlteracao,
+                    Bairro = p.UsuarioDoador.Bairro
                 }
             })
             .FirstOrDefaultAsync();
@@ -142,8 +179,25 @@ namespace crudcomdb.Repositories
         }
 
         // Muda só o status direto no banco (sem regravar fotos nem o doador)
-        public async Task AtualizarStatusAsync(int id, string status) =>
-            await _context.Pets.Where(p => p.Id == id).ExecuteUpdateAsync(s => s.SetProperty(p => p.Status, status));
+        public async Task AtualizarStatusAsync(int id, string status)
+        {
+            var pets = _context.Pets.Where(p => p.Id == id);
+            if (status == "Adotado")
+            {
+                var agora = DateTime.UtcNow;
+                await pets.ExecuteUpdateAsync(s => s.SetProperty(p => p.Status, status).SetProperty(p => p.DataAdocao, agora));
+            }
+            else if (status == "Disponível")
+            {
+                // Reaberto: deixa de contar como adoção
+                await pets.ExecuteUpdateAsync(s => s.SetProperty(p => p.Status, status)
+                    .SetProperty(p => p.DataAdocao, (DateTime?)null).SetProperty(p => p.AdotanteId, (int?)null));
+            }
+            else
+            {
+                await pets.ExecuteUpdateAsync(s => s.SetProperty(p => p.Status, status));
+            }
+        }
 
         public async Task DeleteAsync(int id)
         {

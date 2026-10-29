@@ -23,7 +23,7 @@ namespace crudcomdb.Repositories
                 Status = i.Status,
                 UsuarioDoadorId = i.UsuarioDoadorId,
                 DataCadastro = i.DataCadastro,
-                Imagens = i.Imagens.OrderBy(img => img.Id).Take(1).ToList(),
+                Imagens = i.Imagens.OrderBy(img => img.Id).Take(1).Select(img => new ItemImagem { Id = img.Id, ItemDoacaoId = img.ItemDoacaoId }).ToList(),
                 UsuarioDoador = new Usuario
                 {
                     Id = i.UsuarioDoador!.Id,

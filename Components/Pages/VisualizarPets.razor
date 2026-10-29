@@ -1,9 +1,9 @@
 @page "/pets/detalhes/{Id:int}"
 @inject IPetRepository PetRepository
-@inject IInteresseRepository InteresseRepository
 @inject AuthService AuthService
+@inject ChatService Chat
+@inject GeoService Geo
 @inject NavigationManager Nav
-@inject IHttpContextAccessor HttpContextAccessor
 @inject ToastService Toast
 @inject IJSRuntime JS
 
@@ -33,12 +33,12 @@
         </button>
 
         <div class="row g-4 g-lg-5">
-            @* ===== FOTOS ===== *@
+            @* ===== FOTOS E MAPA ===== *@
             <div class="col-lg-7">
                 <div class="galeria mp-card overflow-hidden">
                     @if (pet.Imagens.Any())
                     {
-                        <img src="@pet.Imagens[fotoAtual].Base64Data" class="img-cover" alt="Foto de @pet.Nome" />
+                        <img src="@Url.Pet(pet.Imagens[fotoAtual])" class="img-cover" alt="Foto de @pet.Nome" />
                         @if (pet.Imagens.Count > 1)
                         {
                             <button class="seta esq" @onclick="() => MudarFoto(-1)" aria-label="Foto anterior"><i class="bi bi-chevron-left"></i></button>
@@ -58,11 +58,29 @@
                         {
                             var indice = i;
                             <button class="mini @(indice == fotoAtual ? "ativa" : "")" @onclick="() => fotoAtual = indice" aria-label="Ver foto @(indice + 1)">
-                                <img src="@pet.Imagens[indice].Base64Data" alt="" />
+                                <img src="@Url.Pet(pet.Imagens[indice])" alt="" />
                             </button>
                         }
                     </div>
                 }
+
+                @* Mapa: mostra só a região (bairro/cidade), nunca o endereço exato *@
+                <div class="mp-card mt-4 overflow-hidden">
+                    <div class="d-flex align-items-center gap-2 px-3 py-2 border-bottom">
+                        <i class="bi bi-map text-primary"></i>
+                        <b class="small">Onde @pet.Nome está</b>
+                        <span class="small text-muted ms-auto">@(local?.Descricao ?? pet.UsuarioDoador?.Cidade)@(local != null ? $" · {pet.UsuarioDoador?.Estado}" : "")</span>
+                    </div>
+                    @if (local != null)
+                    {
+                        <div id="mapa-pet" class="mapa" role="img" aria-label="Mapa da região onde o pet está"></div>
+                        <div class="small text-muted px-3 py-2"><i class="bi bi-shield-lock me-1"></i>Por segurança, o mapa mostra a região aproximada. O endereço é combinado na conversa.</div>
+                    }
+                    else
+                    {
+                        <div class="p-4 text-center text-muted small">@(localizando ? "Carregando mapa..." : "Não foi possível mostrar o mapa desta cidade.")</div>
+                    }
+                </div>
             </div>
 
             @* ===== INFORMAÇÕES ===== *@
@@ -96,7 +114,7 @@
 
                 @if (pet.UsuarioDoador != null)
                 {
-                    <div class="mp-card p-3 d-flex align-items-center gap-3 mb-4">
+                    <a href="/u/@pet.UsuarioDoador.Id" class="mp-card mp-card-hover p-3 d-flex align-items-center gap-3 mb-4 text-decoration-none">
                         <Avatar Usuario="pet.UsuarioDoador" Tamanho="48" />
                         <div class="min-w-0">
                             <small class="text-muted">Anunciado por</small>
@@ -106,7 +124,8 @@
                         {
                             <span class="tag verde ms-auto"><i class="bi bi-patch-check-fill"></i>ONG</span>
                         }
-                    </div>
+                        <i class="bi bi-chevron-right text-muted @(pet.UsuarioDoador.EhOng ? "" : "ms-auto")"></i>
+                    </a>
                 }
 
                 <div class="acao-adotar">
@@ -117,81 +136,27 @@
                             <a href="/pets/editar/@pet.Id" class="ms-auto fw-bold">Editar</a>
                         </div>
                     }
-                    else if (pet.Status != "Disponível")
+                    else if (pet.Status == "Adotado")
                     {
-                        <div class="alert @(pet.Status == "Adotado" ? "alert-warning" : "alert-info") mb-0">
-                            <i class="bi @(pet.Status == "Adotado" ? "bi-stars" : "bi-hourglass-split") me-2"></i>
-                            @(pet.Status == "Adotado" ? "Este pet já encontrou um lar! 💛" : "Este pet já está em processo de adoção.")
-                        </div>
+                        <div class="alert alert-warning mb-0"><i class="bi bi-stars me-2"></i>Este pet já encontrou um lar! 💛</div>
                     }
                     else
                     {
-                        <button class="btn btn-primary btn-lg w-100" @onclick="ValidarEAbrirModal">
-                            <i class="bi bi-heart-fill me-2"></i>Quero adotar @pet.Nome
+                        @if (pet.Status == "Em Processo")
+                        {
+                            <div class="alert alert-info small py-2 mb-2"><i class="bi bi-hourglass-split me-1"></i>Já existe uma adoção em andamento, mas você ainda pode conversar com o doador.</div>
+                        }
+                        <button class="btn btn-primary btn-lg w-100" @onclick="QueroAdotar" disabled="@abrindoConversa">
+                            @if (abrindoConversa) { <span class="spinner-border spinner-border-sm me-2"></span> } else { <i class="bi bi-chat-heart-fill me-2"></i> }
+                            Quero adotar @pet.Nome
                         </button>
-                        <p class="text-center text-muted small mt-2 mb-0"><i class="bi bi-shield-lock me-1"></i>Você assina um termo digital antes de receber o contato.</p>
+                        <p class="text-center text-muted small mt-2 mb-0"><i class="bi bi-shield-lock me-1"></i>Converse pelo chat do site. O termo de adoção é enviado e assinado ali mesmo.</p>
                     }
                 </div>
             </div>
         </div>
     }
 </div>
-
-@if (exibirModal && pet != null)
-{
-    <div class="modal fade show d-block modal-blazor" tabindex="-1" role="dialog" aria-modal="true">
-        <div class="modal-dialog modal-dialog-centered modal-lg modal-fullscreen-sm-down">
-            <div class="modal-content overflow-hidden">
-                <div class="modal-header border-0 px-4 pt-4">
-                    <h5 class="modal-title d-flex align-items-center gap-2">
-                        <span class="icone-bolha @(interesseRegistrado ? "verde" : "azul")" style="width:40px;height:40px;font-size:1.1rem"><i class="bi @(interesseRegistrado ? "bi-check2-circle" : "bi-file-earmark-text")"></i></span>
-                        @(interesseRegistrado ? "Termo assinado!" : "Termo de responsabilidade")
-                    </h5>
-                    <button type="button" class="btn-close" aria-label="Fechar" @onclick="FecharModal"></button>
-                </div>
-                <div class="modal-body px-4 pb-4" style="max-height: 72vh; overflow-y: auto;">
-                    @if (!interesseRegistrado)
-                    {
-                        <div class="p-3 rounded-4 mb-3" style="background:#f8fafc;border:1px solid var(--mp-line);font-family:'Courier New',monospace;font-size:.85rem">
-                            <pre class="mb-0" style="white-space: pre-wrap;">@textoContratoTemporario</pre>
-                        </div>
-
-                        <div class="alert alert-warning small">
-                            <strong>Ao assinar, você declara que:</strong>
-                            <ul class="mb-0 mt-1 ps-3">
-                                <li>vai oferecer abrigo, alimentação e cuidados veterinários;</li>
-                                <li>está ciente da Lei Sansão contra maus-tratos;</li>
-                                <li>o animal não pertence à fauna silvestre ilícita (Lei 9.605/98).</li>
-                            </ul>
-                        </div>
-
-                        <label class="opcao-card mb-3 @(leuClausulas ? "marcada" : "")">
-                            <input type="checkbox" @bind="leuClausulas" />
-                            <i class="bi @(leuClausulas ? "bi-check-square-fill text-primary" : "bi-square") fs-5"></i>
-                            <span class="fw-semibold small">Li e concordo com o termo e as declarações acima.</span>
-                        </label>
-
-                        <button class="btn btn-primary btn-lg w-100" @onclick="AceitarERegistrar" disabled="@(!leuClausulas || registrando)">
-                            @if (registrando) { <span class="spinner-border spinner-border-sm me-2"></span><span>Registrando...</span> }
-                            else { <span><i class="bi bi-pen me-1"></i> Assinar e ver contato</span> }
-                        </button>
-                    }
-                    else
-                    {
-                        <div class="text-center py-3">
-                            <div class="display-3 mb-2">🎉</div>
-                            <p class="fs-5 fw-bold text-dark mb-1">Pronto! O doador foi avisado.</p>
-                            <p class="text-muted">Agora é só combinar a visita com <strong>@pet.UsuarioDoador?.Nome</strong>.</p>
-                            <button class="btn btn-success btn-lg w-100 mt-2" @onclick="AbrirWhatsApp">
-                                <i class="bi bi-whatsapp me-2"></i>Conversar no WhatsApp
-                            </button>
-                        </div>
-                    }
-                </div>
-            </div>
-        </div>
-    </div>
-}
 
 <style>
     .galeria { position: relative; aspect-ratio: 4 / 3; border-radius: 22px; }
@@ -204,6 +169,7 @@
     .dado { background: #fff; border: 1px solid var(--mp-line); border-radius: 14px; padding: .7rem .9rem; }
     .dado small { display: block; color: var(--mp-muted); font-size: .75rem; font-weight: 600; }
     .dado b { color: var(--mp-ink); }
+    .mapa { height: 260px; background: #e5e7eb; z-index: 0; }
     @@media (max-width: 991.98px) {
         /* No celular o botão de adotar fica sempre visível acima da barra inferior */
         .acao-adotar { position: sticky; bottom: calc(76px + env(safe-area-inset-bottom)); background: var(--mp-bg); padding: .75rem 0; z-index: 10; }
@@ -213,19 +179,36 @@
 @code {
     [Parameter] public int Id { get; set; }
     private Pet? pet;
-    private bool carregando = true;
+    private GeoService.Ponto? local;
+    private bool carregando = true, localizando, abrindoConversa, desenharMapa;
     private int fotoAtual;
-    private bool exibirModal, interesseRegistrado, registrando, leuClausulas;
-    private string userIp = "";
-    private string textoContratoTemporario = "";
 
     protected override async Task OnParametersSetAsync()
     {
         carregando = true;
         fotoAtual = 0;
+        local = null;
         pet = await PetRepository.GetByIdAsync(Id);
-        userIp = HttpContextAccessor.HttpContext?.Connection?.RemoteIpAddress?.ToString() ?? "IP Remoto";
         carregando = false;
+
+        if (pet?.UsuarioDoador != null)
+        {
+            localizando = true;
+            StateHasChanged();
+            local = await Geo.LocalizarAsync(pet.UsuarioDoador.Cidade, pet.UsuarioDoador.Estado, pet.UsuarioDoador.Bairro);
+            localizando = false;
+            desenharMapa = local != null;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (desenharMapa && local != null)
+        {
+            desenharMapa = false;
+            try { await JS.InvokeVoidAsync("mpMapa", "mapa-pet", local.Lat, local.Lng, local.RaioMetros, $"{pet?.Nome} está nesta região"); }
+            catch { /* sem internet para o mapa: a página continua funcionando */ }
+        }
     }
 
     private void MudarFoto(int passo)
@@ -234,81 +217,25 @@
         fotoAtual = (fotoAtual + passo + pet.Imagens.Count) % pet.Imagens.Count;
     }
 
-    private void ValidarEAbrirModal()
+    // Abre (ou retoma) a conversa com quem anunciou o pet
+    private async Task QueroAdotar()
     {
+        if (pet == null) return;
         if (AuthService.UsuarioLogado == null)
         {
-            Toast.Info("Entre na sua conta para iniciar uma adoção.");
-            Nav.NavigateTo("/login");
+            Toast.Info("Entre na sua conta para conversar com o doador.");
+            Nav.NavigateTo($"/login?voltar=/pets/detalhes/{pet.Id}");
             return;
         }
 
-        // Só quem teve o documento aprovado pode assinar o termo
-        if (!AuthService.DocumentoAprovado)
-        {
-            Toast.Aviso("Por questões jurídicas, verifique seu documento no Perfil antes de adotar.");
-            Nav.NavigateTo("/perfil");
-            return;
-        }
-
-        textoContratoTemporario = GerarTextoContrato();
-        leuClausulas = false;
-        exibirModal = true;
-    }
-
-    private string GerarTextoContrato()
-    {
-        var adotante = AuthService.UsuarioLogado;
-        var doador = pet?.UsuarioDoador;
-        return $@"CONTRATO DE DOAÇÃO E ADOÇÃO DE ANIMAL DOMÉSTICO
-
-DOADOR: {doador?.Nome} (Doc: {DocumentoUtil.Formatar(doador?.Documento)})
-ADOTANTE: {adotante?.Nome} (Doc: {DocumentoUtil.Formatar(adotante?.Documento)})
-LOCAL: {adotante?.Cidade}/{adotante?.Estado}
-
-OBJETO: O animal de nome {pet?.Nome}, espécie {pet?.Especie}, raça {pet?.Raca}.
-
-Pelo presente instrumento, o ADOTANTE assume a guarda do animal acima descrito, responsabilizando-se civil e criminalmente por seu bem-estar, saúde e integridade, em conformidade com a legislação vigente.
-
-Assinado via IP: {userIp} em {DateTime.Now:dd/MM/yyyy HH:mm}";
-    }
-
-    private void FecharModal() { exibirModal = false; interesseRegistrado = false; }
-
-    private async Task AceitarERegistrar()
-    {
-        if (registrando || pet == null || AuthService.UsuarioLogado == null) return;
-        registrando = true;
+        abrindoConversa = true;
         try
         {
-            await InteresseRepository.AddAsync(new InteresseAdocao
-            {
-                PetId = pet.Id,
-                UsuarioInteressadoId = AuthService.UsuarioLogado.Id,
-                DataInteresse = DateTime.UtcNow,
-                TermoAceito = true,
-                IpUsuario = userIp,
-                ContratoGerado = textoContratoTemporario
-            });
-
-            // O pet sai do catálogo até o doador finalizar ou reabrir o anúncio
-            await PetRepository.AtualizarStatusAsync(pet.Id, "Em Processo");
-            pet.Status = "Em Processo";
-            interesseRegistrado = true;
+            var conversaId = await Chat.ObterOuCriarAsync(AuthService.UsuarioLogado.Id, pet.UsuarioDoadorId, petId: pet.Id,
+                primeiraMensagem: $"Olá! Vi o anúncio do(a) {pet.Nome} e tenho interesse em adotar. Podemos conversar? 🐾");
+            Nav.NavigateTo($"/mensagens/{conversaId}");
         }
-        catch (Exception ex)
-        {
-            Toast.Erro("Não foi possível registrar o termo: " + (ex.InnerException?.Message ?? ex.Message));
-        }
-        finally { registrando = false; }
-    }
-
-    private async Task AbrirWhatsApp()
-    {
-        if (pet?.UsuarioDoador == null) return;
-        var fone = new string(pet.UsuarioDoador.Telefone.Where(char.IsDigit).ToArray());
-        var texto = $"Olá! Acabei de assinar o termo no *Match-Pet SP* para adotar o(a) *{pet.Nome}*! Podemos combinar a visita?";
-        await JS.InvokeVoidAsync("open", $"https://wa.me/55{fone}?text={Uri.EscapeDataString(texto)}", "_blank");
-        FecharModal();
+        catch (Exception ex) { Toast.Erro(ex.Message); }
+        finally { abrindoConversa = false; }
     }
 }

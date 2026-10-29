@@ -1,0 +1,55 @@
+@* Cartão de pessoa/ONG com o botão de amizade (usado em busca, sugestões e lista de amigos) *@
+@inject SocialService Social
+@inject AuthService AuthService
+@inject ToastService Toast
+
+<div class="d-flex align-items-center gap-2 @(Compacto ? "py-2" : "mp-card p-2 px-3")">
+    <a href="/u/@Usuario.Id" class="d-flex align-items-center gap-2 text-decoration-none min-w-0 flex-grow-1">
+        <Avatar Usuario="Usuario" Tamanho="@(Compacto ? 38 : 46)" />
+        <div class="min-w-0">
+            <div class="fw-bold text-dark text-truncate small">@Usuario.Nome @if (Usuario.EhOng) { <i class="bi bi-patch-check-fill text-success"></i> }</div>
+            <div class="text-muted text-truncate" style="font-size:.78rem">@(Usuario.EhOng ? "ONG" : "Pessoa") · @Usuario.Cidade</div>
+        </div>
+    </a>
+    @if (AuthService.UsuarioLogado != null && AuthService.UsuarioLogado.Id != Usuario.Id)
+    {
+        @switch (relacao)
+        {
+            case SocialService.Relacao.Nenhuma:
+                <button class="btn btn-primary btn-sm flex-shrink-0" @onclick="Adicionar" disabled="@ocupado"><i class="bi bi-person-plus"></i>@(Compacto ? "" : " Adicionar")</button>
+                break;
+            case SocialService.Relacao.PedidoEnviado:
+                <span class="tag flex-shrink-0">Enviado</span>
+                break;
+            case SocialService.Relacao.PedidoRecebido:
+                <button class="btn btn-success btn-sm flex-shrink-0" @onclick="Adicionar" disabled="@ocupado">Aceitar</button>
+                break;
+            case SocialService.Relacao.Amigos:
+                <span class="tag verde flex-shrink-0"><i class="bi bi-check2"></i> Amigos</span>
+                break;
+        }
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public Usuario Usuario { get; set; } = default!;
+    [Parameter] public bool Compacto { get; set; }
+
+    private SocialService.Relacao relacao = SocialService.Relacao.EuMesmo;
+    private bool ocupado;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (AuthService.UsuarioLogado != null)
+            (relacao, _) = await Social.RelacaoAsync(AuthService.UsuarioLogado.Id, Usuario.Id);
+    }
+
+    private async Task Adicionar()
+    {
+        ocupado = true;
+        await Social.SolicitarAmizadeAsync(AuthService.UsuarioLogado!.Id, Usuario.Id);
+        (relacao, _) = await Social.RelacaoAsync(AuthService.UsuarioLogado.Id, Usuario.Id);
+        Toast.Sucesso(relacao == SocialService.Relacao.Amigos ? $"Agora você e {Usuario.Nome.Split(' ')[0]} são amigos!" : "Pedido de amizade enviado.");
+        ocupado = false;
+    }
+}

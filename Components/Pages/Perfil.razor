@@ -37,6 +37,7 @@
                     </div>
 
                     <div class="d-grid gap-2 mt-4">
+                        <a href="/u/@u.Id" class="btn btn-primary"><i class="bi bi-person-badge me-1"></i> Ver meu perfil público</a>
                         <a href="/meus-pets" class="btn btn-light"><i class="bi bi-collection me-1"></i> Meus anúncios</a>
                     </div>
                 </div>
@@ -117,6 +118,10 @@
                             <div class="col-md-6">
                                 <label class="form-label">WhatsApp / Telefone</label>
                                 <InputText class="form-control" inputmode="tel" @bind-Value="u.Telefone" />
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Sobre mim <span class="text-muted fw-normal">(aparece no seu perfil público)</span></label>
+                                <InputTextArea class="form-control" rows="3" maxlength="600" @bind-Value="u.Bio" placeholder="Conte um pouco sobre você e seus pets..." />
                             </div>
                             <div class="col-md-8">
                                 <label class="form-label">Endereço</label>

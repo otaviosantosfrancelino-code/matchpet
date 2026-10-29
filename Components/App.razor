@@ -9,10 +9,11 @@
     <meta name="description" content="Match-Pet SP: adoção responsável de animais e doação de itens em Franca e região." />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" />
     <link rel="stylesheet" href="@Assets["lib/bootstrap/dist/css/bootstrap.min.css"]" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link rel="stylesheet" href="@($"app.css?v={VersaoArquivos}")" />
-    <link rel="stylesheet" href="@($"crudcomdb.styles.css?v={VersaoArquivos}")" />
+    <link rel="stylesheet" href="@Assets["app.css"]" />
+    <link rel="stylesheet" href="@Assets["crudcomdb.styles.css"]" />
     <ImportMap />
     <link rel="icon" type="image/png" href="favicon.png" />
     <HeadOutlet @rendermode="ModoInterativo" />
@@ -28,7 +29,7 @@
 
 <body>
     @* Site todo interativo e sem pré-renderização: cada tela carrega uma vez só e o login salvo funciona após o F5 *@
-    <Routes @rendermode="ModoInterativo" />
+    <Routes @rendermode="ModoInterativo" IpCliente="@HttpContext?.Connection.RemoteIpAddress?.ToString()" />
 
     <div id="carregando-app">
         <img src="logo-match-pet.png" alt="" />
@@ -36,20 +37,15 @@
     </div>
 
     <script src="_framework/blazor.web.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // Volta ao topo ao trocar de página
-        window.mpRolarTopo = () => window.scrollTo({ top: 0, behavior: 'instant' });
-        // Copiar texto (Pix etc.); devolve false se o navegador bloquear
-        window.mpCopiar = async (texto) => { try { await navigator.clipboard.writeText(texto); return true; } catch { return false; } };
-    </script>
+    <script src="@Assets["site.js"]"></script>
 </body>
 
 </html>
 
 @code {
+    // Disponível só na abertura da página (antes de o site ficar interativo)
+    [CascadingParameter] private HttpContext? HttpContext { get; set; }
+
     private static readonly IComponentRenderMode ModoInterativo = new InteractiveServerRenderMode(prerender: false);
 
-    // Muda a cada nova versão publicada: obriga o navegador a baixar o CSS novo (em vez de usar o antigo do cache)
-    private static readonly string VersaoArquivos = File.GetLastWriteTimeUtc(typeof(App).Assembly.Location).Ticks.ToString();
 }
