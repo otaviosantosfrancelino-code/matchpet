@@ -11,11 +11,15 @@ namespace crudcomdb.Services
     {
         private readonly IDbContextFactory<AppDbContext> _fabrica;
         private readonly NotificacoesService _avisos;
+        private readonly NotificacaoService _notificacoes;
+        private readonly RankingService _ranking;
 
-        public ChatService(IDbContextFactory<AppDbContext> fabrica, NotificacoesService avisos)
+        public ChatService(IDbContextFactory<AppDbContext> fabrica, NotificacoesService avisos, NotificacaoService notificacoes, RankingService ranking)
         {
             _fabrica = fabrica;
             _avisos = avisos;
+            _notificacoes = notificacoes;
+            _ranking = ranking;
         }
 
         public record ResumoConversa(int Id, Usuario Outro, int? PetId, string? PetNome, int? PetFotoId, string? PetStatus,
@@ -189,6 +193,7 @@ namespace crudcomdb.Services
             await db.SaveChangesAsync();
 
             _avisos.Avisar(adotante.Id, "mensagem", conversaId);
+            await _notificacoes.CriarAsync(adotante.Id, doador.Id, "termo", $"{doador.Nome.Split(' ')[0]} enviou o termo de adoção de {pet.Nome} para você assinar.", $"/mensagens/{conversaId}");
             return termo;
         }
 
@@ -222,6 +227,19 @@ namespace crudcomdb.Services
 
             _avisos.Avisar(termo.DoadorId, "mensagem", termo.ConversaId);
             _avisos.Avisar(adotanteId, "mensagem", termo.ConversaId);
+
+            var nomePet = await db.Pets.Where(p => p.Id == termo.PetId).Select(p => p.Nome).FirstOrDefaultAsync() ?? "o pet";
+            var nomeAdotante = (await db.Usuarios.Where(u => u.Id == adotanteId).Select(u => u.Nome).FirstOrDefaultAsync() ?? "").Split(' ')[0];
+            await _notificacoes.CriarAsync(termo.DoadorId, adotanteId, "termo_assinado", $"{nomeAdotante} assinou o termo: {nomePet} encontrou um lar! 🏡", $"/mensagens/{termo.ConversaId}");
+
+            // Adoção conta pontos no ranking dos dois
+            // (em segundo plano, para não atrasar a assinatura)
+            var doadorId = termo.DoadorId;
+            _ = Task.Run(async () =>
+            {
+                try { await _ranking.VerificarAsync(adotanteId); await _ranking.VerificarAsync(doadorId); }
+                catch { /* o ranking é só um bônus: falha aqui não afeta a adoção */ }
+            });
         }
 
         public async Task CancelarTermoAsync(int termoId, int usuarioId)

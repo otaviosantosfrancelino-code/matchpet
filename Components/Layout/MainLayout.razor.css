@@ -9,16 +9,28 @@ main {
     padding-top: 64px; /* altura do menu fixo */
 }
 
-/* Rodapé */
+/* Rodapé escuro */
 .rodape-site {
-    background: #fff;
-    border-top: 1px solid var(--mp-line);
-    padding: 2.5rem 0 1.5rem;
-    margin-top: 4rem;
+    background: radial-gradient(800px 300px at 10% 0%, rgba(37,99,235,.25), transparent), radial-gradient(600px 300px at 100% 100%, rgba(249,115,22,.15), transparent), #0b1220;
+    color: #94a3b8;
+    padding: 3rem 0 1.5rem;
+    margin-top: 5rem;
 }
-.rodape-site .titulo { font-weight: 800; color: var(--mp-ink); margin-bottom: .6rem; font-size: .95rem; }
-.rodape-site a { display: block; color: var(--mp-muted); text-decoration: none; font-size: .9rem; padding: .2rem 0; }
-.rodape-site a:hover { color: var(--mp-primary); }
+.rodape-site .titulo { font-weight: 800; color: #fff; margin-bottom: .7rem; font-size: .9rem; }
+.rodape-site a:not(.btn) { display: block; color: #94a3b8; text-decoration: none; font-size: .9rem; padding: .22rem 0; transition: color .2s; }
+.rodape-site a:not(.btn):hover { color: #fff; }
+.rodape-cta {
+    display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; flex-wrap: wrap;
+    margin: -6rem 0 3rem; padding: clamp(1.5rem, 4vw, 2.5rem); border-radius: 28px; color: #fff;
+    background: radial-gradient(500px 200px at 100% 0%, rgba(255,255,255,.22), transparent), linear-gradient(120deg, #2563eb, #7c3aed);
+    box-shadow: 0 30px 60px -25px rgba(37,99,235,.6);
+}
+.rodape-cta h2 { color: #fff; font-size: clamp(1.4rem, 3vw, 2rem); margin-bottom: .3rem; }
+.rodape-cta p { margin: 0; opacity: .9; }
+.rodape-cta .btn-light { color: #1e3a8a; }
+.selos { display: flex; flex-wrap: wrap; gap: .4rem; }
+.selos span { font-size: .75rem; font-weight: 600; padding: .3rem .65rem; border-radius: 999px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1); color: #cbd5e1; }
+.rodape-base { display: flex; justify-content: space-between; gap: .5rem; flex-wrap: wrap; border-top: 1px solid rgba(255,255,255,.08); margin-top: 2.5rem; padding-top: 1.25rem; font-size: .8rem; }
 
 /* Mensagem de erro do Blazor */
 #blazor-error-ui {

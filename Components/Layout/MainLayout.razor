@@ -22,35 +22,71 @@
 
     <footer class="rodape-site">
         <div class="container-xl">
-            <div class="row g-4">
-                <div class="col-lg-5">
-                    <div class="d-flex align-items-center gap-2 mb-2">
-                        <img src="/logo-match-pet.png" alt="" style="height:36px" />
-                        <span class="fw-bold text-dark fs-5">Match-Pet <span style="color:var(--mp-accent)">SP</span></span>
+            @if (!AuthService.EstaLogado)
+            {
+                <div class="rodape-cta">
+                    <div>
+                        <h2>Pronto para encontrar seu match?</h2>
+                        <p>Crie sua conta grátis em 2 minutos e converse direto com ONGs e tutores.</p>
                     </div>
-                    <p class="small text-muted mb-0" style="max-width:380px">
+                    <div class="d-flex gap-2 flex-wrap">
+                        <a href="/cadastro" class="btn btn-light btn-lg fw-bold">Criar conta grátis</a>
+                        <a href="/pets" class="btn btn-glass btn-lg">Ver pets</a>
+                    </div>
+                </div>
+            }
+            <div class="row g-4">
+                <div class="col-lg-4">
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <img src="/logo-match-pet.png" alt="" style="height:40px" />
+                        <span class="fw-bold text-white fs-5">Match-Pet <span style="color:#fb923c">SP</span></span>
+                    </div>
+                    <p class="small mb-3" style="max-width:360px">
                         Adoção responsável e doações solidárias em Franca e região. Cada cadastro é verificado para proteger pessoas e animais.
                     </p>
+                    <div class="selos">
+                        <span><i class="bi bi-shield-check"></i> Documentos verificados</span>
+                        <span><i class="bi bi-file-earmark-lock2"></i> Termo digital</span>
+                        <span><i class="bi bi-incognito"></i> LGPD</span>
+                    </div>
                 </div>
-                <div class="col-6 col-lg-2">
+                <div class="col-6 col-md-3 col-lg-2">
                     <div class="titulo">Adotar</div>
                     <a href="/pets">Catálogo</a>
                     <a href="/ongs">ONGs</a>
                     <a href="/final-feliz">Final Feliz</a>
                 </div>
-                <div class="col-6 col-lg-2">
+                <div class="col-6 col-md-3 col-lg-2">
+                    <div class="titulo">Comunidade</div>
+                    <a href="/comunidade">Feed</a>
+                    <a href="/reels">Vídeos</a>
+                    <a href="/estatisticas">Estatísticas e rankings</a>
+                </div>
+                <div class="col-6 col-md-3 col-lg-2">
                     <div class="titulo">Ajudar</div>
                     <a href="/pets/novo">Anunciar pet</a>
                     <a href="/bazar">Bazar Solidário</a>
                     <a href="/cadastro">Criar conta</a>
                 </div>
-                <div class="col-lg-3">
-                    <div class="titulo">Segurança</div>
-                    <p class="small text-muted mb-0"><i class="bi bi-shield-check text-success me-1"></i>Documentos verificados, contratos digitais e respeito à LGPD.</p>
+                <div class="col-6 col-md-3 col-lg-2">
+                    <div class="titulo">Conta</div>
+                    @if (AuthService.EstaLogado)
+                    {
+                        <a href="/perfil">Meu perfil</a>
+                        <a href="/notificacoes">Notificações</a>
+                        <a href="/mensagens">Mensagens</a>
+                    }
+                    else
+                    {
+                        <a href="/login">Entrar</a>
+                        <a href="/esqueci-senha">Esqueci a senha</a>
+                    }
                 </div>
             </div>
-            <hr class="my-4" />
-            <div class="small text-muted text-center">&copy; 2026 Match-Pet SP · Sistema de Gestão de Adoções · Franca/SP</div>
+            <div class="rodape-base">
+                <span>&copy; 2026 Match-Pet SP · Sistema de Gestão de Adoções · Franca/SP</span>
+                <span>Feito com 🐾 para quem ama animais</span>
+            </div>
         </div>
     </footer>
 </div>

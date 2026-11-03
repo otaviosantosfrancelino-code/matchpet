@@ -1,5 +1,8 @@
 // Funções JavaScript chamadas pelas páginas Blazor (C#)
 
+// Liga as animações de entrada (sem JavaScript, tudo aparece normalmente)
+document.documentElement.classList.add("anim");
+
 // Volta ao topo ao trocar de página
 window.mpRolarTopo = () => window.scrollTo({ top: 0, behavior: 'instant' });
 
@@ -73,3 +76,51 @@ window.mpObservarVideos = () => {
 window.mpAlternarSom = () => {
     document.querySelectorAll('video[data-auto]').forEach(v => { if (!v.paused) v.muted = !v.muted; });
 };
+
+// Liga/desliga o som de todos os vídeos da tela cheia
+window.mpDefinirSom = (mudo) => {
+    document.querySelectorAll('video[data-auto]').forEach(v => { v.muted = mudo; });
+    const tocando = [...document.querySelectorAll('video[data-auto]')].find(v => !v.paused);
+    if (tocando && !mudo) tocando.play().catch(() => { });
+};
+
+// ----- ANIMAÇÕES AO ROLAR (todas as páginas) -----
+// Elementos com data-revelar aparecem suavemente quando entram na tela.
+// Elementos com data-contar="123" contam de 0 até o número.
+(function () {
+    const reduzir = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    const contar = (el) => {
+        const alvo = parseInt(el.dataset.contar || '0', 10);
+        if (reduzir || !alvo) { el.textContent = alvo.toLocaleString('pt-BR'); return; }
+        const inicio = performance.now(), duracao = 1200;
+        const passo = (t) => {
+            const p = Math.min(1, (t - inicio) / duracao);
+            const suave = 1 - Math.pow(1 - p, 3);
+            el.textContent = Math.round(alvo * suave).toLocaleString('pt-BR');
+            if (p < 1) requestAnimationFrame(passo);
+        };
+        requestAnimationFrame(passo);
+    };
+
+    const observador = new IntersectionObserver((itens) => {
+        itens.forEach(i => {
+            if (!i.isIntersecting) return;
+            const el = i.target;
+            if (el.hasAttribute('data-revelar')) el.classList.add('revelado');
+            if (el.hasAttribute('data-contar') && !el.dataset.contado) { el.dataset.contado = '1'; contar(el); }
+            observador.unobserve(el);
+        });
+    }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+
+    const observarNovos = (raiz) => {
+        raiz.querySelectorAll?.('[data-revelar]:not(.revelado), [data-contar]:not([data-contado])').forEach(el => observador.observe(el));
+    };
+
+    // O Blazor troca o conteúdo da página sem recarregar: observa o que for aparecendo
+    new MutationObserver((mudancas) => {
+        mudancas.forEach(m => m.addedNodes.forEach(n => { if (n.nodeType === 1) { observarNovos(n); if (n.matches?.('[data-revelar],[data-contar]')) observador.observe(n); } }));
+    }).observe(document.documentElement, { childList: true, subtree: true });
+
+    document.addEventListener('DOMContentLoaded', () => observarNovos(document));
+})();

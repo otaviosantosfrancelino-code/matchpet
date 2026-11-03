@@ -4,6 +4,7 @@
 @inject AuthService AuthService
 @inject NavigationManager Nav
 @inject ToastService Toast
+@inject RankingService Ranking
 
 <PageTitle>Meus anúncios | Match-Pet SP</PageTitle>
 
@@ -168,6 +169,13 @@
         meusItens = await ItemRepository.GetByUserIdAsync(id);
     }
 
+    // Doações contam pontos no ranking (em segundo plano)
+    private void VerificarRanking()
+    {
+        var id = AuthService.UsuarioLogado!.Id;
+        _ = Task.Run(async () => { try { await Ranking.VerificarAsync(id); } catch { } });
+    }
+
     private static string CorStatus(string s) => s switch { "Disponível" => "bg-success", "Em Processo" => "bg-primary", _ => "bg-warning" };
 
     private async Task MudarStatusPet(Pet pet, string status)
@@ -181,6 +189,7 @@
     {
         await ItemRepository.AtualizarStatusAsync(item.Id, "Doado");
         Toast.Sucesso("Obrigado por ajudar! Item marcado como doado.");
+        VerificarRanking();
         await CarregarDados();
     }
 
@@ -194,6 +203,7 @@
             {
                 await PetRepository.AtualizarStatusAsync(c.Id, "Adotado");
                 Toast.Sucesso($"Que notícia boa! {c.Nome} está na galeria Final Feliz. 💛");
+                VerificarRanking();
             }
             else if (c.EhPet)
             {

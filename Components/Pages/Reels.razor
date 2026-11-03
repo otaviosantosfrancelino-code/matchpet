@@ -1,0 +1,137 @@
+@page "/reels"
+@layout crudcomdb.Components.Layout.TelaCheiaLayout
+@inject SocialService Social
+@inject AuthService AuthService
+@inject NavigationManager Nav
+@inject ToastService Toast
+@inject IJSRuntime JS
+
+<PageTitle>Vídeos | Match-Pet SP</PageTitle>
+
+<div class="reels-tela" id="reels-tela">
+    <header class="reels-topo">
+        <button class="reels-botao" @onclick="Voltar" aria-label="Fechar vídeos"><i class="bi bi-x-lg"></i></button>
+        <b>Vídeos</b>
+        <button class="reels-botao" @onclick="AlternarSom" aria-label="@(mudo ? "Ligar som" : "Desligar som")"><i class="bi @(mudo ? "bi-volume-mute-fill" : "bi-volume-up-fill")"></i></button>
+    </header>
+
+    @if (videos == null)
+    {
+        <div class="reel-cheio"><div class="spinner-border text-light"></div></div>
+    }
+    else if (!videos.Any())
+    {
+        <div class="reel-cheio text-white text-center p-4"><div><div class="display-4">🎬</div><p>Nenhum vídeo publicado ainda.</p><a href="/comunidade" class="btn btn-light">Voltar à Comunidade</a></div></div>
+    }
+    else
+    {
+        @foreach (var v in videos)
+        {
+            <section class="reel-cheio" id="reel-@v.Id">
+                <video src="@v.MidiaUrl" data-auto loop playsinline preload="metadata" muted @onclick="AlternarSom" @ondblclick="() => CurtirDuplo(v)"></video>
+
+                @if (explodindo == v.Id) { <span class="pata-explosao"><IconePata Cheia="true" Tamanho="120" /></span> }
+
+                <div class="reel-texto">
+                    <a href="/u/@v.Autor.Id" class="d-flex align-items-center gap-2 text-white text-decoration-none mb-2">
+                        <Avatar Usuario="v.Autor" Tamanho="38" />
+                        <b>@v.Autor.Nome</b>
+                        @if (v.Autor.EhOng) { <i class="bi bi-patch-check-fill text-info"></i> }
+                    </a>
+                    @if (!string.IsNullOrWhiteSpace(v.Texto)) { <p class="mb-1 texto-2-linhas">@v.Texto</p> }
+                    @if (v.PetId != null) { <a href="/pets/detalhes/@v.PetId" class="tag text-decoration-none" style="background:rgba(255,255,255,.18);color:#fff">🐾 @v.PetNome</a> }
+                </div>
+
+                <div class="reel-lateral">
+                    <button class="reels-acao @(curtidos.Contains(v.Id) ? "curtido" : "")" @onclick="() => Curtir(v)" aria-label="Dar patinha">
+                        <IconePata Cheia="curtidos.Contains(v.Id)" Tamanho="36" />
+                        <span>@contagem.GetValueOrDefault(v.Id)</span>
+                    </button>
+                    <a class="reels-acao" href="/comunidade?post=@v.Id" aria-label="Comentários">
+                        <i class="bi bi-chat-fill"></i><span>@v.Comentarios</span>
+                    </a>
+                    <button class="reels-acao" @onclick="() => Compartilhar(v)" aria-label="Copiar link">
+                        <i class="bi bi-send-fill"></i><span>Enviar</span>
+                    </button>
+                </div>
+            </section>
+        }
+    }
+</div>
+
+@code {
+    [SupplyParameterFromQuery(Name = "inicio")] public int? Inicio { get; set; }
+
+    private List<SocialService.PostagemView>? videos;
+    private readonly HashSet<int> curtidos = new();
+    private readonly Dictionary<int, int> contagem = new();
+    private bool mudo = true, posicionar;
+    private int? explodindo;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var eu = AuthService.UsuarioLogado?.Id;
+        var todos = new List<SocialService.PostagemView>();
+        for (var pagina = 0; pagina < 6; pagina++)
+        {
+            var lote = await Social.FeedAsync(eu, "videos", pagina);
+            todos.AddRange(lote);
+            if (lote.Count < SocialService.PorPagina) break;
+        }
+        // O vídeo escolhido vem primeiro; o resto segue a ordem do feed
+        if (Inicio is int id && todos.FirstOrDefault(v => v.Id == id) is { } escolhido)
+        {
+            todos.Remove(escolhido);
+            todos.Insert(0, escolhido);
+        }
+        videos = todos;
+        foreach (var v in todos)
+        {
+            contagem[v.Id] = v.Curtidas;
+            if (v.Curti) curtidos.Add(v.Id);
+        }
+        posicionar = true;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (posicionar && videos != null)
+        {
+            posicionar = false;
+            try { await JS.InvokeVoidAsync("mpObservarVideos"); } catch { }
+        }
+    }
+
+    // O som é ligado/desligado direto no navegador (o vídeo precisa começar mudo para tocar sozinho)
+    private async Task AlternarSom()
+    {
+        mudo = !mudo;
+        try { await JS.InvokeVoidAsync("mpDefinirSom", mudo); } catch { }
+    }
+
+    private async Task Curtir(SocialService.PostagemView v)
+    {
+        if (!AuthService.EstaLogado) { Toast.Info("Entre na sua conta para dar patinhas."); return; }
+        var (curtiu, total) = await Social.AlternarCurtidaAsync(v.Id, AuthService.UsuarioLogado!.Id);
+        if (curtiu) curtidos.Add(v.Id); else curtidos.Remove(v.Id);
+        contagem[v.Id] = total;
+    }
+
+    // Dois toques no vídeo: patinha grande, igual ao Instagram
+    private async Task CurtirDuplo(SocialService.PostagemView v)
+    {
+        explodindo = v.Id;
+        if (!curtidos.Contains(v.Id)) await Curtir(v);
+        StateHasChanged();
+        await Task.Delay(900);
+        explodindo = null;
+    }
+
+    private async Task Compartilhar(SocialService.PostagemView v)
+    {
+        var link = Nav.ToAbsoluteUri($"/reels?inicio={v.Id}").ToString();
+        if (await JS.InvokeAsync<bool>("mpCopiar", link)) Toast.Sucesso("Link do vídeo copiado!");
+    }
+
+    private void Voltar() => Nav.NavigateTo("/comunidade");
+}

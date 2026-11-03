@@ -1,0 +1,18 @@
+@* Layout sem menu e sem rodapé (vídeos em tela cheia) *@
+@inherits LayoutComponentBase
+@inject AuthService AuthService
+
+<div class="page tela-cheia">
+    <Avisos />
+    @if (pronto) { @Body }
+</div>
+
+@code {
+    private bool pronto;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await AuthService.RestaurarSessaoAsync();
+        pronto = true;
+    }
+}

@@ -1,0 +1,107 @@
+@* Rankings: quem mais adotou, quem mais doou e ONGs mais bem avaliadas, com filtro de período *@
+@inject RankingService Ranking
+@inject AuthService AuthService
+
+<section id="rankings" class="ranking mp-card p-3 p-md-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-3">
+        <div>
+            <span class="eyebrow"><i class="bi bi-trophy"></i> Rankings</span>
+            <h2 class="h4 mb-0">Quem mais faz a diferença</h2>
+            <small class="text-muted">@RankingService.Rotulo(periodo) · atualiza em tempo real</small>
+        </div>
+        <div class="chips">
+            @foreach (var (chave, rotulo) in RankingService.Periodos)
+            {
+                <button class="chip @(periodo == chave ? "ativo" : "")" @onclick="() => MudarPeriodo(chave)">@rotulo</button>
+            }
+        </div>
+    </div>
+
+    <div class="segmentos w-100 mb-4">
+        <button class="@(aba == "adotantes" ? "ativo" : "")" @onclick='() => aba = "adotantes"'>🏡 Mais adotaram</button>
+        <button class="@(aba == "doadores" ? "ativo" : "")" @onclick='() => aba = "doadores"'>🎁 Mais doaram</button>
+        <button class="@(aba == "ongs" ? "ativo" : "")" @onclick='() => aba = "ongs"'>⭐ ONGs</button>
+    </div>
+
+    @if (carregando)
+    {
+        <div class="row g-3 mb-3">@for (var i = 0; i < 3; i++) { <div class="col-4"><div class="skeleton" style="height:180px;border-radius:18px"></div></div> }</div>
+    }
+    else
+    {
+        var lista = aba switch { "doadores" => doadores, "ongs" => ongs, _ => adotantes };
+        @if (lista.Count == 0)
+        {
+            <div class="estado-vazio py-4"><div class="emoji">🏆</div><p class="text-muted mb-0">Ninguém pontuou neste período ainda. Que tal ser o primeiro?</p></div>
+        }
+        else
+        {
+            @* Pódio: 2º, 1º e 3º *@
+            <div class="podio">
+                @foreach (var p in new[] { lista.ElementAtOrDefault(1), lista.ElementAtOrDefault(0), lista.ElementAtOrDefault(2) })
+                {
+                    @if (p == null) { <div class="degrau vazio"></div> continue; }
+                    <a href="/u/@p.Usuario.Id" class="degrau lugar-@p.Lugar @(p.Usuario.Id == AuthService.UsuarioLogado?.Id ? "voce" : "")">
+                        <span class="medalha">@(p.Lugar switch { 1 => "🥇", 2 => "🥈", _ => "🥉" })</span>
+                        <Avatar Usuario="p.Usuario" Tamanho="@(p.Lugar == 1 ? 84 : 66)" />
+                        <b class="nome text-truncate">@p.Usuario.Nome</b>
+                        <small class="text-muted text-truncate">@p.Usuario.Cidade</small>
+                        <span class="pontos">@p.Pontos <small>@(aba == "ongs" ? "pts" : aba == "doadores" ? (p.Pontos == 1 ? "doação" : "doações") : (p.Pontos == 1 ? "adoção" : "adoções"))</small></span>
+                        <div class="base">@(p.Lugar)º</div>
+                    </a>
+                }
+            </div>
+
+            <ol class="lista-ranking" start="4">
+                @foreach (var p in lista.Skip(3))
+                {
+                    <li>
+                        <a href="/u/@p.Usuario.Id" class="linha-ranking @(p.Usuario.Id == AuthService.UsuarioLogado?.Id ? "voce" : "")">
+                            <span class="lugar">@p.Lugar</span>
+                            <Avatar Usuario="p.Usuario" Tamanho="40" />
+                            <span class="min-w-0 flex-grow-1">
+                                <b class="d-block text-dark text-truncate">@p.Usuario.Nome @if (p.Usuario.EhOng) { <i class="bi bi-patch-check-fill text-success"></i> }</b>
+                                <small class="text-muted d-block text-truncate">@p.Detalhe</small>
+                            </span>
+                            <span class="pontos-linha">@p.Pontos</span>
+                        </a>
+                    </li>
+                }
+            </ol>
+
+            @if (aba == "ongs")
+            {
+                <p class="small text-muted mt-3 mb-0"><i class="bi bi-info-circle me-1"></i>Pontuação: adoção concluída = 10 · história de adotante = 5 · amigo = 2 · patinha em publicação = 1.</p>
+            }
+        }
+    }
+</section>
+
+@code {
+    [Parameter] public string PeriodoInicial { get; set; } = "tudo";
+
+    private string periodo = "tudo", aba = "adotantes";
+    private bool carregando = true;
+    private List<RankingService.Posicao> adotantes = new(), doadores = new(), ongs = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        periodo = RankingService.Periodos.Any(p => p.Chave == PeriodoInicial) ? PeriodoInicial : "tudo";
+        await Carregar();
+    }
+
+    private async Task MudarPeriodo(string novo)
+    {
+        periodo = novo;
+        await Carregar();
+    }
+
+    private async Task Carregar()
+    {
+        carregando = true;
+        adotantes = await Ranking.AdotantesAsync(periodo);
+        doadores = await Ranking.DoadoresAsync(periodo);
+        ongs = await Ranking.OngsAsync(periodo);
+        carregando = false;
+    }
+}

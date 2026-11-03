@@ -378,6 +378,49 @@ namespace crudcomdb.Migrations
                     b.ToTable("Midias");
                 });
 
+            modelBuilder.Entity("crudcomdb.Models.Notificacao", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("AtorId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Chave")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("DataCriacao")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("Lida")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Link")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Texto")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Tipo")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("UsuarioId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UsuarioId", "Chave");
+
+                    b.HasIndex("UsuarioId", "Lida", "DataCriacao");
+
+                    b.ToTable("Notificacoes");
+                });
+
             modelBuilder.Entity("crudcomdb.Models.Pet", b =>
                 {
                     b.Property<int>("Id")
@@ -864,6 +907,15 @@ namespace crudcomdb.Migrations
                         .WithMany()
                         .HasForeignKey("UsuarioId")
                         .OnDelete(DeleteBehavior.SetNull);
+                });
+
+            modelBuilder.Entity("crudcomdb.Models.Notificacao", b =>
+                {
+                    b.HasOne("crudcomdb.Models.Usuario", null)
+                        .WithMany()
+                        .HasForeignKey("UsuarioId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("crudcomdb.Models.Pet", b =>

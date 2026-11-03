@@ -79,6 +79,14 @@
                     <div class="alert alert-info d-flex align-items-center gap-2"><i class="bi bi-info-circle"></i><span class="small">Entre na sua conta para publicar, curtir e comentar.</span><a href="/login?voltar=/comunidade" class="btn btn-primary btn-sm ms-auto">Entrar</a></div>
                 }
 
+                @if (destaque != null && aba != "videos")
+                {
+                    <div class="destaque-post">
+                        <div class="d-flex align-items-center justify-content-between mb-2"><span class="eyebrow"><i class="bi bi-bell"></i> Da sua notificação</span><button class="btn btn-ghost btn-sm" @onclick="() => destaque = null">Fechar</button></div>
+                        <PostCard Post="destaque" />
+                    </div>
+                }
+
                 @if (posts == null)
                 {
                     @for (var i = 0; i < 3; i++) { <div class="mp-card p-3 mb-3"><div class="d-flex gap-2 mb-3"><div class="skeleton rounded-circle" style="width:42px;height:42px"></div><div class="flex-grow-1"><div class="skeleton mb-2" style="height:14px;width:40%"></div><div class="skeleton" style="height:12px;width:25%"></div></div></div><div class="skeleton" style="height:260px"></div></div> }
@@ -97,7 +105,8 @@
                         @foreach (var p in posts)
                         {
                             <div class="reel">
-                                <video src="@p.MidiaUrl" data-auto muted loop playsinline preload="metadata" @onclick="() => AlternarSom(p.Id)"></video>
+                                <video src="@p.MidiaUrl" data-auto muted loop playsinline preload="metadata" @onclick='() => Nav.NavigateTo($"/reels?inicio={p.Id}")'></video>
+                                <a href="/reels?inicio=@p.Id" class="botao-tela-cheia" aria-label="Assistir em tela cheia"><i class="bi bi-arrows-fullscreen"></i></a>
                                 <div class="reel-info">
                                     <a href="/u/@p.Autor.Id" class="d-flex align-items-center gap-2 text-white text-decoration-none mb-1">
                                         <Avatar Usuario="p.Autor" Tamanho="34" /> <b>@p.Autor.Nome</b>
@@ -110,7 +119,7 @@
                             </div>
                         }
                     </div>
-                    <p class="text-center small text-muted mt-2"><i class="bi bi-volume-mute me-1"></i>Toque no vídeo para ligar o som</p>
+                    <div class="text-center mt-3"><a href="/reels" class="btn btn-dark px-4"><i class="bi bi-arrows-fullscreen me-2"></i>Assistir em tela cheia</a></div>
                 }
                 else
                 {
@@ -166,6 +175,8 @@
 </div>
 
 @code {
+    [SupplyParameterFromQuery(Name = "post")] public int? PostId { get; set; }
+    private SocialService.PostagemView? destaque;
     private string aba = "todos";
     private List<SocialService.PostagemView>? posts;
     private List<Usuario>? sugestoes, pessoas;
@@ -180,6 +191,12 @@
     {
         await CarregarFeed();
         if (AuthService.UsuarioLogado is { } u) sugestoes = await Social.SugestoesAsync(u.Id, u.Cidade, 5);
+    }
+
+    // Também quando a pessoa já está na Comunidade e abre outra notificação
+    protected override async Task OnParametersSetAsync()
+    {
+        if (PostId is int id && destaque?.Id != id) destaque = await Social.PostagemAsync(id, Eu);
     }
 
     private async Task MudarAba(string nova)

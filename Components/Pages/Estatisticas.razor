@@ -29,6 +29,9 @@
             <div class="col-6 col-lg-3"><div class="mp-card kpi"><span class="rotulo"><i class="bi bi-people"></i> Pessoas e ONGs</span><b>@r.Usuarios</b><small>@r.Ongs ONGs parceiras</small></div></div>
         </div>
 
+        @* ===== RANKINGS ===== *@
+        <div class="mb-4"><SecaoRankings PeriodoInicial="@(Periodo ?? "tudo")" /></div>
+
         <div class="row g-3 g-md-4">
             <div class="col-12">
                 <GraficoColunas Titulo="Adoções por mês" Subtitulo="Últimos 12 meses" Dados="r.AdocoesPorMes" />
@@ -67,6 +70,7 @@
 </div>
 
 @code {
+    [SupplyParameterFromQuery(Name = "periodo")] public string? Periodo { get; set; }
     private EstatisticasService.Resumo? r;
     protected override async Task OnInitializedAsync() => r = await Servico.CalcularAsync();
 }

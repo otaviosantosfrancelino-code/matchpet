@@ -30,21 +30,23 @@
 
     @if (Post.MidiaUrl != null)
     {
-        <div class="midia">
+        <div class="midia position-relative">
             @if (Post.TipoMidia == "video")
             {
                 <video src="@Post.MidiaUrl" controls playsinline preload="metadata"></video>
+                <a href="/reels?inicio=@Post.Id" class="botao-tela-cheia" title="Assistir em tela cheia" aria-label="Assistir em tela cheia"><i class="bi bi-arrows-fullscreen"></i></a>
             }
             else
             {
-                <img src="@Post.MidiaUrl" alt="Foto publicada por @Post.Autor.Nome" loading="lazy" @ondblclick="Curtir" />
+                <img src="@Post.MidiaUrl" alt="Foto publicada por @Post.Autor.Nome" loading="lazy" @ondblclick="CurtirDuplo" />
+                @if (explosao) { <span class="pata-explosao"><IconePata Cheia="true" Tamanho="96" /></span> }
             }
         </div>
     }
 
     <footer class="px-2 py-1 d-flex align-items-center gap-1 border-top">
         <button class="btn btn-ghost btn-sm acao @(curti ? "curtido" : "")" @onclick="Curtir" aria-pressed="@curti">
-            <i class="bi @(curti ? "bi-heart-fill" : "bi-heart")"></i> @curtidas
+            <IconePata Cheia="curti" /> @curtidas
         </button>
         <button class="btn btn-ghost btn-sm acao" @onclick="AlternarComentarios">
             <i class="bi bi-chat"></i> @totalComentarios
@@ -91,7 +93,17 @@
     [Parameter, EditorRequired] public SocialService.PostagemView Post { get; set; } = default!;
     [Parameter] public EventCallback<int> OnExcluido { get; set; }
 
-    private bool curti, mostrarComentarios;
+    private bool curti, mostrarComentarios, explosao;
+
+    // Dois toques na foto: patinha grande animada (como no Instagram)
+    private async Task CurtirDuplo()
+    {
+        explosao = true;
+        if (!curti) await Curtir();
+        StateHasChanged();
+        await Task.Delay(900);
+        explosao = false;
+    }
     private int curtidas, totalComentarios;
     private List<SocialService.ComentarioView>? comentarios;
     private string novoComentario = "";

@@ -9,11 +9,13 @@ namespace crudcomdb.Services
     {
         private readonly IDbContextFactory<AppDbContext> _fabrica;
         private readonly NotificacoesService _avisos;
+        private readonly NotificacaoService _notificacoes;
 
-        public SocialService(IDbContextFactory<AppDbContext> fabrica, NotificacoesService avisos)
+        public SocialService(IDbContextFactory<AppDbContext> fabrica, NotificacoesService avisos, NotificacaoService notificacoes)
         {
             _fabrica = fabrica;
             _avisos = avisos;
+            _notificacoes = notificacoes;
         }
 
         public const int PorPagina = 12;
@@ -89,6 +91,13 @@ namespace crudcomdb.Services
             if (existente != null) db.Curtidas.Remove(existente);
             else db.Curtidas.Add(new Curtida { PostagemId = postagemId, UsuarioId = usuarioId });
             await db.SaveChangesAsync();
+            if (existente == null)
+            {
+                // Avisa o autor (só uma vez por pessoa, mesmo que curta e descurta)
+                var autorId = await db.Postagens.Where(p => p.Id == postagemId).Select(p => p.AutorId).FirstOrDefaultAsync();
+                var nome = await NomeAsync(db, usuarioId);
+                await _notificacoes.CriarAsync(autorId, usuarioId, "curtida", $"{nome} deu uma patinha na sua publicação.", $"/comunidade?post={postagemId}", $"curtida:{postagemId}:{usuarioId}");
+            }
             return (existente == null, await db.Curtidas.CountAsync(c => c.PostagemId == postagemId));
         }
 
@@ -107,6 +116,30 @@ namespace crudcomdb.Services
             await using var db = await _fabrica.CreateDbContextAsync();
             db.Comentarios.Add(new Comentario { PostagemId = postagemId, AutorId = autorId, Texto = texto.Trim() });
             await db.SaveChangesAsync();
+
+            var donoId = await db.Postagens.Where(p => p.Id == postagemId).Select(p => p.AutorId).FirstOrDefaultAsync();
+            var nome = await NomeAsync(db, autorId);
+            var resumo = texto.Trim().Length > 60 ? texto.Trim()[..60] + "…" : texto.Trim();
+            await _notificacoes.CriarAsync(donoId, autorId, "comentario", $"{nome} comentou: “{resumo}”", $"/comunidade?post={postagemId}");
+        }
+
+        private static async Task<string> NomeAsync(AppDbContext db, int usuarioId) =>
+            (await db.Usuarios.Where(u => u.Id == usuarioId).Select(u => u.Nome).FirstOrDefaultAsync())?.Split(' ')[0] ?? "Alguém";
+
+        // Uma publicação só (usada quando a pessoa abre uma notificação)
+        public async Task<PostagemView?> PostagemAsync(int postagemId, int? eu)
+        {
+            await using var db = await _fabrica.CreateDbContextAsync();
+            var p = await db.Postagens.AsNoTracking().Where(x => x.Id == postagemId)
+                .Select(x => new
+                {
+                    x.Id, x.AutorId, x.Texto, x.MidiaUrl, x.TipoMidia, x.PetId, x.DataCriacao,
+                    PetNome = x.Pet != null ? x.Pet.Nome : null, Curtidas = x.Curtidas.Count, Comentarios = x.Comentarios.Count,
+                    Curti = eu != null && x.Curtidas.Any(c => c.UsuarioId == eu)
+                }).FirstOrDefaultAsync();
+            if (p == null) return null;
+            var autor = (await Consultas.UsuariosPublicosAsync(db, new[] { p.AutorId })).GetValueOrDefault(p.AutorId);
+            return autor == null ? null : new PostagemView(p.Id, autor, p.Texto, p.MidiaUrl, p.TipoMidia, p.PetId, p.PetNome, p.DataCriacao, p.Curtidas, p.Comentarios, p.Curti);
         }
 
         // ================= PERFIS =================
@@ -177,12 +210,14 @@ namespace crudcomdb.Services
                     existente.DataResposta = DateTime.UtcNow;
                     await db.SaveChangesAsync();
                     _avisos.Avisar(outro, "amizade");
+                    await _notificacoes.CriarAsync(outro, eu, "amizade_aceita", $"{await NomeAsync(db, eu)} aceitou seu pedido de amizade.", $"/u/{eu}");
                 }
                 return;
             }
             db.Amizades.Add(new Amizade { SolicitanteId = eu, DestinatarioId = outro });
             await db.SaveChangesAsync();
             _avisos.Avisar(outro, "amizade");
+            await _notificacoes.CriarAsync(outro, eu, "amizade", $"{await NomeAsync(db, eu)} quer ser seu amigo(a).", "/amigos", $"amizade:{eu}:{outro}");
         }
 
         public async Task ResponderAmizadeAsync(int amizadeId, int eu, bool aceitar)
@@ -194,7 +229,11 @@ namespace crudcomdb.Services
             else db.Amizades.Remove(a);
             await db.SaveChangesAsync();
             _avisos.Avisar(eu, "amizade");
-            if (aceitar) _avisos.Avisar(a.SolicitanteId, "amizade");
+            if (aceitar)
+            {
+                _avisos.Avisar(a.SolicitanteId, "amizade");
+                await _notificacoes.CriarAsync(a.SolicitanteId, eu, "amizade_aceita", $"{await NomeAsync(db, eu)} aceitou seu pedido de amizade.", $"/u/{eu}");
+            }
         }
 
         // Desfazer amizade ou cancelar pedido enviado
@@ -274,6 +313,14 @@ namespace crudcomdb.Services
             await using var db = await _fabrica.CreateDbContextAsync();
             db.Depoimentos.Add(new Depoimento { AutorId = autorId, Titulo = titulo.Trim(), Texto = texto.Trim(), PetId = petId, FotoUrl = fotoUrl });
             await db.SaveChangesAsync();
+
+            // Quem doou o pet fica sabendo da história 💛
+            if (petId != null)
+            {
+                var pet = await db.Pets.Where(p => p.Id == petId).Select(p => new { p.UsuarioDoadorId, p.Nome }).FirstOrDefaultAsync();
+                if (pet != null)
+                    await _notificacoes.CriarAsync(pet.UsuarioDoadorId, autorId, "historia", $"{await NomeAsync(db, autorId)} contou como está a vida de {pet.Nome} no Final Feliz 💛", "/final-feliz");
+            }
         }
 
         public async Task ExcluirDepoimentoAsync(int id, int autorId)

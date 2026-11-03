@@ -79,3 +79,16 @@
 .ponto { position: absolute; top: 2px; right: calc(50% - 16px); width: 10px; height: 10px; border-radius: 50%; background: #e11d48; border: 2px solid #fff; }
 .links ::deep a { white-space: nowrap; }
 .topo .btn { white-space: nowrap; }
+
+/* Nome da marca e painel de notificações */
+.nome-marca { white-space: nowrap; }
+@media (max-width: 420px) { .nome-marca { display: none; } }
+.icone-topo.ativo { background: var(--mp-primary-soft); color: var(--mp-primary); }
+.painel-fundo { position: fixed; inset: 0; z-index: 1040; }
+.painel-notif {
+    position: absolute; right: -8px; top: calc(100% + 10px); width: 380px; z-index: 1050;
+    background: #fff; border: 1px solid var(--mp-line); border-radius: 20px;
+    box-shadow: 0 24px 60px -18px rgba(15, 23, 42, .35); overflow: hidden; animation: cair .18s ease;
+}
+.painel-lista { max-height: 420px; overflow-y: auto; }
+@keyframes cair { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }

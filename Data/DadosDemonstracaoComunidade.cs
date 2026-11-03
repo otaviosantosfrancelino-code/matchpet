@@ -21,7 +21,7 @@ namespace crudcomdb.Data
         private static string Mulher(int n) => $"https://randomuser.me/api/portraits/women/{n}.jpg";
         private static string Homem(int n) => $"https://randomuser.me/api/portraits/men/{n}.jpg";
 
-        private static readonly string[] Videos =
+        internal static readonly string[] Videos =
         {
             WikiOrig + "2/21/Puppy_playing.webm",
             WikiOrig + "f/f3/Kitten_playing_-_Tokyo_-_Jan_7_2020.webm",
@@ -32,7 +32,7 @@ namespace crudcomdb.Data
         };
 
         // Fotos reais dos produtos do Bazar (Wikimedia Commons)
-        private static class Foto
+        internal static class Foto
         {
             public const string RacaoCao = Wiki + "b/b3/CHAMPS_dry_dog_food_pack_by_PENTA_GROUP.jpg/960px-CHAMPS_dry_dog_food_pack_by_PENTA_GROUP.jpg";
             public const string ComedouroGato = Wiki + "f/f7/A_cat_pauses_over_a_bowl_of_food%2C_2011.jpg/960px-A_cat_pauses_over_a_bowl_of_food%2C_2011.jpg";

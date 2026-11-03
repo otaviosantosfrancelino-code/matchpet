@@ -1,0 +1,37 @@
+@page "/notificacoes"
+@inject NotificacaoService Servico
+@inject AuthService AuthService
+@inject NavigationManager Nav
+@inject ToastService Toast
+
+<PageTitle>Notificações | Match-Pet SP</PageTitle>
+
+<div class="container py-4 py-md-5" style="max-width: 720px;">
+    <div class="page-header">
+        <div class="d-flex align-items-center gap-3">
+            <div class="icone-bolha azul"><i class="bi bi-bell"></i></div>
+            <div><h1>Notificações</h1><p>Patinhas, comentários, amizades, termos e rankings.</p></div>
+        </div>
+        <button class="btn btn-light btn-sm" @onclick="MarcarTodas"><i class="bi bi-check2-all me-1"></i>Marcar todas como lidas</button>
+    </div>
+
+    <div class="mp-card overflow-hidden">
+        <ListaNotificacoes @ref="lista" Quantidade="80" />
+    </div>
+</div>
+
+@code {
+    private ListaNotificacoes? lista;
+
+    protected override void OnInitialized()
+    {
+        if (!AuthService.EstaLogado) Nav.NavigateTo("/login?voltar=/notificacoes");
+    }
+
+    private async Task MarcarTodas()
+    {
+        await Servico.MarcarTodasLidasAsync(AuthService.UsuarioLogado!.Id);
+        if (lista != null) await lista.Recarregar();
+        Toast.Sucesso("Tudo em dia! ✨");
+    }
+}

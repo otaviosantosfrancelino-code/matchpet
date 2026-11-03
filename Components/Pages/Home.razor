@@ -4,17 +4,21 @@
 @inject IPetRepository PetRepository
 @inject IItemRepository ItemRepository
 @inject IUsuarioRepository UsuarioRepository
+@inject SocialService Social
+@inject RankingService Ranking
+@inject EstatisticasService Estatisticas
 
-<PageTitle>Match-Pet SP | Adoção responsável em Franca</PageTitle>
+<PageTitle>Match-Pet SP | Adoção responsável em Franca e região</PageTitle>
 
-@* ===== CAPA ===== *@
+@* ================= CAPA ================= *@
 <section class="hero">
+    <div class="hero-bolhas" aria-hidden="true"><span></span><span></span><span></span></div>
     <div class="container-xl position-relative">
-        <div class="row align-items-center g-5">
-            <div class="col-lg-6">
-                <span class="eyebrow mb-3"><i class="bi bi-heart-fill"></i> Adoção responsável em Franca/SP</span>
-                <h1 class="hero-titulo">Encontre o <span class="destaque">amigo certo</span> para a sua vida.</h1>
-                <p class="hero-texto">Pets de ONGs e tutores verificados, filtrados pelo seu estilo de vida. Contrato digital e contato direto com quem está doando.</p>
+        <div class="row align-items-center g-4 g-lg-5">
+            <div class="col-lg-6 order-2 order-lg-1">
+                <span class="eyebrow mb-3"><span class="ponto-vivo"></span> @(numeros?.Disponiveis ?? 0) pets esperando um lar agora</span>
+                <h1 class="hero-titulo">Encontre o <span class="texto-gradiente">amigo certo</span> para a sua vida.</h1>
+                <p class="hero-texto">Adoção responsável com ONGs e tutores verificados, conversa direta pelo chat e termo digital assinado em minutos. Tudo em um só lugar.</p>
 
                 <div class="busca mp-card">
                     <div class="chips">
@@ -32,144 +36,321 @@
                     </div>
                 </div>
 
-                <div class="numeros">
-                    <div><strong>@(disponiveis?.ToString() ?? "–")</strong><span>pets esperando</span></div>
-                    <div><strong>@(adotados?.ToString() ?? "–")</strong><span>finais felizes</span></div>
-                    <div><strong>@(ongs?.ToString() ?? "–")</strong><span>ONGs parceiras</span></div>
+                <div class="prova-social">
+                    <div class="avatares">
+                        @foreach (var p in rostos)
+                        {
+                            <Avatar Usuario="p" Tamanho="36" />
+                        }
+                    </div>
+                    <span><b>@(numeros?.Usuarios ?? 0)+ pessoas</b> e <b>@(numeros?.Ongs ?? 0) ONGs</b> já fazem parte</span>
                 </div>
             </div>
 
-            <div class="col-lg-6 d-none d-lg-block">
+            @* Mascote da marca: aparece também no celular *@
+            <div class="col-lg-6 order-1 order-lg-2">
                 <div class="hero-imagem">
-                    <img src="/home-match-pet.png" alt="Mascotes do Match-Pet" />
-                    <div class="flutuante f1"><span>🛡️</span><div><b>Cadastro verificado</b><small>Documento conferido</small></div></div>
-                    <div class="flutuante f2"><span>📝</span><div><b>Contrato digital</b><small>Adoção com segurança</small></div></div>
+                    <div class="aro"></div>
+                    <img src="/home-match-pet.png" alt="Mascote do Match-Pet: um cachorrinho de moletom amarelo" />
+                    <div class="flutuante f1"><span>🛡️</span><div><b>Perfis verificados</b><small>Documento conferido</small></div></div>
+                    <div class="flutuante f2"><span>📝</span><div><b>Termo digital</b><small>Assinado no chat</small></div></div>
+                    <div class="flutuante f3 d-none d-md-flex"><span>💛</span><div><b>@(numeros?.Adotados ?? 0) adoções</b><small>e contando</small></div></div>
                 </div>
             </div>
         </div>
     </div>
 </section>
 
-@* ===== RECÉM-CHEGADOS ===== *@
-<section class="container-xl py-5">
-    <div class="d-flex align-items-end justify-content-between gap-3 mb-4 flex-wrap">
+@* ================= NÚMEROS ================= *@
+@if (numeros != null)
+{
+    <section class="container-xl numeros-faixa" data-revelar>
+        <div class="mp-card p-3 p-md-4">
+            <div class="row g-3 text-center">
+                <div class="col-6 col-md-2"><b data-contar="@numeros.Adotados">@numeros.Adotados</b><span>adoções</span></div>
+                <div class="col-6 col-md-2"><b data-contar="@numeros.Disponiveis">@numeros.Disponiveis</b><span>pets disponíveis</span></div>
+                <div class="col-6 col-md-2"><b data-contar="@numeros.Ongs">@numeros.Ongs</b><span>ONGs parceiras</span></div>
+                <div class="col-6 col-md-2"><b data-contar="@numeros.Usuarios">@numeros.Usuarios</b><span>pessoas</span></div>
+                <div class="col-6 col-md-2"><b data-contar="@(numeros.ItensDoados + numeros.ItensDisponiveis)">@(numeros.ItensDoados + numeros.ItensDisponiveis)</b><span>itens no Bazar</span></div>
+                <div class="col-6 col-md-2"><b data-contar="@numeros.Depoimentos">@numeros.Depoimentos</b><span>histórias felizes</span></div>
+            </div>
+        </div>
+    </section>
+}
+
+@* ================= RECÉM-CHEGADOS ================= *@
+<section class="container-xl secao pb-4">
+    <div class="d-flex align-items-end justify-content-between gap-3 mb-4 flex-wrap" data-revelar>
         <div>
             <span class="eyebrow">Novidades</span>
-            <h2 class="secao-titulo mb-0">Recém-chegados</h2>
+            <h2 class="secao-titulo mb-0 mt-2">Recém-chegados</h2>
         </div>
         <a href="/pets" class="btn btn-light">Ver todos <i class="bi bi-arrow-right ms-1"></i></a>
     </div>
-
-    @if (recentes == null)
-    {
-        <CardsCarregando Quantidade="4" />
-    }
-    else if (!recentes.Any())
-    {
-        <div class="estado-vazio"><div class="emoji">🐾</div><p class="text-muted mb-3">Ainda não há pets anunciados.</p><a href="/pets/novo" class="btn btn-primary">Anunciar o primeiro</a></div>
-    }
+    @if (recentes == null) { <CardsCarregando Quantidade="4" /> }
     else
     {
         <div class="row g-3 g-md-4">
+            @{ var i = 0; }
             @foreach (var pet in recentes)
             {
-                <div class="col-6 col-md-4 col-lg-3"><PetCard Pet="pet" /></div>
+                i++;
+                <div class="col-6 col-md-4 col-lg-3" data-revelar="@((i - 1) % 4 + 1)"><PetCard Pet="pet" /></div>
             }
         </div>
     }
 </section>
 
-@* ===== COMO FUNCIONA ===== *@
-<section class="container-xl py-5">
-    <div class="text-center mb-5">
-        <span class="eyebrow">Passo a passo</span>
-        <h2 class="secao-titulo">Como funciona</h2>
-        <p class="text-muted mx-auto" style="max-width:560px">Do primeiro clique até o pet chegar em casa, em quatro etapas simples.</p>
-    </div>
-    <div class="row g-3 g-md-4">
-        @foreach (var passo in Passos)
-        {
-            <div class="col-sm-6 col-lg-3">
-                <div class="mp-card mp-card-hover p-4 h-100">
-                    <div class="d-flex align-items-center gap-3 mb-3">
-                        <div class="icone-bolha @passo.Cor"><i class="bi @passo.Icone"></i></div>
-                        <span class="numero-passo">0@(passo.Numero)</span>
+@* ================= ESPERANDO HÁ MAIS TEMPO ================= *@
+@if (esperando?.Any() == true)
+{
+    <section class="container-xl pb-5">
+        <div class="cartao-destaque" data-revelar>
+            <div class="d-flex align-items-end justify-content-between gap-3 mb-3 flex-wrap">
+                <div>
+                    <span class="eyebrow" style="background:#fff7ed;color:#c2410c">❤️‍🩹 Adoção especial</span>
+                    <h2 class="h3 mb-1 mt-2">Esperando há mais tempo</h2>
+                    <p class="text-muted mb-0">Adultos e idosos costumam esperar mais. Eles têm muito amor para dar.</p>
+                </div>
+                <a href="/pets" class="btn btn-accent">Conhecer todos</a>
+            </div>
+            <div class="carrossel">
+                @foreach (var pet in esperando)
+                {
+                    <PetCard Pet="pet" MostrarBotao="false" />
+                }
+            </div>
+        </div>
+    </section>
+}
+
+@* ================= COMO FUNCIONA ================= *@
+<section class="secao secao-escura">
+    <div class="container-xl">
+        <div class="text-center mb-5" data-revelar>
+            <span class="eyebrow">Passo a passo</span>
+            <h2 class="secao-titulo mt-2">Da primeira mensagem ao final feliz</h2>
+            <p class="mx-auto" style="max-width:560px">Uma jornada simples, segura e registrada de ponta a ponta.</p>
+        </div>
+        <div class="row g-3 g-md-4 linha-passos">
+            @{ var n = 0; }
+            @foreach (var passo in Passos)
+            {
+                n++;
+                <div class="col-sm-6 col-lg-3" data-revelar="@n">
+                    <div class="cartao-vidro p-4 h-100">
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            <span class="numero-passo">0@(passo.Numero)</span>
+                            <span class="fs-2">@passo.Emoji</span>
+                        </div>
+                        <h5 class="mb-2">@passo.Titulo</h5>
+                        <p class="small mb-0">@passo.Descricao</p>
                     </div>
-                    <h5 class="mb-2">@passo.Titulo</h5>
-                    <p class="text-muted small mb-0">@passo.Descricao</p>
+                </div>
+            }
+        </div>
+    </div>
+</section>
+
+@* ================= ONGs PARCEIRAS ================= *@
+@if (ongs?.Any() == true)
+{
+    <section class="container-xl pt-5">
+        <p class="text-center text-muted small fw-bold text-uppercase mb-3" style="letter-spacing:.08em" data-revelar>Instituições que confiam no Match-Pet</p>
+        <div class="letreiro" data-revelar>
+            <div class="letreiro-trilho">
+                @foreach (var o in ongs.Concat(ongs))
+                {
+                    <a href="/u/@o.Id" class="ong-chip"><Avatar Usuario="o" Tamanho="34" /> <span>@o.Nome</span> <i class="bi bi-patch-check-fill text-success"></i></a>
+                }
+            </div>
+        </div>
+    </section>
+}
+
+@* ================= POR QUE ADOTAR ================= *@
+<section class="container-xl secao">
+    <div class="row align-items-center g-4 g-lg-5">
+        <div class="col-lg-5" data-revelar>
+            <span class="eyebrow">Por que adotar?</span>
+            <h2 class="secao-titulo mt-2">Adotar muda <span class="texto-gradiente">duas vidas</span>.</h2>
+            <p class="text-muted fs-5">A sua e a de quem estava esperando por você. No Match-Pet cada etapa foi pensada para dar segurança aos dois lados.</p>
+            <a href="/pets" class="btn btn-primary btn-lg mt-2">Quero adotar</a>
+        </div>
+        <div class="col-lg-7">
+            <div class="row g-3">
+                @{ var b = 0; }
+                @foreach (var beneficio in Beneficios)
+                {
+                    b++;
+                    <div class="col-sm-6" data-revelar="@b">
+                        <div class="mp-card mp-card-hover p-4 h-100 beneficio">
+                            <div class="icone-bolha @beneficio.Cor mb-3"><i class="bi @beneficio.Icone"></i></div>
+                            <h5 class="mb-1">@beneficio.Titulo</h5>
+                            <p class="small text-muted mb-0">@beneficio.Texto</p>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</section>
+
+@* ================= HISTÓRIAS ================= *@
+@if (historias?.Any() == true)
+{
+    <section class="container-xl pb-5">
+        <div class="d-flex align-items-end justify-content-between gap-3 mb-4 flex-wrap" data-revelar>
+            <div>
+                <span class="eyebrow">Final feliz</span>
+                <h2 class="secao-titulo mb-0 mt-2">Histórias que inspiram</h2>
+            </div>
+            <a href="/final-feliz" class="btn btn-light">Ler todas <i class="bi bi-arrow-right ms-1"></i></a>
+        </div>
+        <div class="row g-3 g-md-4">
+            @{ var h = 0; }
+            @foreach (var d in historias)
+            {
+                h++;
+                <div class="col-md-4" data-revelar="@h">
+                    <article class="mp-card historia-card h-100">
+                        @if (d.FotoUrl != null || d.PetFotoId != null)
+                        {
+                            <img src="@(d.FotoUrl ?? $"/imagens/pet/{d.PetFotoId}")" alt="" loading="lazy" />
+                        }
+                        <div class="p-4">
+                            <div class="aspas">“</div>
+                            <h3 class="h6 fw-bold">@d.Titulo</h3>
+                            <p class="small text-muted texto-3-linhas">@d.Texto</p>
+                            <a href="/u/@d.Autor.Id" class="d-flex align-items-center gap-2 text-decoration-none">
+                                <Avatar Usuario="d.Autor" Tamanho="30" />
+                                <span class="small"><b class="text-dark">@d.Autor.Nome</b> <span class="text-muted">· @d.Autor.Cidade</span></span>
+                            </a>
+                        </div>
+                    </article>
+                </div>
+            }
+        </div>
+    </section>
+}
+
+@* ================= COMUNIDADE ================= *@
+@if (destaquesComunidade?.Any() == true)
+{
+    <section class="secao" style="background:linear-gradient(180deg, transparent, #eef4ff 30%, #eef4ff 70%, transparent)">
+        <div class="container-xl">
+            <div class="d-flex align-items-end justify-content-between gap-3 mb-4 flex-wrap" data-revelar>
+                <div>
+                    <span class="eyebrow">Comunidade</span>
+                    <h2 class="secao-titulo mb-0 mt-2">O que está rolando</h2>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="/reels" class="btn btn-dark"><i class="bi bi-play-btn-fill me-1"></i>Vídeos</a>
+                    <a href="/comunidade" class="btn btn-light">Ver feed</a>
+                </div>
+            </div>
+            <div class="mosaico">
+                @foreach (var p in destaquesComunidade)
+                {
+                    <a href="@(p.TipoMidia == "video" ? $"/reels?inicio={p.Id}" : $"/comunidade?post={p.Id}")" class="mosaico-item" data-revelar>
+                        @if (p.TipoMidia == "video")
+                        {
+                            <video src="@p.MidiaUrl" muted playsinline preload="metadata"></video>
+                            <span class="selo-video"><i class="bi bi-play-fill"></i></span>
+                        }
+                        else
+                        {
+                            <img src="@p.MidiaUrl" alt="Publicação de @p.Autor.Nome" loading="lazy" />
+                        }
+                        <span class="mosaico-info">
+                            <Avatar Usuario="p.Autor" Tamanho="26" />
+                            <span class="text-truncate">@p.Autor.Nome</span>
+                            <span class="ms-auto d-flex align-items-center gap-1"><IconePata Cheia="true" Tamanho="16" /> @p.Curtidas</span>
+                        </span>
+                    </a>
+                }
+            </div>
+        </div>
+    </section>
+}
+
+@* ================= RANKING + BAZAR ================= *@
+<section class="container-xl secao pt-4">
+    <div class="row g-4">
+        @if (topAdotantes?.Any() == true)
+        {
+            <div class="col-lg-5" data-revelar>
+                <div class="mp-card p-4 h-100 ranking-mini">
+                    <span class="eyebrow"><i class="bi bi-trophy"></i> Ranking</span>
+                    <h3 class="h4 mt-2">Quem mais adotou</h3>
+                    <ol class="list-unstyled mb-3 mt-3">
+                        @foreach (var p in topAdotantes)
+                        {
+                            <li>
+                                <a href="/u/@p.Usuario.Id" class="d-flex align-items-center gap-3 py-2 text-decoration-none">
+                                    <span class="fs-4">@(p.Lugar switch { 1 => "🥇", 2 => "🥈", _ => "🥉" })</span>
+                                    <Avatar Usuario="p.Usuario" Tamanho="42" />
+                                    <span class="min-w-0"><b class="d-block text-dark text-truncate">@p.Usuario.Nome</b><small class="text-muted">@p.Detalhe</small></span>
+                                </a>
+                            </li>
+                        }
+                    </ol>
+                    <a href="/estatisticas#rankings" class="btn btn-light w-100">Ver rankings completos</a>
                 </div>
             </div>
         }
+        <div class="@(topAdotantes?.Any() == true ? "col-lg-7" : "col-12")" data-revelar="2">
+            <div class="chamada laranja h-100 flex-column align-items-start">
+                <div class="d-flex justify-content-between w-100 gap-3">
+                    <div>
+                        <h3>Bazar Solidário</h3>
+                        <p>Ração, caminhas, gaiolas e acessórios doados por quem quer ajudar.</p>
+                    </div>
+                    <span class="emoji d-none d-sm-block">🎁</span>
+                </div>
+                @if (itensBazar?.Any() == true)
+                {
+                    <div class="row g-2 w-100 my-2">
+                        @foreach (var item in itensBazar)
+                        {
+                            <div class="col-6 col-md-3">
+                                <a href="/bazar" class="mini-item">
+                                    @if (item.Imagens.Any()) { <img src="@Url.Item(item.Imagens[0])" alt="" loading="lazy" /> }
+                                    <span class="text-truncate">@item.Nome</span>
+                                </a>
+                            </div>
+                        }
+                    </div>
+                }
+                <a href="/bazar" class="btn btn-light mt-auto">Ver todos os itens</a>
+            </div>
+        </div>
     </div>
 </section>
 
-@* ===== CHAMADAS ===== *@
-<section class="container-xl py-4">
-    <div class="row g-3 g-md-4">
-        <div class="col-lg-6">
-            <div class="chamada azul h-100">
-                <div>
-                    <h3>Precisa doar um pet?</h3>
-                    <p>Anuncie grátis. Os interessados assinam um termo de responsabilidade antes de receber o seu contato.</p>
-                    <a href="/pets/novo" class="btn btn-light">Anunciar agora</a>
-                </div>
-                <span class="emoji">🐶</span>
-            </div>
-        </div>
-        <div class="col-lg-6">
-            <div class="chamada laranja h-100">
-                <div>
-                    <h3>Bazar Solidário</h3>
-                    <p>Ração, caminhas, gaiolas e acessórios doados por quem quer ajudar. @(itens is > 0 ? $"{itens} itens disponíveis agora." : "")</p>
-                    <a href="/bazar" class="btn btn-light">Ver itens</a>
-                </div>
-                <span class="emoji">🎁</span>
-            </div>
-        </div>
-    </div>
-</section>
-
-@* ===== SEGURANÇA JURÍDICA ===== *@
-<section class="container-xl py-5">
-    <div class="text-center mb-5">
+@* ================= CONFIANÇA ================= *@
+<section class="container-xl pb-5">
+    <div class="text-center mb-4" data-revelar>
         <span class="eyebrow">Confiança</span>
-        <h2 class="secao-titulo">Amparo legal e intermediação segura</h2>
+        <h2 class="secao-titulo mt-2">Amparo legal e intermediação segura</h2>
     </div>
     <div class="row g-3 g-md-4">
-        <div class="col-md-4">
-            <div class="mp-card p-4 h-100">
-                <div class="icone-bolha azul mb-3"><i class="bi bi-file-earmark-lock2"></i></div>
-                <h5>Contrato digital</h5>
-                <p class="small text-muted mb-0">Cada interesse gera uma minuta vinculando adotante e doador, registrada com data, hora e IP do dispositivo.</p>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="mp-card p-4 h-100">
-                <div class="icone-bolha vermelho mb-3"><i class="bi bi-bookmark-star"></i></div>
-                <h5>Lei Sansão (14.064/20)</h5>
-                <p class="small text-muted mb-0">Os termos exigem ciência expressa sobre a responsabilidade criminal por maus-tratos ou abandono.</p>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="mp-card p-4 h-100">
-                <div class="icone-bolha verde mb-3"><i class="bi bi-tree"></i></div>
-                <h5>Fauna silvestre protegida</h5>
-                <p class="small text-muted mb-0">Seguindo a Lei de Crimes Ambientais (9.605/98), é proibido anunciar animais silvestres sem autorização.</p>
-            </div>
-        </div>
+        <div class="col-md-4" data-revelar="1"><div class="mp-card p-4 h-100"><div class="icone-bolha azul mb-3"><i class="bi bi-file-earmark-lock2"></i></div><h5>Termo digital no chat</h5><p class="small text-muted mb-0">Doador e adotante conversam e assinam o termo na própria conversa, com data, hora e IP registrados.</p></div></div>
+        <div class="col-md-4" data-revelar="2"><div class="mp-card p-4 h-100"><div class="icone-bolha vermelho mb-3"><i class="bi bi-bookmark-star"></i></div><h5>Lei Sansão (14.064/20)</h5><p class="small text-muted mb-0">O termo traz ciência expressa sobre a responsabilidade criminal por maus-tratos ou abandono.</p></div></div>
+        <div class="col-md-4" data-revelar="3"><div class="mp-card p-4 h-100"><div class="icone-bolha verde mb-3"><i class="bi bi-shield-check"></i></div><h5>Identidade verificada</h5><p class="small text-muted mb-0">CPF/CNPJ conferido, CNPJ consultado na Receita e foto do documento comparada com o cadastro.</p></div></div>
     </div>
 </section>
 
-@* ===== PERGUNTAS FREQUENTES ===== *@
-<section class="container-xl py-4" style="max-width: 860px;">
-    <div class="text-center mb-4">
+@* ================= DÚVIDAS ================= *@
+<section class="container-xl pb-5" style="max-width: 860px;">
+    <div class="text-center mb-4" data-revelar>
         <span class="eyebrow">Dúvidas</span>
-        <h2 class="secao-titulo">Perguntas frequentes</h2>
+        <h2 class="secao-titulo mt-2">Perguntas frequentes</h2>
     </div>
-    <div class="accordion" id="faq">
-        @for (var i = 0; i < Faq.Length; i++)
+    <div class="accordion" id="faq" data-revelar>
+        @for (var f = 0; f < Faq.Length; f++)
         {
-            var indice = i;
+            var indice = f;
             <div class="accordion-item">
                 <h3 class="accordion-header">
                     <button class="accordion-button @(faqAberta == indice ? "" : "collapsed")" type="button" @onclick="() => faqAberta = faqAberta == indice ? -1 : indice">
@@ -186,50 +367,107 @@
 </section>
 
 <style>
-    .hero { position: relative; overflow: hidden; padding: 3.5rem 0 4rem; background: radial-gradient(1200px 500px at 85% -10%, #dbeafe 0%, transparent 60%), radial-gradient(800px 400px at -10% 110%, #ffedd5 0%, transparent 60%), #f8fbff; }
-    .hero-titulo { font-size: clamp(2.2rem, 5vw, 3.6rem); line-height: 1.05; margin: 1rem 0 1.25rem; }
-    .hero-titulo .destaque { background: linear-gradient(120deg, var(--mp-primary), #7c3aed); -webkit-background-clip: text; background-clip: text; color: transparent; }
-    .hero-texto { font-size: 1.12rem; color: var(--mp-muted); max-width: 540px; margin-bottom: 1.75rem; }
-    .busca { padding: 1rem; border-radius: 22px; box-shadow: var(--mp-shadow); max-width: 560px; }
-    .numeros { display: flex; gap: 2rem; margin-top: 2rem; flex-wrap: wrap; }
-    .numeros strong { display: block; font-size: 1.9rem; font-weight: 800; color: var(--mp-ink); line-height: 1; }
-    .numeros span { font-size: .85rem; color: var(--mp-muted); font-weight: 600; }
-    .hero-imagem { position: relative; padding: 1.5rem; }
-    .hero-imagem img { width: 100%; max-height: 480px; object-fit: contain; filter: drop-shadow(0 30px 40px rgba(37, 99, 235, .25)); animation: flutuar 5s ease-in-out infinite; }
-    .flutuante { position: absolute; display: flex; align-items: center; gap: .7rem; background: #fff; padding: .75rem 1rem; border-radius: 16px; box-shadow: var(--mp-shadow); }
-    .flutuante span { font-size: 1.5rem; }
-    .flutuante b { display: block; color: var(--mp-ink); font-size: .9rem; }
-    .flutuante small { color: var(--mp-muted); font-size: .78rem; }
-    .flutuante.f1 { top: 12%; left: -2%; animation: flutuar 6s ease-in-out infinite; }
-    .flutuante.f2 { bottom: 10%; right: 0; animation: flutuar 7s ease-in-out infinite reverse; }
-    @@keyframes flutuar { 50% { transform: translateY(-10px); } }
-    .numero-passo { font-size: 2rem; font-weight: 800; color: #e2e8f0; margin-left: auto; }
-    .chamada { position: relative; overflow: hidden; border-radius: 24px; padding: 2rem; color: #fff; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
-    .chamada h3 { color: #fff; font-size: 1.5rem; }
-    .chamada p { opacity: .9; max-width: 380px; }
-    .chamada .emoji { font-size: 5rem; line-height: 1; opacity: .9; }
-    .chamada.azul { background: linear-gradient(135deg, #2563eb, #7c3aed); }
-    .chamada.laranja { background: linear-gradient(135deg, #f97316, #e11d48); }
-    @@media (max-width: 576px) { .chamada .emoji { display: none; } .hero { padding-top: 2rem; } }
+    .hero { position: relative; overflow: hidden; padding: 2.5rem 0 3.5rem; }
+    .hero-bolhas span { position: absolute; border-radius: 50%; filter: blur(60px); opacity: .55; }
+    .hero-bolhas span:nth-child(1) { width: 420px; height: 420px; background: #bfdbfe; top: -120px; right: -80px; }
+    .hero-bolhas span:nth-child(2) { width: 320px; height: 320px; background: #fed7aa; bottom: -120px; left: -100px; }
+    .hero-bolhas span:nth-child(3) { width: 260px; height: 260px; background: #ddd6fe; top: 40%; left: 45%; }
+    .hero-titulo { font-size: clamp(2.3rem, 5.4vw, 4rem); line-height: 1.03; margin: 1rem 0 1.25rem; letter-spacing: -.035em; }
+    .hero-texto { font-size: clamp(1rem, 1.6vw, 1.15rem); color: var(--mp-muted); max-width: 540px; margin-bottom: 1.75rem; }
+    .ponto-vivo { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 0 0 rgba(34,197,94,.6); animation: pulsoVivo 1.8s infinite; display: inline-block; }
+    @@keyframes pulsoVivo { 70% { box-shadow: 0 0 0 10px rgba(34,197,94,0); } 100% { box-shadow: 0 0 0 0 rgba(34,197,94,0); } }
+    .busca { padding: 1rem; border-radius: 22px; box-shadow: var(--mp-shadow); max-width: 560px; background: rgba(255,255,255,.9); backdrop-filter: blur(10px); }
+    .prova-social { display: flex; align-items: center; gap: .8rem; margin-top: 1.5rem; font-size: .9rem; color: var(--mp-muted); flex-wrap: wrap; }
+    .prova-social b { color: var(--mp-ink); }
+    .avatares { display: flex; }
+    .avatares > * { margin-left: -10px; border: 3px solid #fff; border-radius: 50%; box-shadow: var(--mp-shadow-sm); }
+    .avatares > *:first-child { margin-left: 0; }
+    .hero-imagem { position: relative; max-width: 520px; margin: 0 auto; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; }
+    .hero-imagem .aro { position: absolute; inset: 6%; border-radius: 50%; background: conic-gradient(from 180deg, #2563eb, #7c3aed, #f97316, #2563eb); opacity: .16; filter: blur(2px); animation: girar 18s linear infinite; }
+    .hero-imagem img { position: relative; width: 82%; border-radius: 36px; object-fit: cover; box-shadow: 0 40px 80px -30px rgba(37, 99, 235, .55); animation: flutuar 6s ease-in-out infinite; }
+    @@keyframes girar { to { transform: rotate(360deg); } }
+    @@keyframes flutuar { 50% { transform: translateY(-12px); } }
+    .flutuante { position: absolute; display: flex; align-items: center; gap: .7rem; background: rgba(255,255,255,.92); backdrop-filter: blur(8px); padding: .7rem .95rem; border-radius: 16px; box-shadow: var(--mp-shadow); z-index: 2; }
+    .flutuante span { font-size: 1.4rem; }
+    .flutuante b { display: block; color: var(--mp-ink); font-size: .85rem; }
+    .flutuante small { color: var(--mp-muted); font-size: .74rem; }
+    .flutuante.f1 { top: 10%; left: -2%; animation: flutuar 7s ease-in-out infinite; }
+    .flutuante.f2 { bottom: 12%; right: -2%; animation: flutuar 8s ease-in-out infinite reverse; }
+    .flutuante.f3 { bottom: 2%; left: 8%; animation: flutuar 9s ease-in-out infinite; }
+    @@media (max-width: 991.98px) {
+        .hero { padding-top: 1.25rem; }
+        .hero-imagem { max-width: 300px; }
+        .flutuante { padding: .5rem .7rem; }
+        .flutuante span { font-size: 1.1rem; }
+        .flutuante b { font-size: .75rem; } .flutuante small { font-size: .68rem; }
+    }
+    .numeros-faixa { margin-top: -1.5rem; position: relative; z-index: 2; }
+    .numeros-faixa b { display: block; font-size: clamp(1.6rem, 3.5vw, 2.3rem); font-weight: 800; color: var(--mp-ink); line-height: 1.1; }
+    .numeros-faixa span { font-size: .8rem; color: var(--mp-muted); font-weight: 600; }
+    .cartao-destaque { border-radius: 28px; padding: clamp(1.25rem, 3vw, 2rem); background: linear-gradient(135deg, #fff7ed, #fff 60%); border: 1px solid #fed7aa; }
+    .numero-passo { font-size: 2.2rem; font-weight: 800; background: linear-gradient(135deg, #93c5fd, #c4b5fd); -webkit-background-clip: text; background-clip: text; color: transparent; }
+    .ong-chip { display: inline-flex; align-items: center; gap: .55rem; padding: .5rem .9rem .5rem .5rem; background: #fff; border: 1px solid var(--mp-line); border-radius: 999px; text-decoration: none; color: var(--mp-ink); font-weight: 700; font-size: .9rem; white-space: nowrap; box-shadow: var(--mp-shadow-sm); }
+    .beneficio { transition: transform .25s; }
+    .historia-card { overflow: hidden; display: flex; flex-direction: column; }
+    .historia-card img { width: 100%; height: 180px; object-fit: cover; }
+    .historia-card .aspas { font-size: 3rem; line-height: .6; color: #c7d2fe; font-family: Georgia, serif; height: 1.4rem; }
+    .texto-3-linhas { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+    .mosaico { display: grid; grid-template-columns: repeat(4, 1fr); grid-auto-rows: 180px; gap: .75rem; }
+    .mosaico-item { position: relative; border-radius: 20px; overflow: hidden; background: #0f172a; display: block; }
+    .mosaico-item:nth-child(1) { grid-column: span 2; grid-row: span 2; }
+    .mosaico-item img, .mosaico-item video { width: 100%; height: 100%; object-fit: cover; transition: transform .5s; }
+    .mosaico-item:hover img, .mosaico-item:hover video { transform: scale(1.05); }
+    .mosaico-info { position: absolute; left: 0; right: 0; bottom: 0; display: flex; align-items: center; gap: .45rem; padding: .7rem .8rem; color: #fff; font-size: .8rem; font-weight: 700; background: linear-gradient(transparent, rgba(0,0,0,.7)); }
+    .mosaico-info .icone-pata { color: #fdba74; }
+    .selo-video { position: absolute; top: 10px; right: 10px; width: 32px; height: 32px; border-radius: 50%; background: rgba(0,0,0,.55); color: #fff; display: flex; align-items: center; justify-content: center; }
+    @@media (max-width: 767.98px) { .mosaico { grid-template-columns: repeat(2, 1fr); grid-auto-rows: 150px; } }
+    .ranking-mini li + li { border-top: 1px solid var(--mp-line); }
+    .chamada { position: relative; overflow: hidden; border-radius: 26px; padding: 2rem; color: #fff; display: flex; gap: 1rem; }
+    .chamada h3 { color: #fff; font-size: 1.6rem; }
+    .chamada p { opacity: .9; max-width: 420px; }
+    .chamada .emoji { font-size: 4.5rem; line-height: 1; }
+    .chamada.laranja { background: radial-gradient(500px 240px at 100% 0%, rgba(255,255,255,.25), transparent), linear-gradient(135deg, #f97316, #e11d48); }
+    .mini-item { display: block; background: rgba(255,255,255,.95); border-radius: 14px; overflow: hidden; text-decoration: none; color: var(--mp-ink); font-size: .75rem; font-weight: 700; }
+    .mini-item img { width: 100%; height: 80px; object-fit: cover; display: block; }
+    .mini-item span { display: block; padding: .35rem .5rem; }
 </style>
 
 @code {
     private string especie = "";
     private string cidade = "";
     private int faqAberta = 0;
-    private IEnumerable<Pet>? recentes;
-    private int? disponiveis, adotados, ongs, itens;
+
+    private EstatisticasService.Resumo? numeros;
+    private IEnumerable<Pet>? recentes, esperando;
+    private List<Usuario> rostos = new();
+    private List<Usuario>? ongs;
+    private List<SocialService.DepoimentoView>? historias;
+    private List<SocialService.PostagemView>? destaquesComunidade;
+    private List<RankingService.Posicao>? topAdotantes;
+    private List<ItemDoacao>? itensBazar;
 
     private static readonly (string, string)[] Especies =
         { ("", "🐾 Todos"), ("Cão", "🐶 Cães"), ("Gato", "🐱 Gatos"), ("Pássaro", "🐦 Aves"), ("Outros", "🐹 Outros") };
 
+    // Carrega aos poucos: a capa aparece logo e as outras seções vão chegando
     protected override async Task OnInitializedAsync()
     {
-        // Consultas uma de cada vez (o banco do Blazor não aceita duas ao mesmo tempo)
         recentes = await PetRepository.GetRecentesAsync(8);
-        (disponiveis, adotados) = await PetRepository.GetEstatisticasAsync();
-        ongs = await UsuarioRepository.ContarOngsAsync();
-        itens = await ItemRepository.ContarDisponiveisAsync();
+        numeros = await Estatisticas.CalcularAsync();
+        StateHasChanged();
+
+        var feed = await Social.FeedAsync(null, "todos", 0);
+        rostos = feed.Select(p => p.Autor).Where(a => a.UrlFoto != null && !a.EhOng).DistinctBy(a => a.Id).Take(5).ToList();
+        destaquesComunidade = feed.Where(p => p.MidiaUrl != null).Take(7).ToList();
+        StateHasChanged();
+
+        esperando = (await PetRepository.BuscarAsync(new FiltroPets { Ordem = "antigos" })).Take(10).ToList();
+        ongs = await UsuarioRepository.GetOngsAsync();
+        StateHasChanged();
+
+        historias = (await Social.DepoimentosAsync()).Take(3).ToList();
+        topAdotantes = await Ranking.AdotantesAsync("tudo", 3);
+        itensBazar = (await ItemRepository.GetDisponiveisAsync()).Take(4).ToList();
     }
 
     private void Buscar()
@@ -240,21 +478,31 @@
 
     private void Enter(KeyboardEventArgs e) { if (e.Key == "Enter") Buscar(); }
 
-    private record Passo(int Numero, string Titulo, string Descricao, string Icone, string Cor);
+    private record Passo(int Numero, string Emoji, string Titulo, string Descricao);
     private static readonly Passo[] Passos =
     {
-        new(1, "Crie sua conta", "Cadastro rápido com CPF ou CNPJ e verificação do documento.", "bi-person-check", "azul"),
-        new(2, "Encontre o match", "Filtre por espécie, porte, cidade e pelo seu estilo de vida.", "bi-search-heart", "laranja"),
-        new(3, "Assine o termo", "Contrato digital de responsabilidade em um clique.", "bi-pen", "verde"),
-        new(4, "Conheça o pet", "Fale com o doador pelo WhatsApp e combine a visita.", "bi-house-heart", "vermelho"),
+        new(1, "🔎", "Encontre o match", "Filtre por espécie, porte, idade, cidade e pelo seu estilo de vida."),
+        new(2, "💬", "Converse pelo chat", "Tire dúvidas e combine a visita direto com o doador ou a ONG."),
+        new(3, "📝", "Assine o termo", "O doador envia o termo na conversa e você assina em um clique."),
+        new(4, "🏡", "Final feliz", "Leve seu amigo para casa e conte a história na Comunidade."),
+    };
+
+    private record Beneficio(string Icone, string Cor, string Titulo, string Texto);
+    private static readonly Beneficio[] Beneficios =
+    {
+        new("bi-heart-pulse", "vermelho", "Salva uma vida", "Cada adoção abre espaço nos abrigos para um novo resgate."),
+        new("bi-shield-check", "verde", "Pets cuidados", "A maioria já sai vacinada, vermifugada e castrada pelas ONGs."),
+        new("bi-chat-heart", "azul", "Apoio depois da adoção", "O chat continua aberto para dúvidas sobre adaptação."),
+        new("bi-people", "laranja", "Comunidade apaixonada", "Troque dicas, fotos e vídeos com quem também ama animais."),
     };
 
     private record ItemFaq(string Pergunta, string Resposta);
     private static readonly ItemFaq[] Faq =
     {
-        new("Como funciona o match?", "Você informa o que combina com a sua rotina (crianças em casa, apartamento, espécie, porte) e o sistema mostra apenas os pets compatíveis, com base no que o doador declarou."),
-        new("Por que preciso enviar um documento?", "Para evitar perfis falsos e dar segurança jurídica às adoções. O documento é conferido automaticamente: o nome e o CPF/CNPJ precisam bater com o cadastro, e a mesma foto não pode ser usada em duas contas."),
-        new("O termo assinado digitalmente tem validade?", "Sim. O documento registra IP, data, hora e os dados civis das partes, caracterizando uma manifestação expressa de vontade que serve como início de prova documental."),
-        new("Esqueci minha senha. E agora?", "Na tela de login, clique em \"Esqueci minha senha\". Enviaremos um link para o seu e-mail para você criar uma nova senha."),
+        new("Como funciona o match?", "Você informa o que combina com a sua rotina (crianças em casa, apartamento, espécie, porte, idade) e o catálogo mostra só os pets compatíveis."),
+        new("Como converso com o doador?", "Na página do pet, toque em \"Quero adotar\". Uma conversa é aberta no chat do site, onde vocês combinam tudo com segurança."),
+        new("Por que preciso enviar um documento?", "Para evitar perfis falsos e dar segurança jurídica às adoções. O nome e o CPF/CNPJ precisam bater com o cadastro, e a mesma foto não pode ser usada em duas contas."),
+        new("O termo assinado tem validade?", "Sim. O termo registra IP, data, hora e os dados das partes (assinatura eletrônica simples, Lei 14.063/2020) e pode ser salvo em PDF."),
+        new("Esqueci minha senha. E agora?", "Na tela de login, toque em \"Esqueci minha senha\" para receber um link de recuperação por e-mail."),
     };
 }

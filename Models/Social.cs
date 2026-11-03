@@ -156,3 +156,20 @@ namespace crudcomdb.Models
         public DateTime DataCriacao { get; set; } = DateTime.UtcNow;
     }
 }
+
+namespace crudcomdb.Models
+{
+    // Notificação do site (sininho): curtida, comentário, amizade, termo, ranking...
+    public class Notificacao
+    {
+        [System.ComponentModel.DataAnnotations.Key] public int Id { get; set; }
+        public int UsuarioId { get; set; }            // quem recebe
+        public int? AtorId { get; set; }              // quem causou (ex.: quem curtiu)
+        public string Tipo { get; set; } = "";        // curtida, comentario, amizade, amizade_aceita, termo, termo_assinado, ranking, adocao
+        public string Texto { get; set; } = "";
+        public string? Link { get; set; }
+        public string? Chave { get; set; }            // evita notificação repetida (ex.: a mesma curtida)
+        public bool Lida { get; set; }
+        public DateTime DataCriacao { get; set; } = DateTime.UtcNow;
+    }
+}

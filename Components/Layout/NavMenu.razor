@@ -2,6 +2,7 @@
 @inject ChatService Chat
 @inject SocialService Social
 @inject NotificacoesService Avisos
+@inject NotificacaoService Notificacoes
 @inject NavigationManager Nav
 @implements IDisposable
 
@@ -10,7 +11,7 @@
     <div class="container-xl d-flex align-items-center gap-2 gap-md-3 h-100">
         <a class="marca" href="/" aria-label="Match-Pet SP - Início">
             <img src="/logo-match-pet.png" alt="" />
-            <span class="d-none d-sm-inline">Match-Pet <b>SP</b></span>
+            <span class="nome-marca">Match-Pet <b>SP</b></span>
         </a>
 
         <nav class="links d-none d-lg-flex" aria-label="Principal">
@@ -38,6 +39,31 @@
                     <i class="bi bi-chat-dots"></i>
                     @if (naoLidas > 0) { <span class="contador">@(naoLidas > 99 ? "99+" : naoLidas)</span> }
                 </a>
+
+                @* Sininho: no celular abre a página, no computador abre um painel *@
+                <a href="/notificacoes" class="icone-topo d-lg-none" title="Notificações" aria-label="Notificações @(notificacoes > 0 ? $"({notificacoes} novas)" : "")">
+                    <i class="bi bi-bell"></i>
+                    @if (notificacoes > 0) { <span class="contador">@(notificacoes > 99 ? "99+" : notificacoes)</span> }
+                </a>
+                <div class="position-relative d-none d-lg-block">
+                    <button type="button" class="icone-topo border-0 bg-transparent @(painelAberto ? "ativo" : "")" title="Notificações" @onclick="AlternarPainel"
+                            aria-label="Notificações @(notificacoes > 0 ? $"({notificacoes} novas)" : "")" aria-expanded="@painelAberto">
+                        <i class="bi @(painelAberto ? "bi-bell-fill" : "bi-bell")"></i>
+                        @if (notificacoes > 0) { <span class="contador">@(notificacoes > 99 ? "99+" : notificacoes)</span> }
+                    </button>
+                    @if (painelAberto)
+                    {
+                        <div class="painel-fundo" @onclick="() => painelAberto = false"></div>
+                        <div class="painel-notif" role="dialog" aria-label="Notificações">
+                            <div class="d-flex justify-content-between align-items-center px-3 pt-3 pb-2">
+                                <b class="text-dark">Notificações</b>
+                                <button class="btn btn-ghost btn-sm py-1" @onclick="MarcarTodasLidas">Marcar como lidas</button>
+                            </div>
+                            <div class="painel-lista"><ListaNotificacoes Quantidade="12" AoAbrir="() => painelAberto = false" /></div>
+                            <a href="/notificacoes" class="d-block text-center small fw-bold py-2 border-top" @onclick="() => painelAberto = false">Ver todas</a>
+                        </div>
+                    }
+                </div>
                 <button class="usuario" type="button" @onclick="ToggleMenu" aria-label="Abrir menu da conta" aria-expanded="@menuAberto">
                     <Avatar Usuario="u" Tamanho="34" />
                     <span class="d-none d-md-inline text-truncate" style="max-width:140px">@PrimeiroNome(u.Nome)</span>
@@ -46,8 +72,8 @@
             }
             else
             {
-                <a href="/login" class="btn btn-ghost btn-sm px-3 d-none d-md-inline-flex">Entrar</a>
-                <a href="/cadastro" class="btn btn-primary btn-sm px-3">Criar conta</a>
+                <a href="/login" class="btn btn-outline-primary btn-sm px-3"><i class="bi bi-box-arrow-in-right me-1 d-none d-sm-inline"></i>Entrar</a>
+                <a href="/cadastro" class="btn btn-primary btn-sm px-3"><span class="d-none d-sm-inline">Criar conta</span><span class="d-sm-none">Cadastrar</span></a>
                 @* Em notebooks parte dos links fica no menu lateral *@
                 <button type="button" class="icone-topo border-0 bg-transparent d-none d-lg-inline-flex d-xxl-none" @onclick="ToggleMenu" aria-label="Abrir menu"><i class="bi bi-list"></i></button>
             }
@@ -99,6 +125,7 @@
         {
             <div class="grupo">Minha conta</div>
             <a href="/mensagens" class="item" @onclick="FecharMenu"><i class="bi bi-chat-dots"></i> Mensagens @if (naoLidas > 0) { <span class="badge bg-primary ms-auto">@naoLidas</span> }</a>
+            <a href="/notificacoes" class="item" @onclick="FecharMenu"><i class="bi bi-bell"></i> Notificações @if (notificacoes > 0) { <span class="badge bg-danger ms-auto">@notificacoes</span> }</a>
             <a href="/amigos" class="item" @onclick="FecharMenu"><i class="bi bi-person-heart"></i> Amigos @if (pedidos > 0) { <span class="badge bg-danger ms-auto">@pedidos</span> }</a>
             <a href="/meus-pets" class="item" @onclick="FecharMenu"><i class="bi bi-collection"></i> Meus anúncios</a>
             <a href="/perfil" class="item" @onclick="FecharMenu">
@@ -119,7 +146,8 @@
 
 @code {
     private bool menuAberto = false;
-    private int naoLidas, pedidos;
+    private int naoLidas, pedidos, notificacoes;
+    private bool painelAberto;
     private int? usuarioContado;
 
     protected override async Task OnInitializedAsync()
@@ -139,13 +167,14 @@
             {
                 naoLidas = await Chat.ContarNaoLidasAsync(u.Id);
                 pedidos = await Social.ContarPedidosAsync(u.Id);
+                notificacoes = await Notificacoes.ContarNaoLidasAsync(u.Id);
             }
             catch { /* banco indisponível: só não mostra os números */ }
             usuarioContado = u.Id;
         }
         else
         {
-            naoLidas = pedidos = 0;
+            naoLidas = pedidos = notificacoes = 0;
             usuarioContado = null;
         }
     }
@@ -167,10 +196,20 @@
     private void AoNavegar(object? sender, LocationChangedEventArgs e)
     {
         menuAberto = false;
+        painelAberto = false;
         _ = InvokeAsync(async () => { await AtualizarContadores(); StateHasChanged(); });
     }
 
     private void ToggleMenu() => menuAberto = !menuAberto;
+
+    private void AlternarPainel() => painelAberto = !painelAberto;
+
+    private async Task MarcarTodasLidas()
+    {
+        await Notificacoes.MarcarTodasLidasAsync(AuthService.UsuarioLogado!.Id);
+        painelAberto = false;
+        await AtualizarContadores();
+    }
     private void FecharMenu() => menuAberto = false;
 
     private static string PrimeiroNome(string nome) => nome.Trim().Split(' ')[0];

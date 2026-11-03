@@ -24,6 +24,7 @@ namespace crudcomdb.Data
         public DbSet<Mensagem> Mensagens { get; set; }
         public DbSet<TermoAdocao> TermosAdocao { get; set; }
         public DbSet<Depoimento> Depoimentos { get; set; }
+        public DbSet<Notificacao> Notificacoes { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -121,6 +122,12 @@ namespace crudcomdb.Data
                 .HasOne(d => d.Autor).WithMany().HasForeignKey(d => d.AutorId).OnDelete(DeleteBehavior.Cascade);
             modelBuilder.Entity<Depoimento>()
                 .HasOne(d => d.Pet).WithMany().HasForeignKey(d => d.PetId).OnDelete(DeleteBehavior.SetNull);
+
+            // ----- Notificações -----
+            modelBuilder.Entity<Notificacao>()
+                .HasOne<Usuario>().WithMany().HasForeignKey(n => n.UsuarioId).OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<Notificacao>().HasIndex(n => new { n.UsuarioId, n.Lida, n.DataCriacao });
+            modelBuilder.Entity<Notificacao>().HasIndex(n => new { n.UsuarioId, n.Chave });
 
             modelBuilder.Entity<Midia>()
                 .HasOne<Usuario>().WithMany().HasForeignKey(m => m.UsuarioId).OnDelete(DeleteBehavior.SetNull);

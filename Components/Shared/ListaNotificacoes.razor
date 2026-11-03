@@ -1,0 +1,62 @@
+@* Lista de notificações (usada no painel do sininho e na página /notificacoes) *@
+@inject NotificacaoService Notificacoes
+@inject AuthService AuthService
+@inject NavigationManager Nav
+
+@if (itens == null)
+{
+    @for (var i = 0; i < 4; i++) { <div class="d-flex gap-2 p-2"><div class="skeleton rounded-circle" style="width:42px;height:42px"></div><div class="flex-grow-1"><div class="skeleton mb-2" style="height:12px"></div><div class="skeleton" style="height:10px;width:40%"></div></div></div> }
+}
+else if (!itens.Any())
+{
+    <div class="text-center text-muted py-4 px-3">
+        <div class="display-6 mb-1">🔔</div>
+        <p class="small mb-0">Nenhuma notificação ainda. Quando alguém der uma patinha, comentar ou pedir amizade, aparece aqui.</p>
+    </div>
+}
+else
+{
+    <ul class="lista-notif" role="list">
+        @foreach (var n in itens)
+        {
+            <li>
+                <button class="notif @(n.Lida ? "" : "nova")" @onclick="() => Abrir(n)">
+                    <span class="avatar-notif">
+                        @if (n.Ator != null) { <Avatar Usuario="n.Ator" Tamanho="42" /> }
+                        else { <span class="sem-ator">@NotificacaoService.Icone(n.Tipo)</span> }
+                        @if (n.Ator != null) { <span class="selo-tipo">@NotificacaoService.Icone(n.Tipo)</span> }
+                    </span>
+                    <span class="min-w-0 text-start">
+                        <span class="d-block texto">@n.Texto</span>
+                        <span class="d-block quando">@Consultas.TempoRelativo(n.Data)</span>
+                    </span>
+                    @if (!n.Lida) { <span class="ponto-novo" aria-label="Não lida"></span> }
+                </button>
+            </li>
+        }
+    </ul>
+}
+
+@code {
+    [Parameter] public int Quantidade { get; set; } = 40;
+    [Parameter] public EventCallback AoAbrir { get; set; }
+
+    private List<NotificacaoService.Item>? itens;
+
+    protected override async Task OnInitializedAsync() => await Recarregar();
+
+    public async Task Recarregar()
+    {
+        if (AuthService.UsuarioLogado is { } u) itens = await Notificacoes.ListarAsync(u.Id, Quantidade);
+        else itens = new();
+        StateHasChanged();
+    }
+
+    private async Task Abrir(NotificacaoService.Item n)
+    {
+        if (!n.Lida) await Notificacoes.MarcarLidaAsync(n.Id, AuthService.UsuarioLogado!.Id);
+        await AoAbrir.InvokeAsync();
+        if (!string.IsNullOrEmpty(n.Link)) Nav.NavigateTo(n.Link);
+        else await Recarregar();
+    }
+}

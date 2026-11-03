@@ -29,6 +29,8 @@ builder.Services.AddScoped<DocumentoValidacaoService>();
 builder.Services.AddScoped<ChatService>();
 builder.Services.AddScoped<SocialService>();
 builder.Services.AddScoped<EstatisticasService>();
+builder.Services.AddScoped<NotificacaoService>();
+builder.Services.AddScoped<RankingService>();
 builder.Services.AddSingleton<NotificacoesService>();   // avisa em tempo real (nova mensagem, pedido de amizade)
 builder.Services.AddSingleton<GeoService>();            // coordenadas das cidades para o mapa
 builder.Services.AddHttpClient();
@@ -70,6 +72,7 @@ using (var escopo = app.Services.CreateScope())
         {
             await DadosDemonstracao.CriarAsync(db, log);
             await DadosDemonstracaoComunidade.CriarAsync(db, log);
+            await DadosDemonstracaoV3.CriarAsync(db, log);
         }
     }
     catch (Exception ex)
