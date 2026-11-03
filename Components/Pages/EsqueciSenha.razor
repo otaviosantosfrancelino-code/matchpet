@@ -5,6 +5,7 @@
 @inject NavigationManager Nav
 @inject IWebHostEnvironment Ambiente
 @inject ILogger<EsqueciSenha> Log
+@inject LimiteTentativasService Limite
 
 <PageTitle>Recuperar senha | Match-Pet SP</PageTitle>
 
@@ -59,6 +60,7 @@
 </div>
 
 @code {
+    [CascadingParameter(Name = "IpCliente")] public string IpCliente { get; set; } = "";
     private string email = "", erro = "";
     private bool enviando, enviado;
     private string? linkDemonstracao;
@@ -71,6 +73,18 @@
             erro = "Digite um e-mail válido.";
             return;
         }
+
+        // No máximo 3 pedidos por e-mail e 10 por conexão a cada 30 minutos (evita enxurrada de e-mails)
+        var chaveEmail = "reset:email:" + email.Trim().ToLowerInvariant();
+        var chaveIp = "reset:ip:" + IpCliente;
+        var espera = Limite.Bloqueio(chaveEmail, 3, TimeSpan.FromMinutes(30)) ?? Limite.Bloqueio(chaveIp, 10, TimeSpan.FromMinutes(30));
+        if (espera is TimeSpan t)
+        {
+            erro = $"Muitos pedidos seguidos. Aguarde {LimiteTentativasService.Tempo(t)} e tente de novo.";
+            return;
+        }
+        Limite.Registrar(chaveEmail);
+        Limite.Registrar(chaveIp);
 
         enviando = true;
         try
@@ -95,12 +109,20 @@
                 var enviou = await EmailService.EnviarAsync(usuario.Email, usuario.Nome, "Redefinição de senha - Match-Pet SP", html);
                 if (!enviou)
                 {
-                    Log.LogWarning("Link de redefinição (e-mail não enviado): {Link}", link);
-                    if (Ambiente.IsDevelopment()) linkDemonstracao = link;
-                    else if (!EmailService.Configurado)
+                    // O link é uma "chave" da conta: só aparece no modo de desenvolvimento, nunca no log de produção
+                    if (Ambiente.IsDevelopment())
                     {
-                        erro = "O envio de e-mails ainda não foi configurado no site. Fale com o administrador.";
-                        return;
+                        linkDemonstracao = link;
+                        Log.LogWarning("Link de redefinição (e-mail não enviado): {Link}", link);
+                    }
+                    else
+                    {
+                        Log.LogWarning("E-mail de redefinição não enviado para o usuário {Id}", usuario.Id);
+                        if (!EmailService.Configurado)
+                        {
+                            erro = "O envio de e-mails ainda não foi configurado no site. Fale com o administrador.";
+                            return;
+                        }
                     }
                 }
             }

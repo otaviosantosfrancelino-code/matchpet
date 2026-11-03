@@ -130,7 +130,7 @@
             <label class="opcao-card mt-4 @(novoUsuario.AceitouTermos ? "marcada" : "")">
                 <input type="checkbox" @bind="novoUsuario.AceitouTermos" />
                 <i class="bi @(novoUsuario.AceitouTermos ? "bi-check-square-fill text-primary" : "bi-square") fs-5"></i>
-                <span class="small">Li e concordo com os <strong>Termos de Uso</strong> e com o tratamento dos meus dados conforme a <strong>LGPD</strong> para formalização de adoções.</span>
+                <span class="small">Li e concordo com os <a href="/privacidade#termos" target="_blank" class="fw-bold">Termos de Uso</a> e com a <a href="/privacidade" target="_blank" class="fw-bold">Política de Privacidade</a> (LGPD) para formalização de adoções.</span>
             </label>
 
             <button type="submit" class="btn btn-primary btn-lg w-100 mt-4" disabled="@processando">

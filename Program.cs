@@ -10,8 +10,14 @@ var builder = WebApplication.CreateBuilder(args);
 // 1. BANCO DE DADOS
 // O Neon "dorme" quando fica parado e derruba conexões antigas: a nova tentativa automática evita erros aleatórios
 // Fábrica: cada operação do chat/rede social abre o seu próprio contexto (seguro com mensagens em tempo real)
+// A senha do banco NUNCA fica no código (o repositório é público):
+// no Render vem da variável ConnectionStrings__DefaultConnection; no computador, do "dotnet user-secrets".
+builder.Configuration.AddUserSecrets<Program>(optional: true);
+var conexaoBanco = builder.Configuration.GetConnectionString("DefaultConnection");
+if (string.IsNullOrWhiteSpace(conexaoBanco))
+    throw new InvalidOperationException("Configure a conexão do banco: variável de ambiente ConnectionStrings__DefaultConnection (Render) ou 'dotnet user-secrets set ConnectionStrings:DefaultConnection ...' (local).");
 builder.Services.AddDbContextFactory<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"),
+    options.UseNpgsql(conexaoBanco,
         npgsql => npgsql.EnableRetryOnFailure(maxRetryCount: 3, maxRetryDelay: TimeSpan.FromSeconds(3), errorCodesToAdd: null)));
 // As telas antigas continuam recebendo um contexto por conexão do usuário
 builder.Services.AddScoped(sp => sp.GetRequiredService<IDbContextFactory<AppDbContext>>().CreateDbContext());
@@ -33,6 +39,19 @@ builder.Services.AddScoped<NotificacaoService>();
 builder.Services.AddScoped<RankingService>();
 builder.Services.AddSingleton<NotificacoesService>();   // avisa em tempo real (nova mensagem, pedido de amizade)
 builder.Services.AddSingleton<GeoService>();            // coordenadas das cidades para o mapa
+builder.Services.AddSingleton<LimiteTentativasService>(); // bloqueia quem erra a senha muitas vezes
+
+// Limite de pedidos por IP na API e no login com Google/Facebook (evita robôs e abuso)
+builder.Services.AddRateLimiter(o =>
+{
+    o.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    o.AddPolicy("api", ctx => System.Threading.RateLimiting.RateLimitPartition.GetFixedWindowLimiter(
+        ctx.Connection.RemoteIpAddress?.ToString() ?? "desconhecido",
+        _ => new System.Threading.RateLimiting.FixedWindowRateLimiterOptions { PermitLimit = 60, Window = TimeSpan.FromMinutes(1) }));
+    o.AddPolicy("login", ctx => System.Threading.RateLimiting.RateLimitPartition.GetFixedWindowLimiter(
+        ctx.Connection.RemoteIpAddress?.ToString() ?? "desconhecido",
+        _ => new System.Threading.RateLimiting.FixedWindowRateLimiterOptions { PermitLimit = 15, Window = TimeSpan.FromMinutes(5) }));
+});
 builder.Services.AddHttpClient();
 builder.Services.AddResponseCompression(o => o.EnableForHttps = true);
 
@@ -84,6 +103,18 @@ using (var escopo = app.Services.CreateScope())
 
 // 5. PIPELINE
 app.UseForwardedHeaders();
+
+// Cabeçalhos de segurança em todas as respostas
+app.Use(async (ctx, proximo) =>
+{
+    var h = ctx.Response.Headers;
+    h["X-Content-Type-Options"] = "nosniff";                       // o navegador não "adivinha" o tipo do arquivo
+    h["X-Frame-Options"] = "SAMEORIGIN";                            // outro site não pode abrir o Match-Pet escondido numa moldura
+    h["Content-Security-Policy"] = "frame-ancestors 'self'; base-uri 'self'; object-src 'none'; form-action 'self' https://accounts.google.com https://www.facebook.com";
+    h["Referrer-Policy"] = "strict-origin-when-cross-origin";       // não vaza o endereço completo para outros sites
+    h["Permissions-Policy"] = "camera=(), microphone=(), geolocation=(self), payment=()";
+    await proximo();
+});
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -102,6 +133,7 @@ app.UseWhen(ctx => !ctx.Request.Path.StartsWithSegments("/api"),
 app.UseHttpsRedirection();
 app.UseResponseCompression();
 app.UseRouting(); // depois do UseStatusCodePages, para a página 404 conseguir ser encontrada
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAntiforgery();
 

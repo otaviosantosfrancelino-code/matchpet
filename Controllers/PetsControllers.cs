@@ -1,11 +1,13 @@
 using crudcomdb.Interfaces;
 using crudcomdb.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace crudcomdb.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [EnableRateLimiting("api")]
     public class PetsControllers : ControllerBase
     {
         private readonly IPetRepository _repository;

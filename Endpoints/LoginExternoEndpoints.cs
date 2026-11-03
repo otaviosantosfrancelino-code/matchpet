@@ -54,7 +54,8 @@ namespace crudcomdb.Endpoints
 
         public static void MapLoginExterno(this WebApplication app)
         {
-            app.MapGet("/entrar/externo/{provedor}", async (string provedor, string? voltar, IAuthenticationSchemeProvider esquemas) =>
+            var grupo = app.MapGroup("/entrar/externo").RequireRateLimiting("login");
+            grupo.MapGet("/{provedor}", async (string provedor, string? voltar, IAuthenticationSchemeProvider esquemas) =>
             {
                 var nome = Provedores.FirstOrDefault(p => p.Equals(provedor, StringComparison.OrdinalIgnoreCase));
                 if (nome == null || await esquemas.GetSchemeAsync(nome) == null)
@@ -64,7 +65,7 @@ namespace crudcomdb.Endpoints
                 return Results.Challenge(new AuthenticationProperties { RedirectUri = destino }, new[] { nome });
             });
 
-            app.MapGet("/entrar/externo/retorno", async (HttpContext ctx, string? voltar, IUsuarioRepository usuarios) =>
+            grupo.MapGet("/retorno", async (HttpContext ctx, string? voltar, IUsuarioRepository usuarios) =>
             {
                 var resultado = await ctx.AuthenticateAsync(EsquemaTemporario);
                 await ctx.SignOutAsync(EsquemaTemporario);

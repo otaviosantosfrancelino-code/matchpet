@@ -3,6 +3,7 @@
 @inject AuthService AuthService
 @inject NavigationManager Nav
 @inject ToastService Toast
+@inject LimiteTentativasService Limite
 
 <PageTitle>Entrar | Match-Pet SP</PageTitle>
 
@@ -78,6 +79,7 @@
             </div>
 
             <p class="text-center text-muted mt-4 mb-0">Ainda não tem conta? <a href="/cadastro" class="fw-bold">Crie grátis</a></p>
+            <p class="text-center text-muted small mt-2 mb-0">Ao entrar, você concorda com a <a href="/privacidade">Política de Privacidade</a>.</p>
         </div>
     </div>
 </div>
@@ -95,6 +97,7 @@
 </style>
 
 @code {
+    [CascadingParameter(Name = "IpCliente")] public string IpCliente { get; set; } = "";
     [SupplyParameterFromQuery(Name = "voltar")] public string? Voltar { get; set; }
     [SupplyParameterFromQuery(Name = "codigo")] public string? Codigo { get; set; }
     [SupplyParameterFromQuery(Name = "erro")] public string? Erro { get; set; }
@@ -150,19 +153,32 @@
             return;
         }
 
+        // Proteção contra quem tenta adivinhar senhas: 5 erros por conta ou 20 por conexão em 15 minutos
+        var texto = identificacao.Trim();
+        var chaveConta = "login:conta:" + (texto.Contains('@') ? texto.ToLowerInvariant() : DocumentoUtil.SomenteDigitos(texto));
+        var chaveIp = "login:ip:" + IpCliente;
+        var janela = TimeSpan.FromMinutes(15);
+        if ((Limite.Bloqueio(chaveConta, 5, janela) ?? Limite.Bloqueio(chaveIp, 20, janela)) is TimeSpan espera)
+        {
+            mensagemErro = $"Muitas tentativas erradas. Por segurança, aguarde {LimiteTentativasService.Tempo(espera)} ou use \"Esqueci minha senha\".";
+            return;
+        }
+
         entrando = true;
         try
         {
-            var texto = identificacao.Trim();
             var usuario = texto.Contains('@')
                 ? await UsuarioRepository.GetByEmailAsync(texto)
                 : await UsuarioRepository.GetByDocumentoAsync(texto);
 
             if (usuario == null || !SenhaService.Verificar(usuario, senha))
             {
+                Limite.Registrar(chaveConta);
+                Limite.Registrar(chaveIp);
                 mensagemErro = "Dados de acesso inválidos. Confira e tente novamente.";
                 return;
             }
+            Limite.Zerar(chaveConta);
 
             // Conta antiga com senha em texto puro: converte para hash agora
             if (!SenhaService.EhHash(usuario.Senha))

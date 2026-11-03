@@ -1,0 +1,107 @@
+@page "/privacidade"
+@page "/termos-de-uso"
+@inject IConfiguration Config
+
+<PageTitle>Privacidade e Termos | Match-Pet SP</PageTitle>
+
+<div class="container py-4 py-md-5" style="max-width: 860px;">
+    <div class="text-center mb-4">
+        <span class="eyebrow">LGPD · Lei 13.709/2018</span>
+        <h1 class="secao-titulo mt-2">Política de Privacidade e Termos de Uso</h1>
+        <p class="text-muted">Última atualização: novembro de 2026</p>
+    </div>
+
+    <nav class="mp-card p-3 mb-4 d-flex flex-wrap gap-2 justify-content-center small">
+        <a href="/privacidade#dados" class="chip text-decoration-none">Dados coletados</a>
+        <a href="/privacidade#uso" class="chip text-decoration-none">Como usamos</a>
+        <a href="/privacidade#compartilhamento" class="chip text-decoration-none">Compartilhamento</a>
+        <a href="/privacidade#seguranca" class="chip text-decoration-none">Segurança</a>
+        <a href="/privacidade#direitos" class="chip text-decoration-none">Seus direitos</a>
+        <a href="/privacidade#exclusao" class="chip text-decoration-none">Excluir meus dados</a>
+        <a href="/privacidade#termos" class="chip text-decoration-none">Termos de uso</a>
+    </nav>
+
+    <article class="mp-card p-4 p-md-5 texto-legal">
+        <p>O <b>Match-Pet SP</b> é uma plataforma de adoção responsável de animais e doação de itens, desenvolvida como Trabalho de Conclusão de Curso. Esta página explica quais dados pessoais tratamos, por quê, e como você pode exercer seus direitos previstos na Lei Geral de Proteção de Dados (LGPD).</p>
+
+        <h2 id="dados">1. Dados que coletamos</h2>
+        <ul>
+            <li><b>Cadastro:</b> nome, CPF ou CNPJ, e-mail, telefone, endereço (CEP, rua, número, bairro, cidade e estado) e senha (guardada apenas de forma criptografada, nunca em texto).</li>
+            <li><b>Verificação de identidade:</b> foto do documento enviada por você, usada para conferir que o nome e o CPF/CNPJ batem com o cadastro.</li>
+            <li><b>Login com Google ou Facebook:</b> apenas nome, e-mail e foto de perfil públicos. Não recebemos sua senha dessas redes nem publicamos nada em seu nome.</li>
+            <li><b>Uso da plataforma:</b> anúncios de pets e itens, mensagens do chat, publicações, comentários, curtidas, amizades e termos de adoção.</li>
+            <li><b>Registros técnicos:</b> endereço IP, data e hora do aceite destes termos e da assinatura dos termos de adoção, como prova da manifestação de vontade.</li>
+        </ul>
+
+        <h2 id="uso">2. Para que usamos os dados</h2>
+        <ul>
+            <li>Criar e proteger sua conta, e evitar perfis falsos ou duplicados (base legal: execução de contrato e legítimo interesse).</li>
+            <li>Intermediar o contato entre doadores e adotantes pelo chat do site.</li>
+            <li>Gerar e guardar os termos de adoção com as informações das partes, conforme a Lei 14.063/2020 (assinatura eletrônica) e a Lei 14.064/2020 (Lei Sansão).</li>
+            <li>Enviar avisos importantes, como recuperação de senha e notificações da plataforma.</li>
+            <li>Produzir estatísticas e rankings de forma agregada (ex.: cidades com mais adoções).</li>
+        </ul>
+        <p>Não vendemos seus dados e não os usamos para publicidade.</p>
+
+        <h2 id="compartilhamento">3. Com quem compartilhamos</h2>
+        <ul>
+            <li><b>Outros usuários:</b> seu nome, cidade, foto e publicações aparecem no seu perfil público. Telefone, e-mail, CPF/CNPJ e endereço completo <b>não</b> são exibidos publicamente; aparecem apenas no termo de adoção, para as partes envolvidas.</li>
+            <li><b>Prestadores de serviço:</b> hospedagem do site (Render), banco de dados (Neon), envio de e-mails e consulta de CNPJ na Receita Federal (BrasilAPI), somente o necessário para o funcionamento.</li>
+            <li><b>Autoridades:</b> quando houver obrigação legal ou ordem judicial, por exemplo em casos de maus-tratos a animais.</li>
+        </ul>
+
+        <h2 id="seguranca">4. Como protegemos</h2>
+        <ul>
+            <li>Conexão sempre criptografada (HTTPS) e senhas armazenadas com hash.</li>
+            <li>Bloqueio temporário após várias tentativas de senha erradas.</li>
+            <li>Chaves e senhas do sistema guardadas fora do código-fonte.</li>
+            <li>Acesso aos dados restrito ao funcionamento da plataforma.</li>
+        </ul>
+
+        <h2 id="direitos">5. Seus direitos (art. 18 da LGPD)</h2>
+        <p>Você pode, a qualquer momento: confirmar se tratamos seus dados, acessá-los, corrigi-los, pedir a anonimização ou exclusão, solicitar a portabilidade e revogar o consentimento. Boa parte disso pode ser feita direto na página <a href="/perfil">Meu perfil</a>.</p>
+
+        <h2 id="exclusao">6. Como excluir seus dados</h2>
+        <p>Para pedir a exclusão da sua conta e dos seus dados, inclusive os recebidos pelo login com Google ou Facebook:</p>
+        <ol>
+            <li>
+                Envie um e-mail para
+                @if (string.IsNullOrWhiteSpace(Contato)) { <span>a administração do Match-Pet SP</span> }
+                else { <a href="mailto:@Contato?subject=Excluir%20meus%20dados">@Contato</a> }
+                com o assunto <b>"Excluir meus dados"</b>, a partir do mesmo e-mail da sua conta.
+            </li>
+            <li>Confirmaremos sua identidade e excluiremos os dados em até <b>15 dias</b>.</li>
+            <li>Termos de adoção já assinados podem ser mantidos pelo prazo legal, apenas como prova jurídica da adoção (art. 16, I, da LGPD).</li>
+        </ol>
+        <p>Se você entrou com o Facebook, também pode remover o acesso do Match-Pet em <i>Configurações → Apps e sites</i> no próprio Facebook.</p>
+
+        <h2 id="cookies">7. Armazenamento no navegador</h2>
+        <p>Usamos apenas o armazenamento essencial para manter você conectado (sessão criptografada) e cookies temporários do login com Google/Facebook. Não usamos cookies de rastreamento ou de publicidade.</p>
+
+        <hr class="my-5" />
+
+        <h2 id="termos">Termos de Uso</h2>
+        <ol>
+            <li><b>Cadastro verdadeiro:</b> você se compromete a informar dados reais. Contas com documentos falsos ou de terceiros serão bloqueadas.</li>
+            <li><b>Adoção responsável:</b> o adotante assume a guarda, os cuidados de saúde, alimentação e bem-estar do animal. Maus-tratos e abandono são crimes (Lei 9.605/1998, art. 32, com pena aumentada para cães e gatos pela Lei 14.064/2020).</li>
+            <li><b>Proibido vender animais:</b> a plataforma é exclusiva para adoção e doação, sem cobrança.</li>
+            <li><b>Conteúdo:</b> é proibido publicar conteúdo ofensivo, violento, discriminatório ou que exponha dados de outras pessoas. Publicações assim podem ser removidas.</li>
+            <li><b>Itens do Bazar:</b> as doações são combinadas diretamente entre as pessoas; o Match-Pet apenas aproxima as partes.</li>
+            <li><b>Responsabilidade:</b> o Match-Pet SP intermedia o contato e registra o termo, mas não é parte da adoção e não se responsabiliza por informações falsas prestadas pelos usuários.</li>
+            <li><b>Alterações:</b> estes termos podem ser atualizados; mudanças importantes serão avisadas no site.</li>
+        </ol>
+        <p class="text-muted small mb-0">Foro: comarca de Franca/SP.</p>
+    </article>
+</div>
+
+<style>
+    .texto-legal h2 { font-size: 1.2rem; margin: 2rem 0 .75rem; scroll-margin-top: 90px; }
+    .texto-legal h2:first-of-type { margin-top: 1rem; }
+    .texto-legal li { margin-bottom: .45rem; }
+    .texto-legal p, .texto-legal li { color: #334155; line-height: 1.7; }
+</style>
+
+@code {
+    // E-mail de contato para pedidos da LGPD (variável de ambiente Contato__Email no Render)
+    private string? Contato => Config["Contato:Email"] ?? Config["Email:RemetenteEmail"];
+}
