@@ -44,6 +44,7 @@ builder.Services.Configure<Microsoft.AspNetCore.Builder.ForwardedHeadersOptions>
     o.KnownProxies.Clear();
 });
 builder.Services.AddHttpContextAccessor();
+builder.AddLoginExterno(); // Google/Facebook: só liga se as chaves estiverem nas variáveis de ambiente
 
 // 3. INTERATIVIDADE E LIMITES DE UPLOAD
 builder.Services.AddRazorComponents()
@@ -101,6 +102,7 @@ app.UseWhen(ctx => !ctx.Request.Path.StartsWithSegments("/api"),
 app.UseHttpsRedirection();
 app.UseResponseCompression();
 app.UseRouting(); // depois do UseStatusCodePages, para a página 404 conseguir ser encontrada
+app.UseAuthentication();
 app.UseAntiforgery();
 
 // Arquivos do site (CSS, JS, imagens) já comprimidos e com cache longo:
@@ -111,6 +113,7 @@ app.MapStaticAssets();
 app.MapGet("/health", () => Results.Text("ok"));
 
 app.MapImagens();
+app.MapLoginExterno();
 app.MapControllers();
 app.MapRazorComponents<crudcomdb.Components.App>()
     .AddInteractiveServerRenderMode();

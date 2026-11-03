@@ -124,3 +124,27 @@ window.mpDefinirSom = (mudo) => {
 
     document.addEventListener('DOMContentLoaded', () => observarNovos(document));
 })();
+
+// ----- MÁSCARA DE CPF/CNPJ -----
+// data-mascara="cpf" | "cnpj" | "doc-ou-email" (no login: se tiver letra ou @, é e-mail e não mexe)
+(function () {
+    const formatar = (digitos, tipo) => {
+        const d = digitos.slice(0, tipo === 'cpf' ? 11 : 14);
+        if (tipo === 'cpf' || (tipo === 'auto' && d.length <= 11))
+            return d.replace(/^(\d{3})(\d)/, '$1.$2').replace(/^(\d{3})\.(\d{3})(\d)/, '$1.$2.$3').replace(/\.(\d{3})(\d{1,2})$/, '.$1-$2');
+        return d.replace(/^(\d{2})(\d)/, '$1.$2').replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3')
+            .replace(/\.(\d{3})(\d)/, '.$1/$2').replace(/(\d{4})(\d{1,2})$/, '$1-$2');
+    };
+
+    document.addEventListener('input', (e) => {
+        const el = e.target;
+        const modo = el?.dataset?.mascara;
+        if (!modo) return;
+        if (modo === 'doc-ou-email' && /[a-zA-Z@]/.test(el.value)) return;
+        // Apagando a pontuação: deixa o usuário apagar normalmente
+        if (e.inputType && e.inputType.startsWith('delete') && /[.\-\/]$/.test(el.value)) return;
+        const digitos = el.value.replace(/\D/g, '');
+        const novo = formatar(digitos, modo === 'doc-ou-email' ? 'auto' : modo);
+        if (novo !== el.value) el.value = novo;
+    });
+})();

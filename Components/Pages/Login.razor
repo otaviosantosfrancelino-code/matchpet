@@ -17,7 +17,7 @@
             <ul class="list-unstyled small mb-0">
                 <li><i class="bi bi-check-circle-fill me-2"></i>Cadastros verificados</li>
                 <li><i class="bi bi-check-circle-fill me-2"></i>Termo digital de adoção</li>
-                <li><i class="bi bi-check-circle-fill me-2"></i>Contato direto pelo WhatsApp</li>
+                <li><i class="bi bi-check-circle-fill me-2"></i>Conversa direta pelo chat do site</li>
             </ul>
         </div>
 
@@ -35,7 +35,7 @@
                     <label class="form-label" for="loginDoc">CPF, CNPJ ou e-mail</label>
                     <div class="campo-icone">
                         <i class="bi bi-person"></i>
-                        <input id="loginDoc" type="text" autocomplete="username" class="form-control" @bind="identificacao" placeholder="000.000.000-00 ou voce@email.com" />
+                        <input id="loginDoc" type="text" autocomplete="username" class="form-control" @bind="identificacao" data-mascara="doc-ou-email" maxlength="80" placeholder="000.000.000-00 ou voce@email.com" />
                     </div>
                 </div>
 
@@ -59,6 +59,24 @@
                 </button>
             </form>
 
+            <div class="divisor-ou"><span>ou</span></div>
+
+            <div class="d-grid gap-2">
+                <button type="button" class="btn btn-social" @onclick='() => EntrarCom("Google")' disabled="@(provedorAbrindo != null)">
+                    @if (provedorAbrindo == "Google") { <span class="spinner-border spinner-border-sm"></span> }
+                    else
+                    {
+                        <svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>
+                    }
+                    <span>Continuar com Google</span>
+                </button>
+                <button type="button" class="btn btn-social" @onclick='() => EntrarCom("Facebook")' disabled="@(provedorAbrindo != null)">
+                    @if (provedorAbrindo == "Facebook") { <span class="spinner-border spinner-border-sm"></span> }
+                    else { <i class="bi bi-facebook" style="color:#1877F2;font-size:1.25rem"></i> }
+                    <span>Continuar com Facebook</span>
+                </button>
+            </div>
+
             <p class="text-center text-muted mt-4 mb-0">Ainda não tem conta? <a href="/cadastro" class="fw-bold">Crie grátis</a></p>
         </div>
     </div>
@@ -70,17 +88,56 @@
     .lado-arte li { margin-bottom: .5rem; }
     .lado-form { flex: 1.15; padding: clamp(1.5rem, 4vw, 3rem); }
     .olho { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); }
+    .divisor-ou { display: flex; align-items: center; gap: .75rem; margin: 1.5rem 0 1.1rem; color: var(--mp-muted); font-size: .8rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; }
+    .divisor-ou::before, .divisor-ou::after { content: ""; flex: 1; height: 1px; background: var(--mp-line); }
+    .btn-social { display: flex; align-items: center; justify-content: center; gap: .65rem; padding: .7rem 1rem; border-radius: 14px; background: #fff; border: 1px solid var(--mp-line); color: var(--mp-ink); font-weight: 700; transition: background .2s, border-color .2s, box-shadow .2s; }
+    .btn-social:hover { background: #f8fafc; border-color: #cbd5e1; box-shadow: var(--mp-shadow-sm); }
 </style>
 
 @code {
     [SupplyParameterFromQuery(Name = "voltar")] public string? Voltar { get; set; }
+    [SupplyParameterFromQuery(Name = "codigo")] public string? Codigo { get; set; }
+    [SupplyParameterFromQuery(Name = "erro")] public string? Erro { get; set; }
 
     private string identificacao = "", senha = "", mensagemErro = "";
     private bool mostrarSenha, entrando;
+    private string? provedorAbrindo;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        if (AuthService.EstaLogado) Nav.NavigateTo("/pets");
+        if (AuthService.EstaLogado) { Nav.NavigateTo("/pets"); return; }
+
+        mensagemErro = Erro switch
+        {
+            "indisponivel" => "Esse tipo de login ainda não foi ativado no site. Entre com CPF/CNPJ ou e-mail e senha.",
+            "cancelado" => "O login foi cancelado ou expirou. Tente de novo.",
+            "sem-email" => "Não recebemos seu e-mail da rede social. Libere o acesso ao e-mail ou entre com CPF/CNPJ e senha.",
+            _ => ""
+        };
+
+        // Voltou do Google/Facebook com uma conta já existente
+        if (LoginExternoEndpoints.Consumir(Codigo) is { UsuarioId: int id } dados)
+        {
+            var usuario = await UsuarioRepository.GetByIdAsync(id);
+            if (usuario != null)
+            {
+                await AuthService.LoginAsync(usuario);
+                Toast.Sucesso($"Bem-vindo(a), {usuario.Nome.Split(' ')[0]}! Você entrou com o {dados.Provedor}.");
+                Nav.NavigateTo(!string.IsNullOrEmpty(Voltar) && Voltar.StartsWith('/') && !Voltar.StartsWith("//") ? Voltar : "/pets");
+            }
+        }
+        else if (!string.IsNullOrEmpty(Codigo))
+        {
+            mensagemErro = "O link de login expirou. Tente de novo.";
+        }
+    }
+
+    // Sai do Blazor e vai para o Google/Facebook (precisa recarregar a página)
+    private void EntrarCom(string provedor)
+    {
+        provedorAbrindo = provedor;
+        var destino = $"/entrar/externo/{provedor}" + (!string.IsNullOrEmpty(Voltar) ? "?voltar=" + Uri.EscapeDataString(Voltar) : "");
+        Nav.NavigateTo(destino, forceLoad: true);
     }
 
     private async Task ProcessarLogin()
