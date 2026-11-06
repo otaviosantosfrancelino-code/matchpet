@@ -41,16 +41,13 @@ builder.Services.AddSingleton<NotificacoesService>();   // avisa em tempo real (
 builder.Services.AddSingleton<GeoService>();            // coordenadas das cidades para o mapa
 builder.Services.AddSingleton<LimiteTentativasService>(); // bloqueia quem erra a senha muitas vezes
 
-// Limite de pedidos por IP na API e no login com Google/Facebook (evita robôs e abuso)
+// Limite de pedidos por IP na API (evita robôs e abuso)
 builder.Services.AddRateLimiter(o =>
 {
     o.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
     o.AddPolicy("api", ctx => System.Threading.RateLimiting.RateLimitPartition.GetFixedWindowLimiter(
         ctx.Connection.RemoteIpAddress?.ToString() ?? "desconhecido",
         _ => new System.Threading.RateLimiting.FixedWindowRateLimiterOptions { PermitLimit = 60, Window = TimeSpan.FromMinutes(1) }));
-    o.AddPolicy("login", ctx => System.Threading.RateLimiting.RateLimitPartition.GetFixedWindowLimiter(
-        ctx.Connection.RemoteIpAddress?.ToString() ?? "desconhecido",
-        _ => new System.Threading.RateLimiting.FixedWindowRateLimiterOptions { PermitLimit = 15, Window = TimeSpan.FromMinutes(5) }));
 });
 builder.Services.AddHttpClient();
 builder.Services.AddResponseCompression(o => o.EnableForHttps = true);
@@ -63,7 +60,6 @@ builder.Services.Configure<Microsoft.AspNetCore.Builder.ForwardedHeadersOptions>
     o.KnownProxies.Clear();
 });
 builder.Services.AddHttpContextAccessor();
-builder.AddLoginExterno(); // Google/Facebook: só liga se as chaves estiverem nas variáveis de ambiente
 
 // 3. INTERATIVIDADE E LIMITES DE UPLOAD
 builder.Services.AddRazorComponents()
@@ -110,7 +106,7 @@ app.Use(async (ctx, proximo) =>
     var h = ctx.Response.Headers;
     h["X-Content-Type-Options"] = "nosniff";                       // o navegador não "adivinha" o tipo do arquivo
     h["X-Frame-Options"] = "SAMEORIGIN";                            // outro site não pode abrir o Match-Pet escondido numa moldura
-    h["Content-Security-Policy"] = "frame-ancestors 'self'; base-uri 'self'; object-src 'none'; form-action 'self' https://accounts.google.com https://www.facebook.com";
+    h["Content-Security-Policy"] = "frame-ancestors 'self'; base-uri 'self'; object-src 'none'; form-action 'self'";
     h["Referrer-Policy"] = "strict-origin-when-cross-origin";       // não vaza o endereço completo para outros sites
     h["Permissions-Policy"] = "camera=(), microphone=(), geolocation=(self), payment=()";
     await proximo();
@@ -134,7 +130,6 @@ app.UseHttpsRedirection();
 app.UseResponseCompression();
 app.UseRouting(); // depois do UseStatusCodePages, para a página 404 conseguir ser encontrada
 app.UseRateLimiter();
-app.UseAuthentication();
 app.UseAntiforgery();
 
 // Arquivos do site (CSS, JS, imagens) já comprimidos e com cache longo:
@@ -145,7 +140,6 @@ app.MapStaticAssets();
 app.MapGet("/health", () => Results.Text("ok"));
 
 app.MapImagens();
-app.MapLoginExterno();
 app.MapControllers();
 app.MapRazorComponents<crudcomdb.Components.App>()
     .AddInteractiveServerRenderMode();

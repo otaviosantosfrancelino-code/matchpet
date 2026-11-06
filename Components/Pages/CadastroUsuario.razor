@@ -17,13 +17,6 @@
     </div>
 
     <div class="mp-card p-3 p-sm-4 p-md-5">
-        @if (externo != null)
-        {
-            <div class="alert alert-primary small d-flex gap-2 align-items-start">
-                <i class="bi bi-person-check-fill fs-5"></i>
-                <div><b>Quase lá, @externo.Nome.Split(' ')[0]!</b> Você entrou com o @externo.Provedor. Para adotar com segurança, complete seu CPF/CNPJ e endereço abaixo.</div>
-            </div>
-        }
         @if (!string.IsNullOrEmpty(mensagemErroGeral))
         {
             <div class="alert alert-danger small"><i class="bi bi-exclamation-triangle-fill me-1"></i> @mensagemErroGeral</div>
@@ -112,8 +105,8 @@
             <div class="row g-3">
                 <div class="col-12">
                     <label class="form-label">E-mail</label>
-                    <InputText type="email" class="form-control" autocomplete="email" placeholder="voce@email.com" @bind-Value="novoUsuario.Email" readonly="@(externo != null)" />
-                    <div class="form-text">@(externo != null ? $"Confirmado pelo {externo.Provedor}. Depois você também pode entrar com ele." : "Usado para entrar e para recuperar a senha.")</div>
+                    <InputText type="email" class="form-control" autocomplete="email" placeholder="voce@email.com" @bind-Value="novoUsuario.Email" />
+                    <div class="form-text">Usado para entrar e para recuperar a senha.</div>
                     <ValidationMessage For="@(() => novoUsuario.Email)" />
                 </div>
                 <div class="col-md-6">
@@ -145,20 +138,7 @@
 
 @code {
     [CascadingParameter(Name = "IpCliente")] public string IpCliente { get; set; } = "";
-    [SupplyParameterFromQuery(Name = "externo")] public string? CodigoExterno { get; set; }
-    private LoginExternoEndpoints.DadosExternos? externo;
     private Usuario novoUsuario = new();
-
-    // Veio do Google/Facebook sem conta: já preenche nome e e-mail
-    protected override void OnInitialized()
-    {
-        externo = LoginExternoEndpoints.Ler(CodigoExterno);
-        if (externo != null)
-        {
-            novoUsuario.Nome = externo.Nome;
-            novoUsuario.Email = externo.Email;
-        }
-    }
     private string senha = "", confirmarSenha = "";
     private bool ehOng, processando, buscandoCep, consultandoCnpj, documentoOk;
     private string mensagemErroGeral = "", mensagemCep = "", avisoDocumento = "";
@@ -293,7 +273,6 @@
 
             await UsuarioRepository.AddAsync(novoUsuario);
             await AuthService.LoginAsync(novoUsuario);
-            if (externo != null) LoginExternoEndpoints.Consumir(CodigoExterno);
 
             // E-mail de boas-vindas (se o envio não estiver configurado, só fica registrado no log)
             var nome = novoUsuario.Nome.Split(' ')[0];
