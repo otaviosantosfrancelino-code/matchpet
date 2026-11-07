@@ -4,6 +4,7 @@
 @inject AuthService AuthService
 @inject NavigationManager Nav
 @inject ToastService Toast
+@inject AvisoAnaliseService Analise
 
 <PageTitle>Novo anúncio | Match-Pet SP</PageTitle>
 
@@ -311,7 +312,7 @@
         try
         {
             await PetRepository.AddAsync(novoPet);
-            if (emModeracao) Toast.Info($"Anúncio de {novoPet.Nome} enviado! Ele aparece no catálogo assim que a moderação aprovar. 🛡️");
+            if (emModeracao) Analise.Mostrar($"Anúncio de {novoPet.Nome} enviado para análise", $"O anúncio de {novoPet.Nome}", "no catálogo");
             else Toast.Sucesso($"{novoPet.Nome} já está no catálogo! 🎉");
             Nav.NavigateTo("/meus-pets");
         }
@@ -334,7 +335,7 @@
         try
         {
             await ItemRepository.AddAsync(novoItem);
-            if (itemEmModeracao) Toast.Info("Doação enviada! Ela aparece no Bazar assim que a moderação aprovar. 🛡️");
+            if (itemEmModeracao) Analise.Mostrar("Doação enviada para análise 🎁", "Sua doação", "no Bazar Solidário");
             else Toast.Sucesso("Doação publicada no Bazar Solidário! 🎁");
             Nav.NavigateTo("/meus-pets?aba=itens");
         }

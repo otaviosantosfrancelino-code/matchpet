@@ -5,6 +5,7 @@
 @inject AuthService AuthService
 @inject NavigationManager Nav
 @inject ToastService Toast
+@inject AvisoAnaliseService Analise
 @implements IDisposable
 
 <PageTitle>Editar pet | Match-Pet SP</PageTitle>
@@ -188,7 +189,7 @@
             petParaEditar.FotoUrl = ""; // a capa é a 1ª imagem (não duplicamos a foto no banco)
             await PetRepository.UpdateAsync(petParaEditar);
             salvo = true;
-            if (petParaEditar.Status == EspeciesPermitidas.StatusModeracao) Toast.Info("Anúncio atualizado! Ele volta ao catálogo assim que a moderação aprovar as mudanças. 🛡️");
+            if (petParaEditar.Status == EspeciesPermitidas.StatusModeracao) Analise.Mostrar("Anúncio enviado para análise", "A edição do seu anúncio", "no catálogo");
             else Toast.Sucesso("Anúncio atualizado!");
             Nav.NavigateTo("/meus-pets");
         }

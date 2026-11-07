@@ -3,6 +3,7 @@
 @inject AuthService AuthService
 @inject NavigationManager Nav
 @inject ToastService Toast
+@inject AvisoAnaliseService Analise
 
 <article class="mp-card post @(Post.Pendente ? "pendente" : "")">
     @if (Post.Pendente)
@@ -146,7 +147,7 @@
         var texto = novoComentario;
         novoComentario = "";
         var direto = await Social.ComentarAsync(Post.Id, AuthService.UsuarioLogado!.Id, texto);
-        if (!direto) Toast.Info("Comentário enviado! Ele aparece para todos depois que a moderação aprovar. 🛡️");
+        if (!direto) Analise.Mostrar("Comentário enviado para análise", "Seu comentário", "na publicação");
         comentarios = await Social.ComentariosAsync(Post.Id, AuthService.UsuarioLogado?.Id);
         totalComentarios = comentarios.Count(c => !c.Pendente);
     }

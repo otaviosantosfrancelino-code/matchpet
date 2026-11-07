@@ -3,6 +3,7 @@
 @inject SocialService Social
 @inject AuthService AuthService
 @inject ToastService Toast
+@inject AvisoAnaliseService Analise
 
 <PageTitle>Final Feliz | Match-Pet SP</PageTitle>
 
@@ -188,7 +189,7 @@
             fotoUrl = null;
             petId = 0;
             if (direto) Toast.Sucesso("Sua história foi publicada! Obrigado por compartilhar 💛");
-            else Toast.Info("História enviada! Ela aparece na galeria depois que a moderação aprovar. Obrigado por compartilhar 💛");
+            else Analise.Mostrar("História enviada para análise 💛", "Sua história", "na galeria Final Feliz");
             depoimentos = await Social.DepoimentosAsync(AuthService.UsuarioLogado?.Id);
         }
         catch (Exception ex) { Toast.Erro("Não foi possível publicar: " + ex.Message); }

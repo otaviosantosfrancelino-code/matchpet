@@ -1,0 +1,39 @@
+@* Janela exibida depois de publicar algo que precisa da aprovação do administrador *@
+@inject AvisoAnaliseService Servico
+@implements IDisposable
+
+@if (Servico.Atual is { } aviso)
+{
+    <div class="modal fade show d-block modal-blazor" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="tituloAvisoAnalise" @onclick="Servico.Fechar">
+        <div class="modal-dialog modal-dialog-centered" @onclick:stopPropagation="true">
+            <div class="modal-content text-center p-2">
+                <div class="modal-body px-4 pt-4">
+                    <div class="icone-analise mx-auto mb-3" aria-hidden="true"><i class="bi bi-shield-check"></i></div>
+                    <h2 class="h4 fw-bold mb-2" id="tituloAvisoAnalise">@aviso.Titulo</h2>
+                    <p class="mb-3">
+                        @aviso.Oque precisa passar pela <b>análise do administrador</b> antes de aparecer para todos @aviso.Onde.
+                    </p>
+                    <ul class="list-unstyled small text-muted text-start mx-auto mb-0" style="max-width:340px">
+                        <li class="mb-2"><i class="bi bi-eye me-2 text-primary"></i>Enquanto isso, só você consegue ver.</li>
+                        <li class="mb-2"><i class="bi bi-bell me-2 text-primary"></i>Você recebe uma notificação assim que a análise terminar.</li>
+                        <li><i class="bi bi-heart me-2 text-primary"></i>Assim mantemos o Match-Pet seguro para todos. 🐾</li>
+                    </ul>
+                </div>
+                <div class="modal-footer border-0 justify-content-center pb-4">
+                    <button class="btn btn-primary btn-lg px-5" @onclick="Servico.Fechar" autofocus>Entendi</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<style>
+    .icone-analise { width: 72px; height: 72px; border-radius: 22px; display: grid; place-items: center; font-size: 2rem;
+        color: var(--mp-primary); background: var(--mp-primary-soft); }
+</style>
+
+@code {
+    protected override void OnInitialized() => Servico.OnMudou += Atualizar;
+    private void Atualizar() => InvokeAsync(StateHasChanged);
+    public void Dispose() => Servico.OnMudou -= Atualizar;
+}

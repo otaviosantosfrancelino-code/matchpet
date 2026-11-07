@@ -3,6 +3,7 @@
 @inject AuthService AuthService
 @inject NavigationManager Nav
 @inject ToastService Toast
+@inject AvisoAnaliseService Analise
 @inject IJSRuntime JS
 
 <PageTitle>Comunidade | Match-Pet SP</PageTitle>
@@ -295,7 +296,7 @@
             texto = "";
             RemoverMidia();
             if (direto) Toast.Sucesso("Publicado! 🎉");
-            else Toast.Info("Publicação enviada! Ela aparece para todos depois que a moderação aprovar. 🛡️");
+            else Analise.Mostrar("Publicação enviada para análise", "Sua publicação", "na Comunidade");
             aba = "todos";
             await CarregarFeed();
         }

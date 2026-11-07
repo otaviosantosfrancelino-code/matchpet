@@ -5,6 +5,7 @@
 @inject AuthService AuthService
 @inject NavigationManager Nav
 @inject ToastService Toast
+@inject AvisoAnaliseService Analise
 @implements IDisposable
 
 <PageTitle>Editar item | Match-Pet SP</PageTitle>
@@ -148,7 +149,7 @@
             else if (item.Status == "Disponível" && !Consultas.PublicaDireto(AuthService.UsuarioLogado)) item.Status = EspeciesPermitidas.StatusModeracao;
             await ItemRepository.UpdateAsync(item);
             salvo = true;
-            if (item.Status == EspeciesPermitidas.StatusModeracao) Toast.Info("Item atualizado! Ele volta ao Bazar assim que a moderação aprovar. 🛡️");
+            if (item.Status == EspeciesPermitidas.StatusModeracao) Analise.Mostrar("Item enviado para análise", "A edição do seu item", "no Bazar Solidário");
             else Toast.Sucesso("Item atualizado!");
             Nav.NavigateTo("/meus-pets?aba=itens");
         }

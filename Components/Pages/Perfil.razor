@@ -5,6 +5,7 @@
 @inject CofreDocumentos Cofre
 @inject NavigationManager Nav
 @inject ToastService Toast
+@inject AvisoAnaliseService Analise
 
 <PageTitle>Meu perfil | Match-Pet SP</PageTitle>
 
@@ -224,7 +225,7 @@
             if (Consultas.PublicaDireto(eu)) eu.FotoPerfilBase64 = foto; else eu.FotoPerfilPendente = foto;
             await SalvarPerfil(silencioso: true);
             if (Consultas.PublicaDireto(eu)) Toast.Sucesso("Foto atualizada!");
-            else Toast.Info("Foto enviada! Ela aparece no seu perfil depois que a moderação aprovar. 🛡️");
+            else Analise.Mostrar("Foto enviada para análise", "Sua nova foto de perfil", "no seu perfil");
         }
         catch (Exception ex)
         {
@@ -329,7 +330,7 @@
             AuthService.AtualizarClassificacao(u);
             await UsuarioRepository.UpdateAsync(u);
             AuthService.NotifyStateChanged();
-            if (emAprovacao) Toast.Info("Perfil salvo! Os textos novos aparecem no seu perfil público depois que a moderação aprovar. 🛡️");
+            if (emAprovacao) Analise.Mostrar("Perfil enviado para análise", "O texto novo do seu perfil", "no seu perfil público");
             else if (!silencioso) Toast.Sucesso("Perfil atualizado!");
         }
         catch (Exception ex)
