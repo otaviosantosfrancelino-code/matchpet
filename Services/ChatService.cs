@@ -273,6 +273,43 @@ namespace crudcomdb.Services
             return termo;
         }
 
+        // Verificação pública de autenticidade (/verificar-termo): mostra só o necessário para conferir o documento,
+        // com os nomes abreviados (LGPD) e sem IP, CPF ou endereço
+        public record TermoPublico(string Codigo, string Status, string Pet, string Especie, string Doador, string Adotante,
+            DateTime DataEnvio, DateTime? DataAssinatura, string Impressao);
+
+        public async Task<TermoPublico?> VerificarTermoAsync(string codigo)
+        {
+            var c = (codigo ?? "").Trim().ToUpperInvariant().Replace(" ", "");
+            if (c.Length < 6) return null;
+            if (!c.StartsWith("MP-")) c = "MP-" + c;
+            await using var db = await _fabrica.CreateDbContextAsync();
+            var t = await db.TermosAdocao.AsNoTracking().FirstOrDefaultAsync(x => x.Codigo == c);
+            if (t == null) return null;
+            var nomes = await db.Usuarios.AsNoTracking().Where(u => u.Id == t.DoadorId || u.Id == t.AdotanteId)
+                .Select(u => new { u.Id, u.Nome, u.EhOng }).ToListAsync();
+            var pet = await db.Pets.AsNoTracking().Where(p => p.Id == t.PetId).Select(p => new { p.Nome, p.Especie }).FirstOrDefaultAsync();
+            string Nome(int id) => nomes.FirstOrDefault(n => n.Id == id) is { } n ? (n.EhOng ? n.Nome : AbreviarNome(n.Nome)) : "—";
+            return new(t.Codigo, t.Status, pet?.Nome ?? "—", pet?.Especie ?? "", Nome(t.DoadorId), Nome(t.AdotanteId), t.DataEnvio, t.DataAssinatura, ImpressaoDigital(t));
+        }
+
+        // "Maria Aparecida da Silva" -> "Maria A. da S."
+        public static string AbreviarNome(string nome)
+        {
+            var partes = nome.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            if (partes.Length <= 1) return nome;
+            return partes[0] + " " + string.Join(" ", partes.Skip(1).Select(p => p.Length <= 3 && char.IsLower(p[0]) ? p : p[0] + "."));
+        }
+
+        // Impressão digital (SHA-256) do conteúdo e das assinaturas: qualquer alteração no texto muda o código
+        public static string ImpressaoDigital(TermoAdocao t)
+        {
+            var conteudo = string.Join("|", t.Codigo, t.Texto, t.DoadorId, t.AdotanteId, t.PetId,
+                t.DataEnvio.ToString("yyyy-MM-ddTHH:mm:ss"), t.IpDoador, t.DataAssinatura?.ToString("yyyy-MM-ddTHH:mm:ss") ?? "", t.IpAdotante ?? "");
+            var hash = SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(conteudo));
+            return Convert.ToHexString(hash)[..16].Insert(12, " ").Insert(8, " ").Insert(4, " ");
+        }
+
         private static async Task<(Pet pet, Usuario doador, Usuario adotante, Conversa conversa)> DadosTermoAsync(AppDbContext db, int conversaId, int doadorId)
         {
             var conversa = await db.Conversas.FirstOrDefaultAsync(c => c.Id == conversaId)

@@ -1,5 +1,8 @@
 @* Card de pet usado no Catálogo, Início e ONGs *@
 @inject NavigationManager Nav
+@inject AuthService AuthService
+@inject FavoritosService Favoritos
+@inject ToastService Toast
 
 <article class="mp-card mp-card-hover pet-card" @onclick="Abrir" role="link" tabindex="0" @onkeydown="Teclado" aria-label="Ver @Pet.Nome">
     <div class="foto">
@@ -10,6 +13,13 @@
         else
         {
             <div class="foto-vazia"><span style="font-size:2.4rem">@Emoji(Pet.Especie)</span><small>Sem foto</small></div>
+        }
+        @if (MostrarFavorito)
+        {
+            <button type="button" class="coracao @(favorito ? "ativo" : "")" @onclick="AlternarFavorito" @onclick:stopPropagation="true" @onkeydown:stopPropagation="true"
+                    aria-pressed="@favorito" aria-label="@(favorito ? $"Tirar {Pet.Nome} dos favoritos" : $"Favoritar {Pet.Nome}")" title="@(favorito ? "Tirar dos favoritos" : "Favoritar")">
+                <i class="bi @(favorito ? "bi-heart-fill" : "bi-heart")"></i>
+            </button>
         }
         <div class="selos">
             <span class="selo"><i class="bi bi-geo-alt-fill text-danger"></i>@(Pet.UsuarioDoador?.Cidade ?? "Franca")</span>
@@ -47,14 +57,33 @@
 @code {
     [Parameter, EditorRequired] public Pet Pet { get; set; } = default!;
     [Parameter] public bool MostrarBotao { get; set; } = true;
+    [Parameter] public bool MostrarFavorito { get; set; } = true;
+    private bool favorito;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (MostrarFavorito && AuthService.EstaLogado)
+        {
+            try { favorito = await Favoritos.EhFavoritoAsync(Pet.Id); } catch { }
+        }
+    }
+
+    private async Task AlternarFavorito()
+    {
+        if (!AuthService.EstaLogado)
+        {
+            Toast.Info("Entre na sua conta para salvar favoritos.");
+            Nav.NavigateTo("/login?voltar=/favoritos");
+            return;
+        }
+        try { favorito = await Favoritos.AlternarAsync(Pet.Id); }
+        catch { Toast.Erro("Não foi possível salvar o favorito."); }
+    }
 
     private void Abrir() => Nav.NavigateTo($"/pets/detalhes/{Pet.Id}");
     private void Teclado(KeyboardEventArgs e) { if (e.Key == "Enter") Abrir(); }
 
     public static string Idade(int anos) => anos switch { <= 0 => "Filhote", 1 => "1 ano", _ => $"{anos} anos" };
 
-    public static string Emoji(string? especie) => especie switch
-    {
-        "Cão" => "🐶", "Gato" => "🐱", "Pássaro" => "🐦", "Peixe" => "🐟", "Hamster" => "🐹", "Coelho" => "🐰", _ => "🐾"
-    };
+    public static string Emoji(string? especie) => EspeciesPermitidas.Emoji(especie);
 }

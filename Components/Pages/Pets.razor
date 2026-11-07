@@ -1,6 +1,8 @@
 @page "/pets"
 @inject IPetRepository PetRepository
 @inject NavigationManager Nav
+@inject AuthService AuthService
+@inject QuestionariosService Questionarios
 
 <PageTitle>Adotar um pet | Match-Pet SP</PageTitle>
 
@@ -45,6 +47,10 @@
         </div>
 
         <div class="chips mt-3">
+            @if (AuthService.EstaLogado)
+            {
+                <button class="chip chip-combina @(combinaComigo ? "ativo" : "")" @onclick="CombinaComigo" title="Usa as respostas do seu questionário de adoção">✨ Combina comigo</button>
+            }
             @foreach (var (valor, rotulo) in Especies)
             {
                 <button class="chip @((filtro.Especie ?? "") == valor ? "ativo" : "")" @onclick="() => MudarEspecie(valor)">@rotulo</button>
@@ -162,7 +168,7 @@
     private readonly SemaphoreSlim travaConsulta = new(1, 1);
 
     private static readonly (string, string)[] Especies =
-        { ("", "🐾 Todos"), ("Cão", "🐶 Cães"), ("Gato", "🐱 Gatos"), ("Pássaro", "🐦 Aves"), ("Peixe", "🐟 Peixes"), ("Outros", "🐹 Outros") };
+        { ("", "🐾 Todos"), ("Cão", "🐶 Cães"), ("Gato", "🐱 Gatos"), ("Pássaro", "🐦 Aves"), ("Outros", "🐰 Pequenos") };
 
     private record Opcao(string Emoji, string Rotulo, Func<FiltroPets, bool> Ler, Action<FiltroPets, bool> Gravar);
     private static readonly Opcao[] Opcoes =
@@ -194,6 +200,20 @@
         await AplicarFiltro();
     }
 
+    private bool combinaComigo;
+
+    // Aplica as respostas do questionário de adoção como filtros (sem questionário, abre o formulário)
+    private async Task CombinaComigo()
+    {
+        if (combinaComigo) { combinaComigo = false; filtro.TemCriancas = filtro.MoraEmApto = false; await AplicarFiltro(); return; }
+        var perfil = await Questionarios.PerfilAsync(AuthService.UsuarioLogado!.Id);
+        if (perfil == null) { Nav.NavigateTo("/questionario-adocao"); return; }
+        combinaComigo = true;
+        filtro.TemCriancas = perfil.TemCriancas;
+        filtro.MoraEmApto = !perfil.TemQuintal;
+        await AplicarFiltro();
+    }
+
     private async Task MudarEspecie(string especie)
     {
         filtro.Especie = especie;
@@ -217,6 +237,7 @@
     {
         filtroNome = "";
         filtro = new FiltroPets { Ordem = filtro.Ordem };
+        combinaComigo = false;
         await AplicarFiltro();
     }
 }

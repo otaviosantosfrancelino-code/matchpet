@@ -71,6 +71,10 @@ namespace crudcomdb.Services
             "ranking" => "🏆",
             "adocao" => "🏡",
             "historia" => "💛",
+            "denuncia" => "🚩",
+            "moderacao" => "🛡️",
+            "documento" => "🪪",
+            "acompanhamento" => "🩺",
             _ => "🔔"
         };
     }

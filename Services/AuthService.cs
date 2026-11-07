@@ -22,6 +22,7 @@ namespace crudcomdb.Services
         public Usuario? UsuarioLogado { get; private set; }
         public bool EstaLogado => UsuarioLogado != null;
         public bool DocumentoAprovado => UsuarioLogado?.StatusValidacaoDocumento == "Aprovado";
+        public bool EhAdmin => UsuarioLogado?.EhAdmin == true;
         public event Action? OnChage;
 
         public record Sessao(int UsuarioId, DateTime ExpiraEm);
@@ -68,7 +69,8 @@ namespace crudcomdb.Services
             try
             {
                 var usuario = await _usuarios.GetByIdAsync(sessao.UsuarioId);
-                if (usuario == null) { await _storage.DeleteAsync(ChaveSessao); return; }
+                // Conta bloqueada pela moderação: encerra a sessão salva
+                if (usuario == null || usuario.Bloqueado) { await _storage.DeleteAsync(ChaveSessao); return; }
 
                 AtualizarClassificacao(usuario);
                 UsuarioLogado = usuario;

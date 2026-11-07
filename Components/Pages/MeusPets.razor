@@ -5,6 +5,7 @@
 @inject NavigationManager Nav
 @inject ToastService Toast
 @inject RankingService Ranking
+@inject FavoritosService Favoritos
 
 <PageTitle>Meus anúncios | Match-Pet SP</PageTitle>
 
@@ -63,7 +64,19 @@
                                 {
                                     <div class="small text-primary fw-semibold"><i class="bi bi-hourglass-split me-1"></i>Alguém assinou o termo. Combine a visita!</div>
                                 }
-                                @if (pet.Status != "Adotado")
+                                @if (pet.Status == EspeciesPermitidas.StatusModeracao)
+                                {
+                                    <div class="small text-info fw-semibold"><i class="bi bi-feather me-1"></i>Aguardando a moderação conferir a espécie da ave.</div>
+                                }
+                                else if (pet.Status == ModeracaoService.StatusRemovido)
+                                {
+                                    <div class="small text-danger fw-semibold"><i class="bi bi-shield-exclamation me-1"></i>Removido pela moderação por violar os Termos de Uso.</div>
+                                }
+                                @if (favoritosPorPet.GetValueOrDefault(pet.Id) is int fav && fav > 0)
+                                {
+                                    <div class="small text-muted"><i class="bi bi-heart-fill text-danger me-1"></i>@fav @(fav == 1 ? "pessoa favoritou" : "pessoas favoritaram")</div>
+                                }
+                                @if (pet.Status is "Disponível" or "Em Processo")
                                 {
                                     <div class="d-flex gap-2 mt-auto">
                                         <button class="btn btn-accent btn-sm flex-grow-1" @onclick="() => confirmacao = new(pet.Id, pet.Nome, true, true)"><i class="bi bi-heart-fill me-1"></i> Foi adotado!</button>
@@ -162,10 +175,13 @@
         await CarregarDados();
     }
 
+    private Dictionary<int, int> favoritosPorPet = new();
+
     private async Task CarregarDados()
     {
         var id = AuthService.UsuarioLogado!.Id;
         meusPets = await PetRepository.GetByUserIdAsync(id);
+        try { favoritosPorPet = await Favoritos.ContarPorPetAsync(meusPets.Select(p => p.Id)); } catch { }
         meusItens = await ItemRepository.GetByUserIdAsync(id);
     }
 
@@ -176,7 +192,7 @@
         _ = Task.Run(async () => { try { await Ranking.VerificarAsync(id); } catch { } });
     }
 
-    private static string CorStatus(string s) => s switch { "Disponível" => "bg-success", "Em Processo" => "bg-primary", _ => "bg-warning" };
+    private static string CorStatus(string s) => s switch { "Disponível" => "bg-success", "Em Processo" => "bg-primary", "Em Moderação" => "bg-info text-dark", "Removido" => "bg-danger", _ => "bg-warning" };
 
     private async Task MudarStatusPet(Pet pet, string status)
     {

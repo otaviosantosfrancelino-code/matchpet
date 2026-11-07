@@ -22,6 +22,25 @@ namespace crudcomdb.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("Microsoft.AspNetCore.DataProtection.EntityFrameworkCore.DataProtectionKey", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("FriendlyName")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Xml")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("DataProtectionKeys");
+                });
+
             modelBuilder.Entity("crudcomdb.Models.Amizade", b =>
                 {
                     b.Property<int>("Id")
@@ -54,6 +73,42 @@ namespace crudcomdb.Migrations
                         .IsUnique();
 
                     b.ToTable("Amizades");
+                });
+
+            modelBuilder.Entity("crudcomdb.Models.AvaliacaoUso", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Comentario")
+                        .HasMaxLength(800)
+                        .HasColumnType("character varying(800)");
+
+                    b.Property<DateTime>("DataCriacao")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Perfil")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<double>("Pontuacao")
+                        .HasColumnType("double precision");
+
+                    b.Property<string>("Respostas")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int?>("UsuarioId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UsuarioId");
+
+                    b.ToTable("AvaliacoesUso");
                 });
 
             modelBuilder.Entity("crudcomdb.Models.Comentario", b =>
@@ -153,6 +208,61 @@ namespace crudcomdb.Migrations
                     b.ToTable("Curtidas");
                 });
 
+            modelBuilder.Entity("crudcomdb.Models.Denuncia", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("AlvoId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("DataCriacao")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DataResolucao")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("DenuncianteId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Detalhes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<string>("Motivo")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)");
+
+                    b.Property<string>("Resolucao")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
+                    b.Property<int?>("ResolvidaPorId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Tipo")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DenuncianteId");
+
+                    b.HasIndex("Status", "DataCriacao");
+
+                    b.HasIndex("Tipo", "AlvoId");
+
+                    b.ToTable("Denuncias");
+                });
+
             modelBuilder.Entity("crudcomdb.Models.Depoimento", b =>
                 {
                     b.Property<int>("Id")
@@ -190,6 +300,33 @@ namespace crudcomdb.Migrations
                     b.HasIndex("PetId");
 
                     b.ToTable("Depoimentos");
+                });
+
+            modelBuilder.Entity("crudcomdb.Models.Favorito", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("DataCriacao")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("PetId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("UsuarioId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PetId");
+
+                    b.HasIndex("UsuarioId", "PetId")
+                        .IsUnique();
+
+                    b.ToTable("Favoritos");
                 });
 
             modelBuilder.Entity("crudcomdb.Models.InteresseAdocao", b =>
@@ -421,6 +558,73 @@ namespace crudcomdb.Migrations
                     b.ToTable("Notificacoes");
                 });
 
+            modelBuilder.Entity("crudcomdb.Models.PerfilAdotante", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("AceitaAcompanhamento")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("CienteDosCustos")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime>("DataAtualizacao")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("HorasSozinho")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("JaTevePets")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Moradia")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<bool>("MoradiaPropria")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Motivacao")
+                        .HasMaxLength(600)
+                        .HasColumnType("character varying(600)");
+
+                    b.Property<string>("OutrosAnimais")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<bool>("ProprietarioPermite")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("TelasDeProtecao")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("TemCriancas")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("TemOutrosAnimais")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("TemQuintal")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("TodosConcordam")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("UsuarioId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UsuarioId")
+                        .IsUnique();
+
+                    b.ToTable("PerfisAdotante");
+                });
+
             modelBuilder.Entity("crudcomdb.Models.Pet", b =>
                 {
                     b.Property<int>("Id")
@@ -636,6 +840,9 @@ namespace crudcomdb.Migrations
                         .HasMaxLength(600)
                         .HasColumnType("character varying(600)");
 
+                    b.Property<bool>("Bloqueado")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("CEP")
                         .IsRequired()
                         .HasColumnType("text");
@@ -679,6 +886,9 @@ namespace crudcomdb.Migrations
                     b.Property<string>("DocumentoObservacao")
                         .HasColumnType("text");
 
+                    b.Property<bool>("EhAdmin")
+                        .HasColumnType("boolean");
+
                     b.Property<bool>("EhOng")
                         .HasColumnType("boolean");
 
@@ -706,6 +916,10 @@ namespace crudcomdb.Migrations
                     b.Property<string>("Logradouro")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<string>("MotivoBloqueio")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
 
                     b.Property<string>("Nome")
                         .IsRequired()
@@ -755,6 +969,14 @@ namespace crudcomdb.Migrations
                     b.Navigation("Destinatario");
 
                     b.Navigation("Solicitante");
+                });
+
+            modelBuilder.Entity("crudcomdb.Models.AvaliacaoUso", b =>
+                {
+                    b.HasOne("crudcomdb.Models.Usuario", null)
+                        .WithMany()
+                        .HasForeignKey("UsuarioId")
+                        .OnDelete(DeleteBehavior.SetNull);
                 });
 
             modelBuilder.Entity("crudcomdb.Models.Comentario", b =>
@@ -822,6 +1044,17 @@ namespace crudcomdb.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("crudcomdb.Models.Denuncia", b =>
+                {
+                    b.HasOne("crudcomdb.Models.Usuario", "Denunciante")
+                        .WithMany()
+                        .HasForeignKey("DenuncianteId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Denunciante");
+                });
+
             modelBuilder.Entity("crudcomdb.Models.Depoimento", b =>
                 {
                     b.HasOne("crudcomdb.Models.Usuario", "Autor")
@@ -836,6 +1069,23 @@ namespace crudcomdb.Migrations
                         .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("Autor");
+
+                    b.Navigation("Pet");
+                });
+
+            modelBuilder.Entity("crudcomdb.Models.Favorito", b =>
+                {
+                    b.HasOne("crudcomdb.Models.Pet", "Pet")
+                        .WithMany()
+                        .HasForeignKey("PetId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("crudcomdb.Models.Usuario", null)
+                        .WithMany()
+                        .HasForeignKey("UsuarioId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Pet");
                 });
@@ -910,6 +1160,15 @@ namespace crudcomdb.Migrations
                 });
 
             modelBuilder.Entity("crudcomdb.Models.Notificacao", b =>
+                {
+                    b.HasOne("crudcomdb.Models.Usuario", null)
+                        .WithMany()
+                        .HasForeignKey("UsuarioId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("crudcomdb.Models.PerfilAdotante", b =>
                 {
                     b.HasOne("crudcomdb.Models.Usuario", null)
                         .WithMany()

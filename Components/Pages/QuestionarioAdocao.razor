@@ -1,0 +1,139 @@
+@page "/questionario-adocao"
+@inject AuthService AuthService
+@inject QuestionariosService Questionarios
+@inject IPetRepository PetRepository
+@inject ChatService Chat
+@inject ToastService Toast
+@inject NavigationManager Nav
+
+<PageTitle>Questionário de adoção | Match-Pet SP</PageTitle>
+
+<div class="container py-4 py-md-5" style="max-width: 820px;">
+    <div class="text-center mb-4">
+        <span class="eyebrow">Adoção responsável</span>
+        <h1 class="secao-titulo mt-2">Questionário de adoção</h1>
+        <p class="text-muted mb-0">Suas respostas ajudam a encontrar o pet certo para a sua rotina e são mostradas <b>apenas</b> a quem anunciou o pet com quem você conversar.</p>
+    </div>
+
+    @if (pet != null)
+    {
+        <div class="mp-card p-3 mb-4 d-flex align-items-center gap-3">
+            @if (pet.Imagens.Any()) { <img src="@Url.Pet(pet.Imagens.First())" alt="" style="width:56px;height:56px;border-radius:14px;object-fit:cover" /> }
+            <div class="small"><b class="text-dark">Falta pouco para conversar sobre @pet.Nome!</b><br /><span class="text-muted">Depois de enviar, abrimos o chat com quem anunciou.</span></div>
+        </div>
+    }
+
+    @if (dados == null)
+    {
+        <div class="skeleton" style="height:520px;border-radius:22px"></div>
+    }
+    else
+    {
+        <form class="mp-card p-4 p-md-5" @onsubmit="Salvar" @onsubmit:preventDefault>
+            <div class="secao-form">1. Sua casa</div>
+            <label class="form-label">Onde você mora?</label>
+            <div class="row g-2 mb-3">
+                @foreach (var (valor, emoji) in new[] { ("Casa", "🏠"), ("Apartamento", "🏢"), ("Chácara/Sítio", "🌳") })
+                {
+                    <div class="col-4">
+                        <label class="opcao-card justify-content-center flex-column text-center @(dados.Moradia == valor ? "marcada" : "")">
+                            <input type="radio" name="moradia" checked="@(dados.Moradia == valor)" @onchange="() => dados.Moradia = valor" />
+                            <span class="emoji">@emoji</span><span class="fw-semibold small">@valor</span>
+                        </label>
+                    </div>
+                }
+            </div>
+            <div class="row g-2 mb-2">
+                <Pergunta Texto="O imóvel é próprio" Emoji="🔑" @bind-Valor="dados.MoradiaPropria" />
+                @if (!dados.MoradiaPropria)
+                {
+                    <Pergunta Texto="O proprietário permite animais" Emoji="📃" @bind-Valor="dados.ProprietarioPermite" />
+                }
+                <Pergunta Texto="Tenho quintal ou área externa" Emoji="🌿" @bind-Valor="dados.TemQuintal" />
+                <Pergunta Texto="As janelas têm tela de proteção" Emoji="🪟" @bind-Valor="dados.TelasDeProtecao" />
+            </div>
+
+            <div class="secao-form mt-4">2. Sua família</div>
+            <div class="row g-2 mb-2">
+                <Pergunta Texto="Moram crianças em casa" Emoji="🧒" @bind-Valor="dados.TemCriancas" />
+                <Pergunta Texto="Já tenho outros animais" Emoji="🐾" @bind-Valor="dados.TemOutrosAnimais" />
+                <Pergunta Texto="Já tive animais antes" Emoji="❤️" @bind-Valor="dados.JaTevePets" />
+                <Pergunta Texto="Todos da casa concordam com a adoção" Emoji="🤝" @bind-Valor="dados.TodosConcordam" />
+            </div>
+            @if (dados.TemOutrosAnimais)
+            {
+                <input class="form-control mb-2" maxlength="200" placeholder="Quais? Ex.: um cão macho castrado de 3 anos" @bind="dados.OutrosAnimais" />
+            }
+
+            <div class="secao-form mt-4">3. Sua rotina</div>
+            <label class="form-label" for="horas">Quantas horas por dia o pet ficaria sozinho? <b class="text-primary">@dados.HorasSozinho h</b></label>
+            <input id="horas" type="range" class="form-range" min="0" max="14" step="1" @bind="dados.HorasSozinho" @bind:event="oninput" />
+            @if (dados.HorasSozinho > 8) { <div class="form-text text-warning"><i class="bi bi-exclamation-triangle me-1"></i>Cães costumam sofrer quando ficam mais de 8 horas sozinhos. Gatos e pets pequenos lidam melhor.</div> }
+
+            <div class="row g-2 mt-2">
+                <Pergunta Texto="Estou ciente dos custos (ração, vacinas, veterinário)" Emoji="💰" @bind-Valor="dados.CienteDosCustos" />
+                <Pergunta Texto="Aceito que o doador acompanhe a adaptação" Emoji="📸" @bind-Valor="dados.AceitaAcompanhamento" />
+            </div>
+
+            <label class="form-label mt-4" for="motivacao">Por que você quer adotar? (opcional)</label>
+            <textarea id="motivacao" class="form-control" rows="3" maxlength="600" @bind="dados.Motivacao" placeholder="Conte um pouco sobre você e o lar que pode oferecer"></textarea>
+
+            @if (!dados.CienteDosCustos)
+            {
+                <div class="alert alert-warning small mt-3 mb-0"><i class="bi bi-info-circle me-1"></i>Um pet custa em média de R$ 150 a R$ 400 por mês, além de emergências veterinárias. Pense nisso com carinho antes de adotar. 💛</div>
+            }
+
+            <div class="d-flex gap-2 mt-4">
+                <button type="submit" class="btn btn-primary btn-lg flex-fill" disabled="@salvando">
+                    @if (salvando) { <span class="spinner-border spinner-border-sm me-2"></span> }
+                    @(pet != null ? $"Salvar e conversar sobre {pet.Nome}" : "Salvar respostas")
+                </button>
+            </div>
+            @if (jaRespondido) { <p class="text-center small text-muted mt-2 mb-0">Você já respondeu antes; as alterações substituem as respostas anteriores.</p> }
+        </form>
+    }
+</div>
+
+@code {
+    [SupplyParameterFromQuery(Name = "pet")] public int? PetId { get; set; }
+    private PerfilAdotante? dados;
+    private Pet? pet;
+    private bool salvando, jaRespondido;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (AuthService.UsuarioLogado is not { } eu)
+        {
+            Nav.NavigateTo($"/login?voltar={Uri.EscapeDataString("/questionario-adocao" + (PetId != null ? $"?pet={PetId}" : ""))}");
+            return;
+        }
+        var atual = await Questionarios.PerfilAsync(eu.Id);
+        jaRespondido = atual != null;
+        dados = atual ?? new PerfilAdotante { MoradiaPropria = true, ProprietarioPermite = true, TodosConcordam = true };
+        if (PetId != null) pet = await PetRepository.GetByIdAsync(PetId.Value);
+    }
+
+    private async Task Salvar()
+    {
+        if (dados == null || salvando) return;
+        salvando = true;
+        try
+        {
+            var eu = AuthService.UsuarioLogado!;
+            await Questionarios.SalvarPerfilAsync(eu.Id, dados);
+
+            if (pet != null && pet.UsuarioDoadorId != eu.Id && pet.Status is "Disponível" or "Em Processo")
+            {
+                var conversaId = await Chat.ObterOuCriarAsync(eu.Id, pet.UsuarioDoadorId, petId: pet.Id,
+                    primeiraMensagem: $"Olá! Vi o anúncio do(a) {pet.Nome} e tenho interesse em adotar. Respondi o questionário de adoção, você pode ver as respostas aqui no chat. 🐾");
+                Toast.Sucesso("Respostas salvas! Agora é só conversar. 💬");
+                Nav.NavigateTo($"/mensagens/{conversaId}");
+                return;
+            }
+            Toast.Sucesso("Respostas salvas! Agora você vê a compatibilidade em cada pet. 🐾");
+            Nav.NavigateTo(pet != null ? $"/pets/detalhes/{pet.Id}" : "/pets");
+        }
+        catch { Toast.Erro("Não foi possível salvar agora. Tente novamente."); }
+        finally { salvando = false; }
+    }
+}

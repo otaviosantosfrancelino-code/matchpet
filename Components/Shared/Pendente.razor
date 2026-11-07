@@ -1,0 +1,19 @@
+@* Cartão clicável de pendência (painel do administrador) *@
+<div class="col-6 col-lg-3">
+    <button type="button" class="mp-card mp-card-hover pendente w-100 text-start" @onclick="AoClicar">
+        <span class="icone-bolha @Cor"><i class="bi @Icone"></i></span>
+        <span class="min-w-0">
+            <b class="d-block">@Total</b>
+            <span class="small text-muted">@Titulo</span>
+        </span>
+        <i class="bi bi-chevron-right text-muted ms-auto"></i>
+    </button>
+</div>
+
+@code {
+    [Parameter] public string Icone { get; set; } = "";
+    [Parameter] public string Cor { get; set; } = "azul";
+    [Parameter] public string Titulo { get; set; } = "";
+    [Parameter] public int Total { get; set; }
+    [Parameter] public EventCallback AoClicar { get; set; }
+}

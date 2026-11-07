@@ -108,7 +108,7 @@
         <div class="cartao-destaque" data-revelar>
             <div class="d-flex align-items-end justify-content-between gap-3 mb-3 flex-wrap">
                 <div>
-                    <span class="eyebrow" style="background:#fff7ed;color:#c2410c">❤️‍🩹 Adoção especial</span>
+                    <span class="eyebrow" style="background:var(--mp-accent-soft);color:#ea580c">❤️‍🩹 Adoção especial</span>
                     <h2 class="h3 mb-1 mt-2">Esperando há mais tempo</h2>
                     <p class="text-muted mb-0">Adultos e idosos costumam esperar mais. Eles têm muito amor para dar.</p>
                 </div>
@@ -406,7 +406,7 @@
     .numeros-faixa span { font-size: .8rem; color: var(--mp-muted); font-weight: 600; }
     .cartao-destaque { border-radius: 28px; padding: clamp(1.25rem, 3vw, 2rem); background: linear-gradient(135deg, #fff7ed, #fff 60%); border: 1px solid #fed7aa; }
     .numero-passo { font-size: 2.2rem; font-weight: 800; background: linear-gradient(135deg, #93c5fd, #c4b5fd); -webkit-background-clip: text; background-clip: text; color: transparent; }
-    .ong-chip { display: inline-flex; align-items: center; gap: .55rem; padding: .5rem .9rem .5rem .5rem; background: #fff; border: 1px solid var(--mp-line); border-radius: 999px; text-decoration: none; color: var(--mp-ink); font-weight: 700; font-size: .9rem; white-space: nowrap; box-shadow: var(--mp-shadow-sm); }
+    .ong-chip { display: inline-flex; align-items: center; gap: .55rem; padding: .5rem .9rem .5rem .5rem; background: var(--mp-surface); border: 1px solid var(--mp-line); border-radius: 999px; text-decoration: none; color: var(--mp-ink); font-weight: 700; font-size: .9rem; white-space: nowrap; box-shadow: var(--mp-shadow-sm); }
     .beneficio { transition: transform .25s; }
     .historia-card { overflow: hidden; display: flex; flex-direction: column; }
     .historia-card img { width: 100%; height: 180px; object-fit: cover; }
@@ -430,6 +430,11 @@
     .mini-item { display: block; background: rgba(255,255,255,.95); border-radius: 14px; overflow: hidden; text-decoration: none; color: var(--mp-ink); font-size: .75rem; font-weight: 700; }
     .mini-item img { width: 100%; height: 80px; object-fit: cover; display: block; }
     .mini-item span { display: block; padding: .35rem .5rem; }
+    /* Modo escuro */
+    [data-tema="escuro"] .busca, [data-tema="escuro"] .flutuante { background: rgba(18, 27, 46, .92); }
+    [data-tema="escuro"] .avatares > * { border-color: var(--mp-bg); }
+    [data-tema="escuro"] .cartao-destaque { background: linear-gradient(135deg, rgba(249, 115, 22, .14), var(--mp-surface) 60%); border-color: rgba(249, 115, 22, .35); }
+    [data-tema="escuro"] .mini-item { background: rgba(18, 27, 46, .95); }
 </style>
 
 @code {

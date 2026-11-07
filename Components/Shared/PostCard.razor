@@ -17,6 +17,10 @@
         {
             <button class="btn btn-ghost btn-icon btn-sm" title="Excluir publicação" aria-label="Excluir publicação" @onclick="Excluir"><i class="bi bi-trash"></i></button>
         }
+        else
+        {
+            <BotaoDenunciar Tipo="post" AlvoId="Post.Id" NomeAlvo="esta publicação" Classe="btn btn-ghost btn-icon btn-sm text-muted" />
+        }
     </header>
 
     @if (!string.IsNullOrWhiteSpace(Post.Texto))

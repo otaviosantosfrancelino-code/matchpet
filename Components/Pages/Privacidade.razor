@@ -27,7 +27,9 @@
         <h2 id="dados">1. Dados que coletamos</h2>
         <ul>
             <li><b>Cadastro:</b> nome, CPF ou CNPJ, e-mail, telefone, endereço (CEP, rua, número, bairro, cidade e estado) e senha (guardada apenas de forma criptografada, nunca em texto).</li>
-            <li><b>Verificação de identidade:</b> foto do documento enviada por você, usada para conferir que o nome e o CPF/CNPJ batem com o cadastro.</li>
+            <li><b>Verificação de identidade:</b> foto do documento enviada por você, usada para conferir que o nome e o CPF/CNPJ batem com o cadastro. A foto fica <b>criptografada</b> e é <b>apagada</b> assim que a conferência termina; guardamos apenas uma impressão digital (hash) para impedir que a mesma foto seja usada em outra conta.</li>
+            <li><b>Questionário de adoção:</b> informações sobre moradia, rotina e família, mostradas apenas a quem anunciou o pet com quem você conversar.</li>
+            <li><b>Denúncias e avaliações:</b> denúncias que você fizer (o denunciado não sabe quem denunciou) e respostas anônimas da pesquisa de usabilidade.</li>
             <li><b>Uso da plataforma:</b> anúncios de pets e itens, mensagens do chat, publicações, comentários, curtidas, amizades e termos de adoção.</li>
             <li><b>Registros técnicos:</b> endereço IP, data e hora do aceite destes termos e da assinatura dos termos de adoção, como prova da manifestação de vontade.</li>
         </ul>
@@ -52,6 +54,8 @@
         <h2 id="seguranca">4. Como protegemos</h2>
         <ul>
             <li>Conexão sempre criptografada (HTTPS) e senhas armazenadas com hash.</li>
+            <li>Foto do documento criptografada (AES-256) e excluída após a verificação.</li>
+            <li>Moderação de conteúdo com canal de denúncias.</li>
             <li>Bloqueio temporário após várias tentativas de senha erradas.</li>
             <li>Chaves e senhas do sistema guardadas fora do código-fonte.</li>
             <li>Acesso aos dados restrito ao funcionamento da plataforma.</li>
@@ -83,6 +87,8 @@
             <li><b>Cadastro verdadeiro:</b> você se compromete a informar dados reais. Contas com documentos falsos ou de terceiros serão bloqueadas.</li>
             <li><b>Adoção responsável:</b> o adotante assume a guarda, os cuidados de saúde, alimentação e bem-estar do animal. Maus-tratos e abandono são crimes (Lei 9.605/1998, art. 32, com pena aumentada para cães e gatos pela Lei 14.064/2020).</li>
             <li><b>Proibido vender animais:</b> a plataforma é exclusiva para adoção e doação, sem cobrança.</li>
+            <li><b>Só animais domésticos:</b> é proibido anunciar animais silvestres (Lei 9.605/1998). São aceitas apenas espécies domésticas da Portaria Ibama nº 93/1998, e anúncios de aves passam por conferência da moderação.</li>
+            <li><b>Moderação:</b> qualquer usuário pode denunciar conteúdos. A equipe pode remover anúncios e publicações e bloquear contas que violem estes termos.</li>
             <li><b>Conteúdo:</b> é proibido publicar conteúdo ofensivo, violento, discriminatório ou que exponha dados de outras pessoas. Publicações assim podem ser removidas.</li>
             <li><b>Itens do Bazar:</b> as doações são combinadas diretamente entre as pessoas; o Match-Pet apenas aproxima as partes.</li>
             <li><b>Responsabilidade:</b> o Match-Pet SP intermedia o contato e registra o termo, mas não é parte da adoção e não se responsabiliza por informações falsas prestadas pelos usuários.</li>

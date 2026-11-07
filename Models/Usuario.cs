@@ -77,6 +77,11 @@ namespace crudcomdb.Models
         public bool EmailConfirmado { get; set; } = false;
         public string? CodigoConfirmacao { get; set; }
 
+        // MODERAÇÃO
+        public bool EhAdmin { get; set; }               // acessa o Painel do administrador (/admin)
+        public bool Bloqueado { get; set; }             // conta bloqueada não consegue entrar
+        [MaxLength(300)] public string? MotivoBloqueio { get; set; }
+
         public DateTime DataCadastro { get; set; } = DateTime.UtcNow;
         public DateTime? DataUltimaAlteracao { get; set; }
 

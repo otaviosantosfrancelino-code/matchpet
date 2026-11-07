@@ -148,3 +148,61 @@ window.mpDefinirSom = (mudo) => {
         if (novo !== el.value) el.value = novo;
     });
 })();
+
+// ----- COMPARTILHAR -----
+// No celular usa a janela nativa do sistema (WhatsApp, Instagram...). Devolve false para a página mostrar as opções próprias.
+window.mpCompartilhar = async (titulo, texto, url) => {
+    const toque = window.matchMedia('(pointer: coarse)').matches;
+    if (!toque || !navigator.share) return false;
+    try { await navigator.share({ title: titulo, text: texto, url }); } catch { /* a pessoa fechou a janela */ }
+    return true;
+};
+
+// ----- TEMA CLARO / ESCURO -----
+// A escolha fica salva no navegador; sem escolha, segue o tema do sistema
+window.mpTema = (novo) => {
+    const raiz = document.documentElement;
+    if (novo === 'claro' || novo === 'escuro') {
+        try { localStorage.setItem('mp-tema', novo); } catch { }
+        raiz.setAttribute('data-tema', novo);
+        raiz.setAttribute('data-bs-theme', novo === 'escuro' ? 'dark' : 'light');
+        document.querySelector('meta[name="theme-color"]')?.setAttribute('content', novo === 'escuro' ? '#0b1220' : '#2563eb');
+    }
+    return raiz.getAttribute('data-tema') || 'claro';
+};
+
+// ----- APLICATIVO (PWA): "Instalar o Match-Pet" na tela inicial -----
+let pedidoInstalacao = null;
+window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); pedidoInstalacao = e; });
+window.mpPodeInstalar = () => !!pedidoInstalacao;
+window.mpEhIos = () => /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.matchMedia('(display-mode: standalone)').matches;
+window.mpInstalar = async () => {
+    if (!pedidoInstalacao) return false;
+    pedidoInstalacao.prompt();
+    const escolha = await pedidoInstalacao.userChoice;
+    pedidoInstalacao = null;
+    return escolha.outcome === 'accepted';
+};
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => { }));
+}
+
+// ----- QR CODE (termo de adoção): biblioteca carregada só quando precisa -----
+let qrCarregando = null;
+window.mpQr = async (id, texto) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (!window.qrcode) {
+        qrCarregando ??= new Promise((ok, erro) => {
+            const js = document.createElement('script');
+            js.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js';
+            js.onload = ok; js.onerror = erro;
+            document.head.appendChild(js);
+        });
+        try { await qrCarregando; } catch { return; }
+    }
+    const qr = window.qrcode(0, 'M');
+    qr.addData(texto);
+    qr.make();
+    el.innerHTML = qr.createSvgTag({ cellSize: 3, margin: 0, scalable: true });
+};

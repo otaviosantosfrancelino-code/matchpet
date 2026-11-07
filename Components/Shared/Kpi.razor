@@ -1,0 +1,15 @@
+@* Número de destaque (painel do administrador) *@
+<div class="col-6 col-lg-3">
+    <div class="mp-card kpi">
+        <span class="rotulo"><i class="bi @Icone"></i> @Rotulo</span>
+        <b>@Valor</b>
+        @if (!string.IsNullOrEmpty(Detalhe)) { <small>@Detalhe</small> }
+    </div>
+</div>
+
+@code {
+    [Parameter] public string Icone { get; set; } = "bi-bar-chart";
+    [Parameter] public string Rotulo { get; set; } = "";
+    [Parameter] public object? Valor { get; set; }
+    [Parameter] public string? Detalhe { get; set; }
+}

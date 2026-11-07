@@ -2,6 +2,7 @@
 @inject AuthService AuthService
 @inject IUsuarioRepository UsuarioRepository
 @inject DocumentoValidacaoService Validacao
+@inject CofreDocumentos Cofre
 @inject NavigationManager Nav
 @inject ToastService Toast
 
@@ -258,8 +259,9 @@
             usuario.StatusValidacaoDocumento = resultado.Status;
             usuario.DocumentoObservacao = resultado.Observacao;
             usuario.DataValidacaoDocumento = DateTime.UtcNow;
-            // Documento recusado não fica guardado
-            usuario.FotoDocumentoBase64 = resultado.Status == "Reprovado" ? null : $"data:{tipo};base64,{Convert.ToBase64String(bytes)}";
+            // LGPD: a foto só fica guardada (criptografada) enquanto espera a conferência manual.
+            // Aprovada ou recusada, a imagem é descartada e fica apenas o hash, para barrar a mesma foto em outra conta.
+            usuario.FotoDocumentoBase64 = resultado.Status == "Em Análise" ? Cofre.Fechar(bytes, tipo) : null;
 
             await SalvarPerfil(silencioso: true);
 
@@ -286,6 +288,8 @@
         try
         {
             var u = AuthService.UsuarioLogado!;
+            // O administrador pode ter aprovado o documento ou bloqueado a conta enquanto esta tela estava aberta
+            if (!silencioso) await UsuarioRepository.SincronizarModeracaoAsync(u);
             u.DataUltimaAlteracao = DateTime.UtcNow;
             AuthService.AtualizarClassificacao(u);
             await UsuarioRepository.UpdateAsync(u);

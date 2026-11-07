@@ -122,6 +122,12 @@
             }
             Limite.Zerar(chaveConta);
 
+            if (usuario.Bloqueado)
+            {
+                mensagemErro = "Esta conta foi bloqueada pela moderação do Match-Pet" + (string.IsNullOrWhiteSpace(usuario.MotivoBloqueio) ? "." : ": " + usuario.MotivoBloqueio + ".") + " Se achar que é um engano, fale com a administração.";
+                return;
+            }
+
             // Conta antiga com senha em texto puro: converte para hash agora
             if (!SenhaService.EhHash(usuario.Senha))
             {

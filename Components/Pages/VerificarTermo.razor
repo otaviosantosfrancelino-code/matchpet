@@ -1,0 +1,96 @@
+@page "/verificar-termo"
+@page "/verificar-termo/{Codigo}"
+@inject ChatService Chat
+@inject NavigationManager Nav
+
+<PageTitle>Verificar termo de adoção | Match-Pet SP</PageTitle>
+
+<div class="container py-4 py-md-5" style="max-width: 720px;">
+    <div class="text-center mb-4">
+        <span class="eyebrow"><i class="bi bi-qr-code"></i> Autenticidade</span>
+        <h1 class="secao-titulo mt-2">Verificar termo de adoção</h1>
+        <p class="text-muted mb-0">Digite o código impresso no termo (ex.: <b>MP-1A2B-3C4D</b>) ou leia o QR code para conferir se o documento é verdadeiro.</p>
+    </div>
+
+    <form class="mp-card p-3 p-md-4 mb-4 d-flex gap-2" @onsubmit="Buscar" @onsubmit:preventDefault>
+        <label for="codigoTermo" class="visually-hidden">Código do termo</label>
+        <input id="codigoTermo" class="form-control form-control-lg text-uppercase" maxlength="20" placeholder="MP-0000-0000" @bind="digitado" autocomplete="off" />
+        <button class="btn btn-primary btn-lg px-4" type="submit" disabled="@buscando">@if (buscando) { <span class="spinner-border spinner-border-sm"></span> } else { <span>Verificar</span> }</button>
+    </form>
+
+    @if (pesquisado && resultado == null)
+    {
+        <div class="mp-card p-4 text-center resultado invalido" role="status">
+            <div class="display-6 mb-2">❌</div>
+            <h2 class="h5">Código não encontrado</h2>
+            <p class="text-muted mb-0">Nenhum termo do Match-Pet tem esse código. Confira se digitou certo. Se o documento foi apresentado como sendo do Match-Pet, ele pode ser falso.</p>
+        </div>
+    }
+    else if (resultado != null)
+    {
+        var assinado = resultado.Status == "Assinado";
+        <div class="mp-card p-4 resultado @(assinado ? "valido" : resultado.Status == "Cancelado" ? "invalido" : "pendente")" role="status">
+            <div class="d-flex align-items-center gap-3 mb-3">
+                <span class="display-6">@(assinado ? "✅" : resultado.Status == "Cancelado" ? "⛔" : "⏳")</span>
+                <div>
+                    <h2 class="h5 mb-0">@(assinado ? "Termo autêntico e assinado" : resultado.Status == "Cancelado" ? "Termo cancelado" : "Termo autêntico, aguardando assinatura")</h2>
+                    <small class="text-muted">Código @resultado.Codigo</small>
+                </div>
+            </div>
+            <dl class="row mb-0 small">
+                <dt class="col-sm-5">Pet</dt><dd class="col-sm-7">@resultado.Pet (@resultado.Especie)</dd>
+                <dt class="col-sm-5">Doador(a)</dt><dd class="col-sm-7">@resultado.Doador</dd>
+                <dt class="col-sm-5">Adotante</dt><dd class="col-sm-7">@resultado.Adotante</dd>
+                <dt class="col-sm-5">Enviado pelo doador em</dt><dd class="col-sm-7">@Consultas.HoraBrasil(resultado.DataEnvio).ToString("dd/MM/yyyy 'às' HH:mm")</dd>
+                <dt class="col-sm-5">Assinado pelo adotante em</dt><dd class="col-sm-7">@(resultado.DataAssinatura is { } d ? Consultas.HoraBrasil(d).ToString("dd/MM/yyyy 'às' HH:mm") : "—")</dd>
+                <dt class="col-sm-5">Impressão digital (SHA-256)</dt><dd class="col-sm-7"><code>@resultado.Impressao</code></dd>
+            </dl>
+            <hr />
+            <p class="small text-muted mb-0"><i class="bi bi-info-circle me-1"></i>Compare a impressão digital acima com a impressa no rodapé do termo: se forem diferentes, o texto foi alterado. Por privacidade (LGPD), os nomes aparecem abreviados e não mostramos documentos nem endereço IP.</p>
+        </div>
+    }
+
+    <div class="mp-card p-4 mt-4 small text-muted">
+        <h2 class="h6 text-dark">Como funciona a assinatura no Match-Pet?</h2>
+        <p class="mb-2">O termo é gerado com os dados do doador, do adotante e do pet. Cada parte assina eletronicamente estando logada com documento verificado, e o sistema registra <b>data, hora e endereço IP</b> de cada assinatura, além de um <b>código único</b>.</p>
+        <p class="mb-0">É uma <b>assinatura eletrônica simples</b> (Lei nº 14.063/2020 e MP nº 2.200-2/2001): registra o compromisso entre as partes, mas não substitui uma assinatura com certificado ICP-Brasil.</p>
+    </div>
+</div>
+
+<style>
+    .resultado { border-width: 2px; border-style: solid; }
+    .resultado.valido { border-color: #86efac; background: var(--mp-success-soft); }
+    .resultado.pendente { border-color: #fcd34d; background: var(--mp-warning-soft); }
+    .resultado.invalido { border-color: #fca5a5; background: var(--mp-danger-soft); }
+    .resultado dt { color: var(--mp-muted); font-weight: 600; }
+    .resultado dd { color: var(--mp-ink); font-weight: 600; }
+</style>
+
+@code {
+    [Parameter] public string? Codigo { get; set; }
+    private string digitado = "";
+    private ChatService.TermoPublico? resultado;
+    private bool pesquisado, buscando;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (string.IsNullOrWhiteSpace(Codigo)) return;
+        digitado = Codigo;
+        await Consultar();
+    }
+
+    private async Task Buscar()
+    {
+        if (string.IsNullOrWhiteSpace(digitado)) return;
+        Nav.NavigateTo($"/verificar-termo/{Uri.EscapeDataString(digitado.Trim().ToUpperInvariant())}", replace: true);
+        if (string.Equals(Codigo, digitado.Trim(), StringComparison.OrdinalIgnoreCase)) await Consultar();
+    }
+
+    private async Task Consultar()
+    {
+        buscando = true;
+        try { resultado = await Chat.VerificarTermoAsync(digitado); }
+        catch { resultado = null; }
+        finally { buscando = false; pesquisado = true; }
+    }
+}

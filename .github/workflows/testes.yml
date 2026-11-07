@@ -1,0 +1,23 @@
+name: Testes
+
+# Roda a compilação e os testes automatizados a cada envio para o GitHub
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  testes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Compilar o site
+        run: dotnet build crudcomdb.csproj -c Release
+
+      - name: Rodar os testes
+        run: dotnet test tests/crudcomdb.Tests -c Release --logger "console;verbosity=normal"

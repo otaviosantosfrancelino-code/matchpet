@@ -1,0 +1,18 @@
+@* Pergunta de sim/não em forma de cartão (questionário de adoção) *@
+<div class="col-md-6">
+    <label class="opcao-card @(Valor ? "marcada" : "")">
+        <input type="checkbox" checked="@Valor" @onchange="Mudar" />
+        <span class="emoji" aria-hidden="true">@Emoji</span>
+        <span class="fw-semibold small flex-grow-1">@Texto</span>
+        <i class="bi @(Valor ? "bi-check-circle-fill text-primary" : "bi-circle text-muted")" aria-hidden="true"></i>
+    </label>
+</div>
+
+@code {
+    [Parameter] public string Texto { get; set; } = "";
+    [Parameter] public string Emoji { get; set; } = "";
+    [Parameter] public bool Valor { get; set; }
+    [Parameter] public EventCallback<bool> ValorChanged { get; set; }
+
+    private Task Mudar(ChangeEventArgs e) => ValorChanged.InvokeAsync((bool)(e.Value ?? false));
+}

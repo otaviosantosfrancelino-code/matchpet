@@ -19,10 +19,11 @@
         <h3 class="nome text-truncate" title="@Item.Nome">@Item.Nome</h3>
         <div class="info">Para: <strong>@(Item.EspecieDestino == "Todos" ? "qualquer pet" : Item.EspecieDestino)</strong> · por @(Item.UsuarioDoador?.Nome ?? "doador")</div>
         <p class="small text-muted mb-0 texto-2-linhas">@Item.Descricao</p>
-        <div class="rodape">
-            <button class="btn btn-success w-100 btn-sm py-2" @onclick="() => OnContatar.InvokeAsync(Item)">
+        <div class="rodape d-flex gap-1">
+            <button class="btn btn-success flex-fill btn-sm py-2" @onclick="() => OnContatar.InvokeAsync(Item)">
                 <i class="bi bi-chat-dots me-1"></i> Quero este item
             </button>
+            <BotaoDenunciar Tipo="item" AlvoId="Item.Id" NomeAlvo="@Item.Nome" Classe="btn btn-light btn-sm text-muted" />
         </div>
     </div>
 </article>

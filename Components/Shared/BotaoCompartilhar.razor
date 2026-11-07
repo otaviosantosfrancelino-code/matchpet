@@ -1,0 +1,53 @@
+@* Compartilhar: no celular abre a janela nativa (WhatsApp, Instagram...); no computador, opções de WhatsApp e copiar link *@
+@inject IJSRuntime JS
+@inject NavigationManager Nav
+@inject ToastService Toast
+
+<div class="position-relative d-inline-block">
+    <button type="button" class="@Classe" @onclick="Compartilhar" aria-expanded="@menu">
+        <i class="bi bi-share me-1"></i>Compartilhar
+    </button>
+    @if (menu)
+    {
+        <div class="painel-fundo" @onclick="() => menu = false"></div>
+        <div class="menu-compartilhar mp-card" role="menu">
+            <a class="item" role="menuitem" href="@($"https://wa.me/?text={Uri.EscapeDataString($"{Titulo}\n{Texto}\n{Link}")}")" target="_blank" rel="noopener" @onclick="() => menu = false">
+                <i class="bi bi-whatsapp" style="color:#16a34a"></i> WhatsApp
+            </a>
+            <a class="item" role="menuitem" href="@($"https://www.facebook.com/sharer/sharer.php?u={Uri.EscapeDataString(Link)}")" target="_blank" rel="noopener" @onclick="() => menu = false">
+                <i class="bi bi-facebook" style="color:#1877f2"></i> Facebook
+            </a>
+            <button class="item" role="menuitem" @onclick="Copiar"><i class="bi bi-link-45deg"></i> Copiar link</button>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string Titulo { get; set; } = "Match-Pet SP";
+    [Parameter] public string Texto { get; set; } = "";
+    [Parameter] public string Caminho { get; set; } = "/";
+    [Parameter] public string Classe { get; set; } = "btn btn-light btn-sm";
+    private bool menu;
+
+    private string Link => Nav.BaseUri.TrimEnd('/') + Caminho;
+
+    private async Task Compartilhar()
+    {
+        try
+        {
+            // true = o navegador abriu a janela de compartilhar do sistema
+            if (await JS.InvokeAsync<bool>("mpCompartilhar", Titulo, Texto, Link)) return;
+        }
+        catch { }
+        menu = !menu;
+    }
+
+    private async Task Copiar()
+    {
+        menu = false;
+        var ok = false;
+        try { ok = await JS.InvokeAsync<bool>("mpCopiar", Link); } catch { }
+        if (ok) Toast.Sucesso("Link copiado! Cole onde quiser.");
+        else Toast.Info(Link);
+    }
+}

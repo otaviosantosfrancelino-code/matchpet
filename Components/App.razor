@@ -6,7 +6,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <base href="/" />
     <meta name="theme-color" content="#2563eb" />
-    <meta name="description" content="Match-Pet SP: adoção responsável de animais e doação de itens em Franca e região." />
+    <meta name="description" content="Match-Pet SP: adoção responsável de animais e doação de itens em Franca e região. Cadastros verificados, chat sem expor o telefone e termo de adoção digital." />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Match-Pet SP" />
+    <meta property="og:title" content="Match-Pet SP: adoção responsável em Franca e região" />
+    <meta property="og:description" content="Encontre um pet compatível com a sua rotina. Cadastros verificados, chat seguro e termo de adoção digital." />
+    <meta property="og:image" content="https://matchpet.onrender.com/home-match-pet.png" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="icones/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Match-Pet" />
+    @* Aplica o tema salvo antes de desenhar a página (evita "piscar" claro antes do escuro) *@
+    <script>
+        (function () {
+            var t = null; try { t = localStorage.getItem("mp-tema"); } catch (e) { }
+            if (!t) t = window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches ? "escuro" : "claro";
+            document.documentElement.setAttribute("data-tema", t);
+            document.documentElement.setAttribute("data-bs-theme", t === "escuro" ? "dark" : "light");
+            if (t === "escuro") document.querySelector('meta[name="theme-color"]').setAttribute("content", "#0b1220");
+        })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" />
@@ -20,6 +39,7 @@
     <style>
         /* Tela de carregamento: some assim que o site aparece (.page) */
         #carregando-app { position: fixed; inset: 0; display: flex; flex-direction: column; gap: 1rem; align-items: center; justify-content: center; background: #f6f8fc; z-index: 5000; }
+        [data-tema="escuro"] #carregando-app { background: #0b1220; }
         #carregando-app img { height: 72px; animation: pulsar 1.2s ease-in-out infinite; }
         #carregando-app span { font: 600 .95rem 'Plus Jakarta Sans', system-ui, sans-serif; color: #64748b; }
         .page ~ #carregando-app { display: none; }
@@ -28,6 +48,7 @@
 </head>
 
 <body>
+    <a class="pular-conteudo" href="#conteudo" onclick="var c=document.getElementById('conteudo');if(c){c.focus();c.scrollIntoView();}return false;">Pular para o conteúdo</a>
     @* Site todo interativo e sem pré-renderização: cada tela carrega uma vez só e o login salvo funciona após o F5 *@
     <Routes @rendermode="ModoInterativo" IpCliente="@HttpContext?.Connection.RemoteIpAddress?.ToString()" />
 

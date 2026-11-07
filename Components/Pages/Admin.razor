@@ -1,0 +1,445 @@
+@page "/admin"
+@inject AuthService AuthService
+@inject ModeracaoService Moderacao
+@inject QuestionariosService Questionarios
+@inject ToastService Toast
+@inject NavigationManager Nav
+
+<PageTitle>Painel do administrador | Match-Pet SP</PageTitle>
+
+@if (!AuthService.EhAdmin)
+{
+    <div class="container py-5" style="max-width:560px">
+        <div class="estado-vazio">
+            <div class="emoji">🔒</div>
+            <h1 class="h4">Área restrita</h1>
+            <p class="text-muted">Esta página é exclusiva da equipe de moderação do Match-Pet.</p>
+            @if (!AuthService.EstaLogado) { <a href="/login?voltar=/admin" class="btn btn-primary">Entrar</a> }
+            else { <a href="/" class="btn btn-primary">Voltar ao início</a> }
+        </div>
+    </div>
+}
+else
+{
+    <div class="container-xl py-4 py-md-5">
+        <div class="page-header">
+            <div class="d-flex align-items-center gap-3">
+                <div class="icone-bolha azul"><i class="bi bi-shield-check"></i></div>
+                <div>
+                    <h1>Painel do administrador</h1>
+                    <p>Moderação de conteúdo, conferência de documentos e indicadores da plataforma.</p>
+                </div>
+            </div>
+            <button class="btn btn-light" @onclick="Recarregar" disabled="@carregando"><i class="bi bi-arrow-clockwise me-1"></i>Atualizar</button>
+        </div>
+
+        <nav class="abas-admin mb-4" aria-label="Seções do painel">
+            @foreach (var (id, rotulo, icone) in Abas)
+            {
+                var pend = Pendencia(id);
+                <button class="chip @(aba == id ? "ativo" : "")" @onclick="() => MudarAba(id)" aria-current="@(aba == id ? "page" : null)">
+                    <i class="bi @icone me-1"></i>@rotulo
+                    @if (pend > 0) { <span class="badge rounded-pill bg-danger ms-1">@pend</span> }
+                </button>
+            }
+        </nav>
+
+        @if (carregando && resumo == null)
+        {
+            <div class="row g-3">@for (var i = 0; i < 8; i++) { <div class="col-6 col-lg-3"><div class="skeleton" style="height:110px;border-radius:18px"></div></div> }</div>
+        }
+        else if (aba == "visao" && resumo != null)
+        {
+            <div class="row g-3 mb-4">
+                <Kpi Icone="bi-people" Rotulo="Usuários" Valor="@resumo.Usuarios" Detalhe="@($"{resumo.Ongs} ONGs · {resumo.Verificados} verificados")" />
+                <Kpi Icone="bi-search-heart" Rotulo="Pets disponíveis" Valor="@resumo.PetsDisponiveis" Detalhe="@($"{resumo.PetsAdotados} já adotados")" />
+                <Kpi Icone="bi-file-earmark-check" Rotulo="Termos assinados" Valor="@resumo.TermosAssinados" Detalhe="Assinatura eletrônica simples" />
+                <Kpi Icone="bi-clipboard-data" Rotulo="Avaliação SUS" Valor="@(resumo.Avaliacoes == 0 ? "–" : resumo.MediaSus.ToString("0.0"))"
+                     Detalhe="@(resumo.Avaliacoes == 0 ? "Nenhuma resposta ainda" : $"{Sus.Classificar(resumo.MediaSus)} · {resumo.Avaliacoes} respostas")" />
+            </div>
+
+            <h2 class="h6 fw-bold text-muted text-uppercase small mb-2">O que precisa da sua atenção</h2>
+            <div class="row g-3 mb-4">
+                <Pendente Icone="bi-flag-fill" Cor="vermelho" Titulo="Denúncias abertas" Total="@resumo.DenunciasAbertas" AoClicar='() => MudarAba("denuncias")' />
+                <Pendente Icone="bi-person-vcard" Cor="laranja" Titulo="Documentos em análise" Total="@resumo.DocumentosAnalise" AoClicar='() => MudarAba("documentos")' />
+                <Pendente Icone="bi-feather" Cor="azul" Titulo="Aves aguardando aprovação" Total="@resumo.PetsModeracao" AoClicar='() => MudarAba("aves")' />
+                <Pendente Icone="bi-person-slash" Cor="cinza" Titulo="Contas bloqueadas" Total="@resumo.Bloqueados" AoClicar='() => { filtroUsuarios = "bloqueados"; MudarAba("usuarios"); }' />
+            </div>
+
+            <GraficoColunas Titulo="Novos cadastros por dia" Subtitulo="Últimos 14 dias" Unidade="Cadastros"
+                            Dados="@resumo.CadastrosPorDia.Select(d => new EstatisticasService.Barra(d.Rotulo, d.Valor)).ToList()" />
+        }
+        else if (aba == "denuncias")
+        {
+            <div class="d-flex gap-2 mb-3 flex-wrap">
+                @foreach (var s in new[] { "Aberta", "Resolvida", "Descartada", "Todas" })
+                {
+                    <button class="chip @(statusDenuncia == s ? "ativo" : "")" @onclick="() => FiltrarDenuncias(s)">@(s == "Todas" ? s : s + "s")</button>
+                }
+            </div>
+            @if (denuncias == null) { <div class="skeleton" style="height:240px;border-radius:18px"></div> }
+            else if (denuncias.Count == 0)
+            {
+                <div class="estado-vazio"><div class="emoji">✅</div><h5>Nenhuma denúncia @(statusDenuncia == "Aberta" ? "aberta" : "aqui")</h5><p class="text-muted mb-0">Tudo tranquilo na comunidade.</p></div>
+            }
+            else
+            {
+                <div class="d-grid gap-3">
+                    @foreach (var d in denuncias)
+                    {
+                        <article class="mp-card p-3 p-md-4">
+                            <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
+                                <span class="tag vermelho"><i class="bi bi-flag-fill"></i>@d.Denuncia.Motivo</span>
+                                <span class="tag">@ModeracaoService.NomeTipo(d.Denuncia.Tipo)</span>
+                                @if (d.TotalNoAlvo > 1) { <span class="tag laranja">@d.TotalNoAlvo denúncias neste conteúdo</span> }
+                                <small class="text-muted ms-auto">@Consultas.TempoRelativo(d.Denuncia.DataCriacao) · por @d.Denunciante</small>
+                            </div>
+                            <div class="fw-bold text-dark text-break">
+                                @if (d.AlvoLink != null) { <a href="@d.AlvoLink" target="_blank" rel="noopener">@d.AlvoTitulo <i class="bi bi-box-arrow-up-right small"></i></a> }
+                                else { @d.AlvoTitulo }
+                            </div>
+                            @if (d.DonoNome != null) { <div class="small text-muted">Responsável: <a href="/u/@d.DonoId" target="_blank" rel="noopener">@d.DonoNome</a></div> }
+                            @if (!string.IsNullOrWhiteSpace(d.Denuncia.Detalhes)) { <p class="small mt-2 mb-0 p-2 rounded" style="background:var(--mp-bg);white-space:pre-line">“@d.Denuncia.Detalhes”</p> }
+
+                            @if (d.Denuncia.Status == "Aberta")
+                            {
+                                <div class="d-flex flex-wrap gap-2 mt-3">
+                                    @if (d.AlvoExiste && d.Denuncia.Tipo != "usuario")
+                                    {
+                                        <button class="btn btn-danger btn-sm" disabled="@ocupado" @onclick='() => Resolver(d, "remover")'><i class="bi bi-trash me-1"></i>Remover conteúdo</button>
+                                    }
+                                    @if (d.DonoId != null)
+                                    {
+                                        <button class="btn btn-outline-danger btn-sm" disabled="@ocupado" @onclick='() => Resolver(d, "bloquear")'><i class="bi bi-person-slash me-1"></i>Bloquear responsável</button>
+                                    }
+                                    <button class="btn btn-light btn-sm" disabled="@ocupado" @onclick='() => Resolver(d, "descartar")'><i class="bi bi-check2 me-1"></i>Descartar (sem violação)</button>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="small mt-2 text-muted"><i class="bi bi-check-circle me-1"></i>@d.Denuncia.Status em @Consultas.HoraBrasil(d.Denuncia.DataResolucao ?? d.Denuncia.DataCriacao).ToString("dd/MM/yyyy HH:mm") · @d.Denuncia.Resolucao</div>
+                            }
+                        </article>
+                    }
+                </div>
+            }
+        }
+        else if (aba == "documentos")
+        {
+            <div class="alert alert-info small"><i class="bi bi-shield-lock me-1"></i>As fotos ficam <b>criptografadas</b> no banco e são apagadas logo após a sua decisão (LGPD). Fica guardado apenas o hash da imagem, para impedir que a mesma foto seja usada em outra conta.</div>
+            @if (documentos == null) { <div class="skeleton" style="height:240px;border-radius:18px"></div> }
+            else if (documentos.Count == 0)
+            {
+                <div class="estado-vazio"><div class="emoji">🪪</div><h5>Nenhum documento aguardando conferência</h5><p class="text-muted mb-0">Os documentos que a leitura automática não conseguiu decidir aparecem aqui.</p></div>
+            }
+            else
+            {
+                <div class="row g-3">
+                    @foreach (var doc in documentos)
+                    {
+                        <div class="col-lg-6">
+                            <article class="mp-card p-3 p-md-4 h-100">
+                                <div class="d-flex justify-content-between gap-2">
+                                    <div class="min-w-0">
+                                        <a href="/u/@doc.UsuarioId" target="_blank" rel="noopener" class="fw-bold text-dark">@doc.Nome</a>
+                                        @if (doc.EhOng) { <span class="tag verde ms-1">ONG</span> }
+                                        <div class="small text-muted">@(doc.EhOng ? "CNPJ" : "CPF") do cadastro: <b>@DocumentoUtil.Formatar(doc.Documento)</b> · @doc.Cidade</div>
+                                    </div>
+                                    <small class="text-muted text-nowrap">@(doc.Data != null ? Consultas.TempoRelativo(doc.Data.Value) : "")</small>
+                                </div>
+                                @if (!string.IsNullOrEmpty(doc.Observacao)) { <p class="small text-muted mt-2 mb-2"><i class="bi bi-robot me-1"></i>@doc.Observacao</p> }
+
+                                @if (fotosAbertas.TryGetValue(doc.UsuarioId, out var foto))
+                                {
+                                    @if (foto != null) { <img src="@foto" class="foto-doc" alt="Documento enviado por @doc.Nome" /> }
+                                    else { <div class="alert alert-warning small py-2">Não foi possível abrir a imagem. Peça para o usuário enviar novamente.</div> }
+                                }
+                                else if (doc.TemFoto)
+                                {
+                                    <button class="btn btn-light btn-sm mb-2" @onclick="() => AbrirFoto(doc.UsuarioId)"><i class="bi bi-eye me-1"></i>Ver documento</button>
+                                }
+                                else { <div class="small text-muted mb-2"><i class="bi bi-image me-1"></i>Sem imagem guardada.</div> }
+
+                                <input class="form-control form-control-sm mb-2" placeholder="Motivo da recusa (opcional)" @bind="motivosRecusa[doc.UsuarioId]" />
+                                <div class="d-flex gap-2">
+                                    <button class="btn btn-success btn-sm flex-fill" disabled="@ocupado" @onclick="() => DecidirDocumento(doc, true)"><i class="bi bi-check-lg me-1"></i>Aprovar</button>
+                                    <button class="btn btn-outline-danger btn-sm flex-fill" disabled="@ocupado" @onclick="() => DecidirDocumento(doc, false)"><i class="bi bi-x-lg me-1"></i>Recusar</button>
+                                </div>
+                            </article>
+                        </div>
+                    }
+                </div>
+            }
+        }
+        else if (aba == "aves")
+        {
+            <div class="alert alert-info small"><i class="bi bi-feather me-1"></i>Anúncios de aves só entram no catálogo depois da sua aprovação. Confira se a espécie consta como <b>doméstica</b> no Anexo I da Portaria Ibama nº 93/1998 (ex.: calopsita, periquito-australiano, canário-belga, agapornis, manon).</div>
+            @if (aves == null) { <div class="skeleton" style="height:240px;border-radius:18px"></div> }
+            else if (aves.Count == 0)
+            {
+                <div class="estado-vazio"><div class="emoji">🐦</div><h5>Nenhum anúncio aguardando</h5></div>
+            }
+            else
+            {
+                <div class="row g-3">
+                    @foreach (var p in aves)
+                    {
+                        <div class="col-12 col-sm-6 col-lg-4">
+                            <div class="d-grid gap-2">
+                                <PetCard Pet="p" MostrarBotao="false" />
+                                <div class="small text-muted text-center">Raça/espécie informada: <b>@p.Raca</b> · por @p.UsuarioDoador?.Nome</div>
+                                <div class="d-flex gap-2">
+                                    <button class="btn btn-success btn-sm flex-fill" disabled="@ocupado" @onclick="() => DecidirPet(p, true)"><i class="bi bi-check-lg me-1"></i>Aprovar</button>
+                                    <button class="btn btn-outline-danger btn-sm flex-fill" disabled="@ocupado" @onclick="() => DecidirPet(p, false)"><i class="bi bi-x-lg me-1"></i>Recusar</button>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        }
+        else if (aba == "usuarios")
+        {
+            <div class="mp-card p-3 mb-3">
+                <div class="row g-2">
+                    <div class="col-md-6">
+                        <div class="campo-icone"><i class="bi bi-search"></i>
+                            <input type="search" class="form-control" placeholder="Nome, e-mail ou CPF/CNPJ" aria-label="Buscar usuários" @bind="buscaUsuarios" @bind:after="CarregarUsuarios" />
+                        </div>
+                    </div>
+                    <div class="col-md-6 d-flex gap-2 flex-wrap align-items-center">
+                        @foreach (var (v, r) in new[] { ("todos", "Todos"), ("nao-verificados", "Não verificados"), ("ongs", "ONGs"), ("bloqueados", "Bloqueados"), ("admins", "Admins") })
+                        {
+                            <button class="chip @(filtroUsuarios == v ? "ativo" : "")" @onclick="async () => { filtroUsuarios = v; await CarregarUsuarios(); }">@r</button>
+                        }
+                    </div>
+                </div>
+            </div>
+            @if (usuarios == null) { <div class="skeleton" style="height:240px;border-radius:18px"></div> }
+            else if (usuarios.Count == 0) { <div class="estado-vazio"><div class="emoji">🔎</div><h5>Ninguém encontrado</h5></div> }
+            else
+            {
+                <div class="mp-card overflow-hidden">
+                    <div class="table-responsive">
+                        <table class="table align-middle mb-0 small">
+                            <thead><tr><th>Usuário</th><th>Documento</th><th>Situação</th><th class="text-center">Pets</th><th class="text-center">Denúncias</th><th></th></tr></thead>
+                            <tbody>
+                                @foreach (var u in usuarios)
+                                {
+                                    <tr class="@(u.Bloqueado ? "table-danger" : "")">
+                                        <td>
+                                            <a href="/u/@u.Id" target="_blank" rel="noopener" class="fw-bold text-dark">@u.Nome</a>
+                                            @if (u.EhOng) { <span class="tag verde ms-1">ONG</span> }
+                                            @if (u.EhAdmin) { <span class="tag azul ms-1">Admin</span> }
+                                            <div class="text-muted">@u.Email · @u.Cidade · desde @u.DataCadastro.ToString("dd/MM/yyyy")</div>
+                                        </td>
+                                        <td class="text-nowrap">@DocumentoUtil.Formatar(u.Documento)</td>
+                                        <td><span class="tag @(u.StatusDocumento == "Aprovado" ? "verde" : u.StatusDocumento == "Reprovado" ? "vermelho" : "laranja")">@u.StatusDocumento</span>@if (u.Bloqueado) { <span class="tag vermelho ms-1">Bloqueado</span> }</td>
+                                        <td class="text-center">@u.Pets</td>
+                                        <td class="text-center">@(u.Denuncias > 0 ? u.Denuncias : "–")</td>
+                                        <td class="text-end">
+                                            @if (!u.EhAdmin)
+                                            {
+                                                <button class="btn btn-sm @(u.Bloqueado ? "btn-light" : "btn-outline-danger")" disabled="@ocupado" @onclick="() => AlternarBloqueio(u)">
+                                                    @(u.Bloqueado ? "Desbloquear" : "Bloquear")
+                                                </button>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <p class="small text-muted mt-2">Mostrando os 60 cadastros mais recentes do filtro. Bloquear uma conta impede o login e retira do catálogo os pets disponíveis dela.</p>
+            }
+        }
+        else if (aba == "avaliacoes")
+        {
+            @if (sus == null) { <div class="skeleton" style="height:240px;border-radius:18px"></div> }
+            else if (sus.Total == 0)
+            {
+                <div class="estado-vazio"><div class="emoji">📋</div><h5>Nenhuma avaliação ainda</h5>
+                    <p class="text-muted">Compartilhe o questionário com ONGs e adotantes para o teste de usabilidade.</p>
+                    <a href="/avaliar" class="btn btn-primary" target="_blank">Abrir questionário</a></div>
+            }
+            else
+            {
+                <div class="row g-3 mb-4">
+                    <Kpi Icone="bi-clipboard-data" Rotulo="Pontuação SUS média" Valor="@sus.Media.ToString("0.0")" Detalhe="@($"{Sus.Classificar(sus.Media)} (0 a 100; acima de 68 é a média de mercado)")" />
+                    <Kpi Icone="bi-people" Rotulo="Respostas" Valor="@sus.Total" Detalhe="@string.Join(" · ", sus.PorPerfil.Select(p => $"{p.Key}: {p.Value.total}"))" />
+                    <Kpi Icone="bi-hand-thumbs-up" Rotulo="Acharam fácil de usar" Valor="@(sus.MediaPorPergunta[2].ToString("0.0") + " / 5")" Detalhe="Média da pergunta 3" />
+                    <Kpi Icone="bi-shield-check" Rotulo="Se sentiram confiantes" Valor="@(sus.MediaPorPergunta[8].ToString("0.0") + " / 5")" Detalhe="Média da pergunta 9" />
+                </div>
+                <div class="row g-3">
+                    <div class="col-lg-7">
+                        <div class="mp-card p-3 p-md-4 h-100">
+                            <h3 class="h6 fw-bold">Média por pergunta (1 = discordo totalmente, 5 = concordo totalmente)</h3>
+                            <ol class="lista-sus small mb-0">
+                                @for (var i = 0; i < 10; i++)
+                                {
+                                    var media = sus.MediaPorPergunta[i];
+                                    var positiva = i % 2 == 0;
+                                    <li>
+                                        <div class="d-flex justify-content-between gap-2"><span>@Sus.Perguntas[i]</span><b>@media.ToString("0.0")</b></div>
+                                        <div class="barra"><span class="@(positiva ? "pos" : "neg")" style="width:@((media / 5 * 100).ToString("0", System.Globalization.CultureInfo.InvariantCulture))%"></span></div>
+                                    </li>
+                                }
+                            </ol>
+                            <p class="small text-muted mt-2 mb-0">Em azul, afirmações positivas (quanto maior, melhor). Em laranja, negativas (quanto menor, melhor).</p>
+                        </div>
+                    </div>
+                    <div class="col-lg-5">
+                        <div class="mp-card p-3 p-md-4 mb-3">
+                            <h3 class="h6 fw-bold">Distribuição</h3>
+                            @foreach (var f in sus.PorFaixa)
+                            {
+                                <div class="d-flex justify-content-between small py-1 border-bottom"><span>@f.Key</span><b>@f.Value</b></div>
+                            }
+                        </div>
+                        <div class="mp-card p-3 p-md-4">
+                            <h3 class="h6 fw-bold">Comentários</h3>
+                            @if (sus.Comentarios.Count == 0) { <p class="small text-muted mb-0">Nenhum comentário.</p> }
+                            @foreach (var c in sus.Comentarios)
+                            {
+                                <blockquote class="small border-start border-3 ps-2 mb-2">“@c.comentario”<footer class="text-muted">@c.perfil · nota @c.nota.ToString("0") · @Consultas.HoraBrasil(c.data).ToString("dd/MM")</footer></blockquote>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+    </div>
+}
+
+<style>
+    .abas-admin { display: flex; gap: .5rem; flex-wrap: wrap; }
+    .foto-doc { width: 100%; max-height: 340px; object-fit: contain; background: #0f172a; border-radius: 12px; margin-bottom: .75rem; }
+    .lista-sus { padding-left: 1.2rem; }
+    .lista-sus li { margin-bottom: .7rem; }
+    .lista-sus .barra { height: 8px; background: var(--mp-line); border-radius: 99px; overflow: hidden; margin-top: .25rem; }
+    .lista-sus .barra span { display: block; height: 100%; border-radius: 99px; }
+    .lista-sus .barra .pos { background: var(--mp-primary); }
+    .lista-sus .barra .neg { background: var(--mp-accent); }
+</style>
+
+@code {
+    [SupplyParameterFromQuery(Name = "aba")] public string? AbaQuery { get; set; }
+
+    private static readonly (string id, string rotulo, string icone)[] Abas =
+    {
+        ("visao", "Visão geral", "bi-speedometer2"), ("denuncias", "Denúncias", "bi-flag"), ("documentos", "Documentos", "bi-person-vcard"),
+        ("aves", "Aves", "bi-feather"), ("usuarios", "Usuários", "bi-people"), ("avaliacoes", "Avaliação SUS", "bi-clipboard-data"),
+    };
+
+    private string aba = "visao";
+    private bool carregando, ocupado;
+    private ModeracaoService.Resumo? resumo;
+    private List<ModeracaoService.DenunciaView>? denuncias;
+    private string statusDenuncia = "Aberta";
+    private List<ModeracaoService.DocumentoPendente>? documentos;
+    private readonly Dictionary<int, string?> fotosAbertas = new();
+    private readonly Dictionary<int, string?> motivosRecusa = new();
+    private List<Pet>? aves;
+    private List<ModeracaoService.UsuarioAdmin>? usuarios;
+    private string? buscaUsuarios;
+    private string filtroUsuarios = "todos";
+    private QuestionariosService.ResultadoSus? sus;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!AuthService.EhAdmin) return;
+        if (Abas.Any(a => a.id == AbaQuery)) aba = AbaQuery!;
+        await Recarregar();
+    }
+
+    private int Pendencia(string id) => resumo == null ? 0 : id switch
+    {
+        "denuncias" => resumo.DenunciasAbertas, "documentos" => resumo.DocumentosAnalise, "aves" => resumo.PetsModeracao, _ => 0
+    };
+
+    private async Task MudarAba(string id)
+    {
+        aba = id;
+        Nav.NavigateTo($"/admin?aba={id}", replace: true);
+        await CarregarAba();
+    }
+
+    private async Task Recarregar()
+    {
+        carregando = true;
+        try
+        {
+            resumo = await Moderacao.ResumoAsync();
+            await CarregarAba();
+        }
+        catch { Toast.Erro("Não foi possível carregar o painel. Tente atualizar."); }
+        finally { carregando = false; }
+    }
+
+    private async Task CarregarAba()
+    {
+        switch (aba)
+        {
+            case "denuncias": denuncias = null; StateHasChanged(); denuncias = await Moderacao.ListarDenunciasAsync(statusDenuncia); break;
+            case "documentos":
+                documentos = null; fotosAbertas.Clear(); StateHasChanged();
+                documentos = await Moderacao.DocumentosEmAnaliseAsync();
+                foreach (var d in documentos) motivosRecusa.TryAdd(d.UsuarioId, null);
+                break;
+            case "aves": aves = null; StateHasChanged(); aves = await Moderacao.PetsEmModeracaoAsync(); break;
+            case "usuarios": await CarregarUsuarios(); break;
+            case "avaliacoes": sus = null; StateHasChanged(); sus = await Questionarios.ResultadoAsync(); break;
+        }
+    }
+
+    private async Task CarregarUsuarios()
+    {
+        usuarios = null;
+        StateHasChanged();
+        usuarios = await Moderacao.BuscarUsuariosAsync(buscaUsuarios, filtroUsuarios);
+    }
+
+    private async Task FiltrarDenuncias(string status)
+    {
+        statusDenuncia = status;
+        await CarregarAba();
+    }
+
+    // Toda ação confere de novo se quem clicou é administrador
+    private async Task Executar(Func<int, Task> acao, string sucesso)
+    {
+        if (!AuthService.EhAdmin || ocupado) return;
+        ocupado = true;
+        try
+        {
+            await acao(AuthService.UsuarioLogado!.Id);
+            Toast.Sucesso(sucesso);
+            resumo = await Moderacao.ResumoAsync();
+            await CarregarAba();
+        }
+        catch (InvalidOperationException ex) { Toast.Erro(ex.Message); }
+        catch { Toast.Erro("Não foi possível concluir a ação."); }
+        finally { ocupado = false; }
+    }
+
+    private Task Resolver(ModeracaoService.DenunciaView d, string acao) =>
+        Executar(admin => Moderacao.ResolverDenunciaAsync(d.Denuncia.Id, admin, acao, null),
+            acao switch { "remover" => "Conteúdo removido e denúncia resolvida.", "bloquear" => "Responsável bloqueado.", _ => "Denúncia descartada." });
+
+    private async Task AbrirFoto(int usuarioId)
+    {
+        if (!AuthService.EhAdmin) return;
+        fotosAbertas[usuarioId] = await Moderacao.AbrirDocumentoAsync(usuarioId, AuthService.UsuarioLogado!.Id);
+    }
+
+    private Task DecidirDocumento(ModeracaoService.DocumentoPendente doc, bool aprovar) =>
+        Executar(admin => Moderacao.DecidirDocumentoAsync(doc.UsuarioId, aprovar, motivosRecusa.GetValueOrDefault(doc.UsuarioId), admin),
+            aprovar ? $"Documento de {doc.Nome} aprovado." : $"Documento de {doc.Nome} recusado.");
+
+    private Task DecidirPet(Pet p, bool aprovar) =>
+        Executar(admin => Moderacao.DecidirPetAsync(p.Id, aprovar, admin), aprovar ? $"{p.Nome} entrou no catálogo." : $"Anúncio de {p.Nome} recusado.");
+
+    private Task AlternarBloqueio(ModeracaoService.UsuarioAdmin u) =>
+        Executar(_ => Moderacao.BloquearAsync(u.Id, !u.Bloqueado, "Bloqueado pela moderação"), u.Bloqueado ? $"{u.Nome} desbloqueado." : $"{u.Nome} bloqueado.");
+}

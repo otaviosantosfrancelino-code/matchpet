@@ -93,3 +93,16 @@ O que já foi otimizado no código:
 O site cria cadastros de exemplo na primeira vez que abre (ONGs, pessoas, pets, itens, publicações, conversas).
 Todas usam a senha **`Demo@123`** e e-mails terminados em `@demo.matchpet.com.br`.
 Para não criar esses dados, adicione `SeedDemo` = `false` no Render.
+
+## 6. Administradores e contas da banca
+
+- As contas da banca (**administrador**, **adotante** e **ONG**, com e-mails `@matchpet.example`) são criadas quando o site roda no computador
+  em modo de desenvolvimento. As senhas, aleatórias, ficam no arquivo local `CONTAS_BANCA.local.txt`, fora do GitHub.
+- Para transformar a **sua própria conta** em administradora, adicione no Render a variável
+  `Admin__Emails` = `seu-email@exemplo.com` (vários e-mails separados por `;`) e reinicie o serviço.
+- O painel fica em **/admin**: denúncias, documentos em análise, aves aguardando aprovação, usuários e o resultado do questionário SUS.
+
+## 7. Teste de usabilidade (SUS)
+
+Compartilhe o link **https://matchpet.onrender.com/avaliar** com ONGs, adotantes e colegas.
+O resultado (nota média de 0 a 100, médias por pergunta e comentários) aparece no painel do administrador, na aba "Avaliação SUS".

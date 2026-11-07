@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /mensagens
+Disallow: /perfil
+Disallow: /termos/
+Disallow: /notificacoes
+Disallow: /api/
+
+Sitemap: https://matchpet.onrender.com/sitemap.xml

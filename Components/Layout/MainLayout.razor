@@ -8,7 +8,7 @@
     <NavMenu />
     <Avisos />
 
-    <main>
+    <main id="conteudo" tabindex="-1">
         @if (!sessaoPronta)
         {
             @* Enquanto recupera o login salvo no navegador *@
@@ -55,18 +55,21 @@
                     <a href="/pets">Catálogo</a>
                     <a href="/ongs">ONGs</a>
                     <a href="/final-feliz">Final Feliz</a>
+                    <a href="/questionario-adocao">Questionário de adoção</a>
                 </div>
                 <div class="col-6 col-md-3 col-lg-2">
                     <div class="titulo">Comunidade</div>
                     <a href="/comunidade">Feed</a>
                     <a href="/reels">Vídeos</a>
                     <a href="/estatisticas">Estatísticas e rankings</a>
+                    <a href="/verificar-termo">Verificar um termo</a>
                 </div>
                 <div class="col-6 col-md-3 col-lg-2">
                     <div class="titulo">Ajudar</div>
                     <a href="/pets/novo">Anunciar pet</a>
                     <a href="/bazar">Bazar Solidário</a>
-                    <a href="/cadastro">Criar conta</a>
+                    <a href="/avaliar">Avaliar o site</a>
+                    <a href="/sobre">Sobre o projeto</a>
                 </div>
                 <div class="col-6 col-md-3 col-lg-2">
                     <div class="titulo">Conta</div>
@@ -75,16 +78,18 @@
                         <a href="/perfil">Meu perfil</a>
                         <a href="/notificacoes">Notificações</a>
                         <a href="/mensagens">Mensagens</a>
+                        <a href="/favoritos">Favoritos</a>
                     }
                     else
                     {
                         <a href="/login">Entrar</a>
+                        <a href="/cadastro">Criar conta</a>
                         <a href="/esqueci-senha">Esqueci a senha</a>
                     }
                 </div>
             </div>
             <div class="rodape-base">
-                <span>&copy; 2026 Match-Pet SP · Sistema de Gestão de Adoções · Franca/SP</span>
+                <span>&copy; 2026 Match-Pet SP · TCC de Otávio M. S. Francelino e Pedro H. P. Grace · Franca/SP</span>
                 <span><a href="/privacidade" class="d-inline p-0">Privacidade</a> · <a href="/privacidade#termos" class="d-inline p-0">Termos de uso</a> · Feito com 🐾 para quem ama animais</span>
             </div>
         </div>

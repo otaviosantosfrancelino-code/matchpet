@@ -3,6 +3,7 @@ using crudcomdb.Endpoints;
 using crudcomdb.Interfaces;
 using crudcomdb.Repositories;
 using crudcomdb.Services;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -40,6 +41,17 @@ builder.Services.AddScoped<RankingService>();
 builder.Services.AddSingleton<NotificacoesService>();   // avisa em tempo real (nova mensagem, pedido de amizade)
 builder.Services.AddSingleton<GeoService>();            // coordenadas das cidades para o mapa
 builder.Services.AddSingleton<LimiteTentativasService>(); // bloqueia quem erra a senha muitas vezes
+builder.Services.AddScoped<ModeracaoService>();
+builder.Services.AddScoped<FavoritosService>();
+builder.Services.AddScoped<QuestionariosService>();
+builder.Services.AddSingleton<CofreDocumentos>();          // criptografa a foto do documento (LGPD)
+builder.Services.AddHostedService<AcompanhamentoService>(); // lembretes 7 e 30 dias depois da adoção
+
+// Chaves de criptografia guardadas no banco: as sessões salvas e os documentos continuam legíveis
+// depois de cada nova publicação no Render (antes, cada deploy gerava chaves novas e todos eram deslogados)
+builder.Services.AddDataProtection()
+    .SetApplicationName("MatchPetSP")
+    .PersistKeysToDbContext<AppDbContext>();
 
 // Limite de pedidos por IP na API (evita robôs e abuso)
 builder.Services.AddRateLimiter(o =>
@@ -90,6 +102,8 @@ using (var escopo = app.Services.CreateScope())
             await DadosDemonstracaoComunidade.CriarAsync(db, log);
             await DadosDemonstracaoV3.CriarAsync(db, log);
         }
+        await ContasBanca.PrepararAsync(db, app.Configuration, app.Environment, log);
+        await escopo.ServiceProvider.GetRequiredService<ModeracaoService>().ProtegerDocumentosAntigosAsync();
     }
     catch (Exception ex)
     {
@@ -140,6 +154,7 @@ app.MapStaticAssets();
 app.MapGet("/health", () => Results.Text("ok"));
 
 app.MapImagens();
+app.MapCompartilhamento();
 app.MapControllers();
 app.MapRazorComponents<crudcomdb.Components.App>()
     .AddInteractiveServerRenderMode();

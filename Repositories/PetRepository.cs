@@ -57,9 +57,9 @@ namespace crudcomdb.Repositories
             if (f.SoOngs) query = query.Where(p => p.UsuarioDoador != null && p.UsuarioDoador.EhOng);
             if (!string.IsNullOrEmpty(f.Especie))
             {
-                // "Outros" = qualquer espécie fora das principais
+                // "Outros" = pequenos animais domésticos (coelho, hamster, porquinho-da-índia, chinchila)
                 query = f.Especie == "Outros"
-                    ? query.Where(p => p.Especie != "Cão" && p.Especie != "Gato" && p.Especie != "Pássaro" && p.Especie != "Peixe")
+                    ? query.Where(p => p.Especie != "Cão" && p.Especie != "Gato" && p.Especie != "Pássaro")
                     : query.Where(p => p.Especie == f.Especie);
             }
             if (!string.IsNullOrEmpty(f.Porte)) query = query.Where(p => p.Porte == f.Porte);

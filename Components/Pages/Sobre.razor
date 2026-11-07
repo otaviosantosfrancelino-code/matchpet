@@ -1,0 +1,245 @@
+@page "/sobre"
+@inject EstatisticasService Estatisticas
+
+<PageTitle>Sobre o projeto | Match-Pet SP</PageTitle>
+
+@* ===== CAPA ===== *@
+<section class="sobre-capa">
+    <div class="container-xl py-5">
+        <div class="row align-items-center g-4">
+            <div class="col-lg-7">
+                <span class="eyebrow claro"><i class="bi bi-mortarboard"></i> Trabalho de Conclusão de Curso · 3º CODITEC</span>
+                <h1 class="display-5 fw-bold text-white mt-3 mb-3">Tecnologia para uma adoção <span class="destaque">compatível, segura e rastreável</span></h1>
+                <p class="lead mb-4">O Match-Pet conecta adotantes, protetores e ONGs de Franca/SP e região. Ele verifica a identidade das pessoas, protege os dados de contato e registra eletronicamente o termo de adoção.</p>
+                <div class="d-flex gap-2 flex-wrap">
+                    <a href="/pets" class="btn btn-light btn-lg fw-bold">Ver a plataforma</a>
+                    <a href="https://github.com/otaviosantosfrancelino-code/matchpet" target="_blank" rel="noopener" class="btn btn-glass btn-lg"><i class="bi bi-github me-1"></i> Código-fonte</a>
+                </div>
+            </div>
+            <div class="col-lg-5 text-center">
+                <img src="/home-match-pet.png" alt="Mascote do Match-Pet" class="img-fluid sobre-mascote" />
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="container-xl py-5">
+    @* ===== PROBLEMA ===== *@
+    <section class="row g-4 align-items-center mb-5">
+        <div class="col-lg-5">
+            <span class="eyebrow">O problema</span>
+            <h2 class="secao-titulo mt-2">4,8 milhões de cães e gatos vulneráveis no Brasil</h2>
+            <p class="text-muted">O abandono de animais é uma questão de bem-estar animal e de saúde pública. Grande parte das adoções ainda acontece em grupos de redes sociais, que:</p>
+        </div>
+        <div class="col-lg-7">
+            <div class="row g-3">
+                <div class="col-sm-4"><div class="mp-card p-3 h-100 text-center"><div class="fs-2">🔀</div><b class="d-block text-dark">Não filtram</b><small class="text-muted">os animais pela realidade do adotante</small></div></div>
+                <div class="col-sm-4"><div class="mp-card p-3 h-100 text-center"><div class="fs-2">🎭</div><b class="d-block text-dark">Não verificam</b><small class="text-muted">a identidade de quem doa ou adota</small></div></div>
+                <div class="col-sm-4"><div class="mp-card p-3 h-100 text-center"><div class="fs-2">📱</div><b class="d-block text-dark">Expõem</b><small class="text-muted">telefone e endereço a desconhecidos</small></div></div>
+            </div>
+            <p class="small text-muted mt-2 mb-0">Fonte: Instituto Pet Brasil (2024), apud Saldanha e Andrade (CNN Brasil, 2024).</p>
+        </div>
+    </section>
+
+    @* ===== DIFERENCIAIS ===== *@
+    <section class="mb-5">
+        <div class="text-center mb-4">
+            <span class="eyebrow">A solução</span>
+            <h2 class="secao-titulo mt-2">O que o Match-Pet faz de diferente</h2>
+        </div>
+        <div class="row g-3">
+            @foreach (var d in Diferenciais)
+            {
+                <div class="col-md-6 col-lg-4">
+                    <div class="mp-card p-4 h-100">
+                        <div class="icone-bolha @d.Cor mb-3"><i class="bi @d.Icone"></i></div>
+                        <h3 class="h6 fw-bold">@d.Titulo</h3>
+                        <p class="small text-muted mb-0">@d.Texto</p>
+                    </div>
+                </div>
+            }
+        </div>
+    </section>
+
+    @* ===== COMO FUNCIONA (BPMN simplificado) ===== *@
+    <section class="mb-5">
+        <div class="text-center mb-4">
+            <span class="eyebrow">Processo de adoção</span>
+            <h2 class="secao-titulo mt-2">Do "Quero adotar" ao termo assinado</h2>
+        </div>
+        <ol class="fluxo">
+            @foreach (var (icone, titulo, texto) in Fluxo)
+            {
+                <li class="mp-card"><span class="passo"><i class="bi @icone"></i></span><b>@titulo</b><small>@texto</small></li>
+            }
+        </ol>
+    </section>
+
+    @* ===== REGRAS DE NEGÓCIO ===== *@
+    <section class="row g-4 mb-5">
+        <div class="col-lg-6">
+            <span class="eyebrow">Regras de negócio</span>
+            <h2 class="h3 fw-bold mt-2 mb-3">Segurança em cada etapa</h2>
+            <div class="d-grid gap-2">
+                @foreach (var (id, texto) in Regras)
+                {
+                    <div class="mp-card p-3 d-flex gap-3 align-items-start"><span class="tag azul flex-shrink-0">@id</span><span class="small">@texto</span></div>
+                }
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <span class="eyebrow">Proteção de dados</span>
+            <h2 class="h3 fw-bold mt-2 mb-3">Privacidade desde o projeto (LGPD)</h2>
+            <ul class="lista-check">
+                <li>Senhas com hash <b>PBKDF2</b> (ASP.NET Core Identity), nunca em texto.</li>
+                <li>Foto do documento <b>criptografada</b> (AES-256) e <b>apagada</b> após a conferência; fica só o hash SHA-256 contra fraudes.</li>
+                <li>Telefone, e-mail, CPF/CNPJ e endereço nunca aparecem no perfil público; o mapa mostra só a região.</li>
+                <li>Limite de tentativas de login e de pedidos à API (proteção contra robôs).</li>
+                <li>Cabeçalhos de segurança (CSP, HSTS, X-Frame-Options) e HTTPS em todo o site.</li>
+                <li>Senha do banco fora do código-fonte (variáveis de ambiente e <i>user-secrets</i>).</li>
+                <li>Termo com <b>código de autenticidade</b>, QR code e verificação pública com nomes abreviados.</li>
+            </ul>
+            <a href="/privacidade" class="btn btn-light btn-sm mt-2">Ler a Política de Privacidade</a>
+        </div>
+    </section>
+
+    @* ===== ARQUITETURA ===== *@
+    <section class="mb-5">
+        <div class="text-center mb-4">
+            <span class="eyebrow">Arquitetura</span>
+            <h2 class="secao-titulo mt-2">Como o sistema foi construído</h2>
+            <p class="text-muted mx-auto" style="max-width:640px">Arquitetura em camadas com injeção de dependência. No Blazor Server as telas rodam no servidor, e os dados sensíveis só saem dele quando a aplicação decide exibi-los.</p>
+        </div>
+        <div class="camadas mx-auto">
+            <div class="camada c1"><b>Apresentação</b><span>Componentes Blazor (Razor) · Bootstrap 5 · JavaScript para mapa, QR code e PWA</span></div>
+            <div class="seta-camada" aria-hidden="true"><i class="bi bi-arrow-down"></i></div>
+            <div class="camada c2"><b>Serviços (regras de negócio)</b><span>Autenticação · Chat em tempo real · Termos · Validação de documentos com IA · Moderação · Rankings</span></div>
+            <div class="seta-camada" aria-hidden="true"><i class="bi bi-arrow-down"></i></div>
+            <div class="camada c3"><b>Repositórios</b><span>Entity Framework Core 9 (mapeamento objeto-relacional) · 25 migrações versionadas</span></div>
+            <div class="seta-camada" aria-hidden="true"><i class="bi bi-arrow-down"></i></div>
+            <div class="camada c4"><b>Banco de dados</b><span>PostgreSQL gerenciado (Neon) · Contêiner Docker no Render</span></div>
+        </div>
+        <div class="d-flex flex-wrap justify-content-center gap-2 mt-4">
+            @foreach (var t in Tecnologias) { <span class="chip">@t</span> }
+        </div>
+    </section>
+
+    @* ===== NÚMEROS ===== *@
+    @if (numeros != null)
+    {
+        <section class="mp-card p-4 mb-5">
+            <div class="row g-3 text-center">
+                <div class="col-6 col-md-3"><b class="numero">@numeros.Adotados</b><small class="d-block text-muted">adoções registradas</small></div>
+                <div class="col-6 col-md-3"><b class="numero">@numeros.Disponiveis</b><small class="d-block text-muted">pets esperando um lar</small></div>
+                <div class="col-6 col-md-3"><b class="numero">@numeros.Usuarios</b><small class="d-block text-muted">pessoas cadastradas</small></div>
+                <div class="col-6 col-md-3"><b class="numero">@numeros.Ongs</b><small class="d-block text-muted">ONGs parceiras</small></div>
+            </div>
+            <p class="small text-muted text-center mt-3 mb-0">Os números incluem cadastros de demonstração criados para a apresentação e não representam resultados reais de uso.</p>
+        </section>
+    }
+
+    @* ===== EQUIPE ===== *@
+    <section class="mb-5">
+        <div class="text-center mb-4">
+            <span class="eyebrow">Equipe</span>
+            <h2 class="secao-titulo mt-2">Quem desenvolveu</h2>
+        </div>
+        <div class="row g-3 justify-content-center">
+            @foreach (var (nome, iniciais) in Equipe)
+            {
+                <div class="col-sm-6 col-lg-4">
+                    <div class="mp-card p-4 text-center h-100">
+                        <div class="avatar-equipe mx-auto mb-3" aria-hidden="true">@iniciais</div>
+                        <h3 class="h6 fw-bold mb-1">@nome</h3>
+                        <small class="text-muted">Desenvolvimento, modelagem e documentação</small>
+                    </div>
+                </div>
+            }
+        </div>
+    </section>
+
+    @* ===== CHAMADA ===== *@
+    <section class="mp-card p-4 p-md-5 text-center chamada-avaliar">
+        <h2 class="h4 fw-bold">Usou o Match-Pet? Avalie em 1 minuto</h2>
+        <p class="text-muted">A sua opinião faz parte do teste de usabilidade do projeto (questionário SUS).</p>
+        <a href="/avaliar" class="btn btn-primary btn-lg">Avaliar o site</a>
+    </section>
+</div>
+
+<style>
+    .sobre-capa { background: radial-gradient(1200px 500px at 80% -10%, rgba(249,115,22,.35), transparent), linear-gradient(140deg, #1e3a8a 0%, #2563eb 55%, #7c3aed 100%); color: rgba(255,255,255,.88); }
+    .sobre-capa .eyebrow.claro { background: rgba(255,255,255,.14); color: #fff; }
+    .sobre-capa .destaque { color: #fdba74; }
+    .sobre-mascote { max-height: 320px; filter: drop-shadow(0 20px 40px rgba(0,0,0,.3)); }
+    .fluxo { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(2, 1fr); gap: .75rem; counter-reset: passo; }
+    @@media (min-width: 768px) { .fluxo { grid-template-columns: repeat(3, 1fr); } }
+    @@media (min-width: 1200px) { .fluxo { grid-template-columns: repeat(6, 1fr); } }
+    .fluxo li { padding: 1.1rem; display: flex; flex-direction: column; gap: .35rem; position: relative; counter-increment: passo; }
+    .fluxo li::after { content: counter(passo); position: absolute; top: .7rem; right: .9rem; font-weight: 800; color: var(--mp-line); font-size: 1.6rem; }
+    .fluxo .passo { width: 42px; height: 42px; border-radius: 12px; background: var(--mp-primary-soft); color: var(--mp-primary); display: grid; place-items: center; font-size: 1.2rem; }
+    .fluxo b { color: var(--mp-ink); }
+    .fluxo small { color: var(--mp-muted); }
+    .lista-check { list-style: none; padding: 0; }
+    .lista-check li { position: relative; padding-left: 1.8rem; margin-bottom: .6rem; font-size: .92rem; }
+    .lista-check li::before { content: "\F26E"; font-family: bootstrap-icons; position: absolute; left: 0; top: 0; color: var(--mp-success); font-size: 1.1rem; }
+    .camadas { max-width: 680px; display: flex; flex-direction: column; align-items: stretch; }
+    .camada { border-radius: 16px; padding: 1rem 1.25rem; color: #fff; display: flex; flex-direction: column; gap: .15rem; }
+    .camada span { font-size: .85rem; opacity: .9; }
+    .camada.c1 { background: #2563eb; } .camada.c2 { background: #7c3aed; } .camada.c3 { background: #0f766e; } .camada.c4 { background: #334155; }
+    .seta-camada { text-align: center; color: var(--mp-muted); line-height: 1.6; }
+    .numero { font-size: 2rem; font-weight: 800; color: var(--mp-primary); }
+    .avatar-equipe { width: 84px; height: 84px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: 1.6rem; color: #fff; background: linear-gradient(135deg, #2563eb, #f97316); }
+    .chamada-avaliar { background: linear-gradient(135deg, var(--mp-primary-soft), var(--mp-accent-soft)); }
+</style>
+
+@code {
+    private EstatisticasService.Resumo? numeros;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try { numeros = await Estatisticas.CalcularAsync(); } catch { }
+    }
+
+    private static readonly (string Nome, string Iniciais)[] Equipe =
+    {
+        ("Otávio Miguel Santos Francelino", "OF"),
+        ("Pedro Henrique Palamoni Grace", "PG"),
+    };
+
+    private record Diferencial(string Icone, string Cor, string Titulo, string Texto);
+    private static readonly Diferencial[] Diferenciais =
+    {
+        new("bi-sliders", "azul", "Filtros de compatibilidade", "O catálogo cruza a moradia e a família do adotante com as necessidades do pet: quem mora em apartamento não vê cães que precisam de quintal."),
+        new("bi-clipboard-heart", "laranja", "Questionário de adoção", "Antes da primeira conversa o adotante responde sobre casa, rotina e família, e o doador vê a compatibilidade em porcentagem."),
+        new("bi-person-vcard", "verde", "Identidade verificada com IA", "A foto do documento é lida por inteligência artificial e comparada ao cadastro. Fotos repetidas ou adulteradas são barradas."),
+        new("bi-chat-heart", "azul", "Chat sem expor o telefone", "Toda a conversa acontece dentro do site. Telefone e endereço nunca são mostrados, e o mapa indica só a região."),
+        new("bi-file-earmark-check", "verde", "Termo eletrônico rastreável", "Registra data, hora e IP das duas partes, com código de autenticidade, QR code e impressão digital SHA-256."),
+        new("bi-shield-check", "vermelho", "Moderação e denúncias", "Qualquer pessoa denuncia maus-tratos, venda ou golpes. A equipe remove conteúdos e bloqueia contas pelo painel."),
+    };
+
+    private static readonly (string, string, string)[] Fluxo =
+    {
+        ("bi-search-heart", "Busca", "O adotante filtra os pets pela sua realidade"),
+        ("bi-clipboard-check", "Questionário", "Responde sobre casa, rotina e família"),
+        ("bi-chat-dots", "Conversa", "Fala com o doador pelo chat, sem expor o telefone"),
+        ("bi-file-earmark-text", "Termo", "O doador avalia e envia o termo de adoção"),
+        ("bi-pen", "Assinatura", "O adotante assina; o pet passa a \"Adotado\""),
+        ("bi-heart", "Acompanhamento", "Lembretes com 7 e 30 dias e a história no Final Feliz"),
+    };
+
+    private static readonly (string, string)[] Regras =
+    {
+        ("RN01", "Um único cadastro por CPF ou CNPJ, com validação dos dígitos e consulta do CNPJ na Receita Federal."),
+        ("RN02", "Só usuários com documento verificado podem enviar ou assinar o termo de adoção."),
+        ("RN03", "O selo \"Usuário Verificado\" ou \"ONG Verificada\" depende da verificação do documento."),
+        ("RN04", "Só animais domésticos (Portaria Ibama nº 93/1998); anúncios de aves passam por moderação prévia."),
+        ("RN05", "Telefone e endereço do doador não são exibidos: o contato ocorre apenas pelo chat."),
+        ("RN06", "Todo termo assinado gera registro permanente com data, hora, IP das partes e código de autenticidade."),
+    };
+
+    private static readonly string[] Tecnologias =
+    {
+        "C# / .NET 9", "ASP.NET Core Blazor Server", "SignalR (tempo real)", "Entity Framework Core 9", "PostgreSQL (Neon)", "Docker + Render",
+        "Bootstrap 5", "Leaflet + OpenStreetMap", "Claude (IA com visão)", "BrasilAPI (CNPJ)", "ViaCEP", "xUnit (testes)", "GitHub Actions", "PWA",
+    };
+}

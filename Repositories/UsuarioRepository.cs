@@ -54,6 +54,21 @@ namespace crudcomdb.Repositories
                 .Select(u => new Usuario { Id = u.Id, Nome = u.Nome })
                 .FirstOrDefaultAsync();
 
+        public async Task SincronizarModeracaoAsync(Usuario usuario)
+        {
+            var atual = await _context.Usuarios.AsNoTracking().Where(u => u.Id == usuario.Id)
+                .Select(u => new { u.StatusValidacaoDocumento, u.DocumentoObservacao, u.DataValidacaoDocumento, u.FotoDocumentoBase64, u.EhAdmin, u.Bloqueado, u.MotivoBloqueio })
+                .FirstOrDefaultAsync();
+            if (atual == null) return;
+            usuario.StatusValidacaoDocumento = atual.StatusValidacaoDocumento;
+            usuario.DocumentoObservacao = atual.DocumentoObservacao;
+            usuario.DataValidacaoDocumento = atual.DataValidacaoDocumento;
+            usuario.FotoDocumentoBase64 = atual.FotoDocumentoBase64;
+            usuario.EhAdmin = atual.EhAdmin;
+            usuario.Bloqueado = atual.Bloqueado;
+            usuario.MotivoBloqueio = atual.MotivoBloqueio;
+        }
+
         public async Task AddAsync(Usuario usuario)
         {
             await _context.Usuarios.AddAsync(usuario);

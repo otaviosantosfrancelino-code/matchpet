@@ -1,0 +1,88 @@
+@* Botão "Denunciar" usado em pets, publicações, perfis e itens. Abre uma janela com os motivos. *@
+@inject AuthService AuthService
+@inject ModeracaoService Moderacao
+@inject ToastService Toast
+@inject NavigationManager Nav
+
+<button type="button" class="@Classe" @onclick="Abrir" title="Denunciar" aria-label="Denunciar @NomeAlvo">
+    <i class="bi bi-flag"></i>@if (!string.IsNullOrEmpty(Rotulo)) { <span class="ms-1">@Rotulo</span> }
+</button>
+
+@if (aberto)
+{
+    <div class="modal fade show d-block modal-blazor" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="tituloDenuncia-@Tipo-@AlvoId" @onclick="Fechar">
+        <div class="modal-dialog modal-dialog-centered" @onclick:stopPropagation="true">
+            <div class="modal-content">
+                <div class="modal-header border-0 px-4 pt-4 pb-0">
+                    <h5 class="modal-title d-flex align-items-center gap-2" id="tituloDenuncia-@Tipo-@AlvoId">
+                        <span class="icone-bolha vermelho" style="width:40px;height:40px;font-size:1.1rem"><i class="bi bi-flag-fill"></i></span>
+                        Denunciar @NomeAlvo
+                    </h5>
+                    <button type="button" class="btn-close" @onclick="Fechar" aria-label="Fechar"></button>
+                </div>
+                <div class="modal-body px-4">
+                    <p class="text-muted small">A denúncia é <b>anônima</b> para quem foi denunciado e será analisada pela moderação. Em caso de maus-tratos em andamento, ligue também para a polícia (190).</p>
+                    <fieldset>
+                        <legend class="form-label">Qual é o problema?</legend>
+                        <div class="d-grid gap-2">
+                            @foreach (var m in ModeracaoService.Motivos)
+                            {
+                                <label class="opcao-card py-2 @(motivo == m ? "marcada" : "")">
+                                    <input type="radio" name="motivo-@Tipo-@AlvoId" checked="@(motivo == m)" @onchange="() => motivo = m" />
+                                    <span class="small fw-semibold">@m</span>
+                                </label>
+                            }
+                        </div>
+                    </fieldset>
+                    <label class="form-label mt-3" for="detalhes-@Tipo-@AlvoId">Detalhes (opcional)</label>
+                    <textarea id="detalhes-@Tipo-@AlvoId" class="form-control" rows="3" maxlength="1000" @bind="detalhes" placeholder="Conte o que aconteceu para ajudar na análise"></textarea>
+                </div>
+                <div class="modal-footer border-0 px-4 pb-4">
+                    <button class="btn btn-light" @onclick="Fechar">Cancelar</button>
+                    <button class="btn btn-danger" disabled="@(motivo == null || enviando)" @onclick="Enviar">
+                        @if (enviando) { <span class="spinner-border spinner-border-sm me-1"></span> } Enviar denúncia
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired] public string Tipo { get; set; } = "";   // pet, item, post, comentario, usuario
+    [Parameter, EditorRequired] public int AlvoId { get; set; }
+    [Parameter] public string NomeAlvo { get; set; } = "este conteúdo";
+    [Parameter] public string? Rotulo { get; set; }
+    [Parameter] public string Classe { get; set; } = "btn btn-ghost btn-sm";
+
+    private bool aberto, enviando;
+    private string? motivo, detalhes;
+
+    private void Abrir()
+    {
+        if (!AuthService.EstaLogado)
+        {
+            Toast.Info("Entre na sua conta para denunciar.");
+            Nav.NavigateTo($"/login?voltar={Uri.EscapeDataString("/" + Nav.ToBaseRelativePath(Nav.Uri))}");
+            return;
+        }
+        motivo = null; detalhes = null; aberto = true;
+    }
+
+    private void Fechar() => aberto = false;
+
+    private async Task Enviar()
+    {
+        if (motivo == null) return;
+        enviando = true;
+        try
+        {
+            var nova = await Moderacao.DenunciarAsync(AuthService.UsuarioLogado!.Id, Tipo, AlvoId, motivo, detalhes);
+            if (nova) Toast.Sucesso("Denúncia enviada. Obrigado por ajudar a manter o Match-Pet seguro! 🛡️");
+            else Toast.Info("Você já denunciou este conteúdo. A moderação está analisando.");
+            aberto = false;
+        }
+        catch { Toast.Erro("Não foi possível enviar a denúncia agora. Tente novamente."); }
+        finally { enviando = false; }
+    }
+}

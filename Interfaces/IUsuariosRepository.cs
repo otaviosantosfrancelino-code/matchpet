@@ -17,6 +17,9 @@ namespace crudcomdb.Interfaces
         // Antifraude: outra conta já usou a mesma foto de documento?
         Task<Usuario?> GetOutroComMesmoDocumentoHashAsync(string hash, int idAtual);
 
+        // Traz do banco o que só o administrador muda (status do documento, bloqueio, admin)
+        Task SincronizarModeracaoAsync(Usuario usuario);
+
         Task AddAsync(Usuario usuario);
         Task UpdateAsync(Usuario usuario);
     }

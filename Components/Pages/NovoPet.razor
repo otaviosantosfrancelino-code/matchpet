@@ -60,26 +60,30 @@
                         <ValidationMessage For="@(() => novoPet.Nome)" />
                     </div>
                     <div class="col-md-5">
-                        <label class="form-label">Espécie</label>
-                        <InputSelect class="form-select" @bind-Value="especieSelecionadaPet">
-                            <option value="Cão">🐶 Cachorro</option>
-                            <option value="Gato">🐱 Gato</option>
-                            <option value="Pássaro">🐦 Pássaro</option>
-                            <option value="Peixe">🐟 Peixe</option>
-                            <option value="Hamster">🐹 Hamster</option>
-                            <option value="Coelho">🐰 Coelho</option>
-                            <option value="Outros">Outro...</option>
-                        </InputSelect>
+                        <label class="form-label" for="especiePet">Espécie</label>
+                        <select id="especiePet" class="form-select" @bind="especieSelecionadaPet" @bind:after="MudouEspecie">
+                            @foreach (var e in EspeciesPermitidas.Especies)
+                            {
+                                <option value="@e.Valor">@e.Emoji @e.Rotulo</option>
+                            }
+                        </select>
+                        <div class="form-text"><i class="bi bi-shield-check me-1"></i>Só animais domésticos (Portaria Ibama nº 93/1998).</div>
                     </div>
-                    @if (especieSelecionadaPet == "Outros")
-                    {
-                        <div class="col-12">
-                            <input type="text" class="form-control" placeholder="Qual é a espécie?" @bind="especiePersonalizadaPet" />
-                        </div>
-                    }
                     <div class="col-md-6">
-                        <label class="form-label">Raça</label>
-                        <InputText class="form-control" @bind-Value="novoPet.Raca" placeholder="SRD (vira-lata), Poodle, Siamês..." />
+                        @if (especieSelecionadaPet == "Pássaro")
+                        {
+                            <label class="form-label" for="racaAve">Qual ave?</label>
+                            <select id="racaAve" class="form-select" @bind="novoPet.Raca">
+                                <option value="">Escolha a espécie da ave</option>
+                                @foreach (var ave in EspeciesPermitidas.AvesDomesticas) { <option value="@ave">@ave</option> }
+                            </select>
+                            <div class="form-text text-warning"><i class="bi bi-feather me-1"></i>Anúncios de aves passam pela moderação antes de aparecer no catálogo.</div>
+                        }
+                        else
+                        {
+                            <label class="form-label">Raça</label>
+                            <InputText class="form-control" @bind-Value="novoPet.Raca" placeholder="SRD (vira-lata), Poodle, Siamês..." />
+                        }
                     </div>
                     <div class="col-6 col-md-3">
                         <label class="form-label">Idade (anos)</label>
@@ -221,7 +225,10 @@
     private const int MaxFotos = 5;
     private const long TamanhoMaxFoto = 10 * 1024 * 1024;
 
-    private string especieSelecionadaPet = "Cão", especiePersonalizadaPet = "";
+    private string especieSelecionadaPet = "Cão";
+
+    // Ao trocar entre ave e outros animais, a raça digitada não serve mais
+    private void MudouEspecie() => novoPet.Raca = especieSelecionadaPet == "Pássaro" ? "" : (EspeciesPermitidas.AvesDomesticas.Contains(novoPet.Raca) ? "SRD" : novoPet.Raca);
     private string categoriaSelecionadaItem = "Ração/Alimento", categoriaPersonalizadaItem = "";
     private string especieDestinoItem = "Todos", especieDestinoPersonalizadaItem = "";
 
@@ -289,8 +296,12 @@
         if (salvando || !PodePublicar()) return;
         if (!novoPet.Imagens.Any()) { Toast.Aviso("Adicione pelo menos uma foto do pet."); return; }
 
-        novoPet.Especie = especieSelecionadaPet == "Outros" && !string.IsNullOrWhiteSpace(especiePersonalizadaPet) ? especiePersonalizadaPet.Trim() : especieSelecionadaPet;
-        if (string.IsNullOrWhiteSpace(novoPet.Raca)) novoPet.Raca = "SRD";
+        novoPet.Especie = especieSelecionadaPet;
+        if (string.IsNullOrWhiteSpace(novoPet.Raca) && novoPet.Especie != "Pássaro") novoPet.Raca = "SRD";
+        // RN04: só animais domésticos
+        if (EspeciesPermitidas.Validar(novoPet.Especie, novoPet.Raca) is string erroEspecie) { Toast.Aviso(erroEspecie); return; }
+        var emModeracao = EspeciesPermitidas.PrecisaModeracao(novoPet.Especie);
+        novoPet.Status = emModeracao ? EspeciesPermitidas.StatusModeracao : "Disponível";
         novoPet.Nome = novoPet.Nome.Trim();
         novoPet.FotoUrl = ""; // a capa é a 1ª imagem (não duplicamos a foto no banco)
         novoPet.UsuarioDoadorId = AuthService.UsuarioLogado!.Id;
@@ -299,7 +310,8 @@
         try
         {
             await PetRepository.AddAsync(novoPet);
-            Toast.Sucesso($"{novoPet.Nome} já está no catálogo! 🎉");
+            if (emModeracao) Toast.Info($"Anúncio de {novoPet.Nome} enviado! Aves passam pela moderação e logo aparecem no catálogo. 🐦");
+            else Toast.Sucesso($"{novoPet.Nome} já está no catálogo! 🎉");
             Nav.NavigateTo("/meus-pets");
         }
         catch (Exception ex) { Toast.Erro("Erro ao publicar: " + (ex.InnerException?.Message ?? ex.Message)); }

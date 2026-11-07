@@ -57,6 +57,7 @@
                         @if (relacao != SocialService.Relacao.EuMesmo)
                         {
                             <button class="btn btn-outline-primary" @onclick="MandarMensagem"><i class="bi bi-chat-dots me-1"></i>Mensagem</button>
+                            <BotaoDenunciar Tipo="usuario" AlvoId="u.Id" NomeAlvo="@u.Nome" Classe="btn btn-light text-muted" />
                         }
                     </div>
                 </div>
@@ -120,9 +121,9 @@
     .capa { height: 170px; background: radial-gradient(600px 200px at 20% 0%, rgba(255,255,255,.35), transparent), linear-gradient(135deg, #2563eb, #7c3aed); }
     .capa.ong { background: radial-gradient(600px 200px at 20% 0%, rgba(255,255,255,.35), transparent), linear-gradient(135deg, #16a34a, #0e7490); }
     .topo-perfil { }
-    .foto-perfil { margin-top: -66px; border: 5px solid #fff; border-radius: 50%; box-shadow: var(--mp-shadow); background: #fff; flex-shrink: 0; }
+    .foto-perfil { margin-top: -66px; border: 5px solid var(--mp-surface); border-radius: 50%; box-shadow: var(--mp-shadow); background: var(--mp-surface); flex-shrink: 0; }
     .numeros-perfil { display: grid; grid-template-columns: repeat(4, 1fr); border: 1px solid var(--mp-line); border-radius: 16px; overflow: hidden; }
-    .numeros-perfil button { background: #fff; border: none; border-right: 1px solid var(--mp-line); padding: .8rem .25rem; display: flex; flex-direction: column; align-items: center; }
+    .numeros-perfil button { background: var(--mp-surface); border: none; border-right: 1px solid var(--mp-line); padding: .8rem .25rem; display: flex; flex-direction: column; align-items: center; }
     .numeros-perfil button:last-child { border-right: none; }
     .numeros-perfil button:hover { background: #f8fafc; }
     .numeros-perfil b { font-size: 1.3rem; color: var(--mp-ink); line-height: 1.1; }

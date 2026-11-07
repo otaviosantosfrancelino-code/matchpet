@@ -18,7 +18,7 @@
 .links ::deep a.active { background: var(--mp-primary-soft); color: var(--mp-primary); }
 
 .usuario {
-    display: flex; align-items: center; gap: .5rem; border: 1px solid var(--mp-line); background: #fff;
+    display: flex; align-items: center; gap: .5rem; border: 1px solid var(--mp-line); background: var(--mp-surface);
     border-radius: 999px; padding: 3px 12px 3px 3px; font-weight: 700; color: var(--mp-ink); font-size: .9rem;
 }
 .usuario:hover { border-color: #cbd5e1; box-shadow: var(--mp-shadow-sm); }
@@ -52,7 +52,7 @@
 .menu-overlay.active { opacity: 1; visibility: visible; }
 .menu-content {
     position: absolute; top: 0; right: 0; width: 320px; max-width: 88vw; height: 100%;
-    background: #fff; padding: 20px; box-shadow: -10px 0 40px rgba(15, 23, 42, .15);
+    background: var(--mp-surface); padding: 20px; box-shadow: -10px 0 40px rgba(15, 23, 42, .15);
     transform: translateX(100%); transition: transform .3s ease; overflow-y: auto;
     display: flex; flex-direction: column;
 }
@@ -87,8 +87,21 @@
 .painel-fundo { position: fixed; inset: 0; z-index: 1040; }
 .painel-notif {
     position: absolute; right: -8px; top: calc(100% + 10px); width: 380px; z-index: 1050;
-    background: #fff; border: 1px solid var(--mp-line); border-radius: 20px;
+    background: var(--mp-surface); border: 1px solid var(--mp-line); border-radius: 20px;
     box-shadow: 0 24px 60px -18px rgba(15, 23, 42, .35); overflow: hidden; animation: cair .18s ease;
 }
 .painel-lista { max-height: 420px; overflow-y: auto; }
 @keyframes cair { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+
+/* Interruptor do modo escuro */
+.interruptor { width: 40px; height: 22px; border-radius: 99px; background: #cbd5e1; position: relative; transition: background .2s; flex-shrink: 0; }
+.interruptor span { position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: transform .2s; box-shadow: 0 1px 3px rgba(0,0,0,.25); }
+.interruptor.ligado { background: var(--mp-primary); }
+.interruptor.ligado span { transform: translateX(18px); }
+.item-admin { color: var(--mp-primary) !important; font-weight: 700; }
+
+/* Modo escuro (a variável --mp-surface já cuida dos fundos brancos) */
+[data-tema="escuro"] .topo { background: rgba(11, 18, 32, .85); border-color: var(--mp-line); }
+[data-tema="escuro"] .barra-inferior { background: rgba(11, 18, 32, .95); border-color: var(--mp-line); }
+[data-tema="escuro"] .item:hover, [data-tema="escuro"] .icone-topo:hover { background: #1a2540; }
+[data-tema="escuro"] .links ::deep a:hover { background: #1a2540; }

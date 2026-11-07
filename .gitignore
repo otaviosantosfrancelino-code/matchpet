@@ -7,3 +7,10 @@ obj/
 *.env
 wwwroot/.env
 appsettings.*.local.json
+
+# Senhas das contas da banca (geradas no computador local)
+CONTAS_BANCA.local.txt
+*.local.txt
+
+# Resultados dos testes
+TestResults/

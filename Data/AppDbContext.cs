@@ -1,9 +1,10 @@
 using crudcomdb.Models;
+using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace crudcomdb.Data
 {
-    public class AppDbContext : DbContext
+    public class AppDbContext : DbContext, IDataProtectionKeyContext
     {
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
@@ -25,6 +26,15 @@ namespace crudcomdb.Data
         public DbSet<TermoAdocao> TermosAdocao { get; set; }
         public DbSet<Depoimento> Depoimentos { get; set; }
         public DbSet<Notificacao> Notificacoes { get; set; }
+
+        // Moderação, favoritos, questionário de adoção e avaliação de uso
+        public DbSet<Denuncia> Denuncias { get; set; }
+        public DbSet<Favorito> Favoritos { get; set; }
+        public DbSet<PerfilAdotante> PerfisAdotante { get; set; }
+        public DbSet<AvaliacaoUso> AvaliacoesUso { get; set; }
+
+        // Chaves de criptografia do site (sessões e documentos): ficam no banco para não se perderem a cada publicação
+        public DbSet<DataProtectionKey> DataProtectionKeys { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -128,6 +138,25 @@ namespace crudcomdb.Data
                 .HasOne<Usuario>().WithMany().HasForeignKey(n => n.UsuarioId).OnDelete(DeleteBehavior.Cascade);
             modelBuilder.Entity<Notificacao>().HasIndex(n => new { n.UsuarioId, n.Lida, n.DataCriacao });
             modelBuilder.Entity<Notificacao>().HasIndex(n => new { n.UsuarioId, n.Chave });
+
+            // ----- Moderação e favoritos -----
+            modelBuilder.Entity<Denuncia>()
+                .HasOne(d => d.Denunciante).WithMany().HasForeignKey(d => d.DenuncianteId).OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<Denuncia>().HasIndex(d => new { d.Status, d.DataCriacao });
+            modelBuilder.Entity<Denuncia>().HasIndex(d => new { d.Tipo, d.AlvoId });
+
+            modelBuilder.Entity<Favorito>()
+                .HasOne<Usuario>().WithMany().HasForeignKey(f => f.UsuarioId).OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<Favorito>()
+                .HasOne(f => f.Pet).WithMany().HasForeignKey(f => f.PetId).OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<Favorito>().HasIndex(f => new { f.UsuarioId, f.PetId }).IsUnique();
+
+            modelBuilder.Entity<PerfilAdotante>()
+                .HasOne<Usuario>().WithMany().HasForeignKey(p => p.UsuarioId).OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<PerfilAdotante>().HasIndex(p => p.UsuarioId).IsUnique();
+
+            modelBuilder.Entity<AvaliacaoUso>()
+                .HasOne<Usuario>().WithMany().HasForeignKey(a => a.UsuarioId).OnDelete(DeleteBehavior.SetNull);
 
             modelBuilder.Entity<Midia>()
                 .HasOne<Usuario>().WithMany().HasForeignKey(m => m.UsuarioId).OnDelete(DeleteBehavior.SetNull);

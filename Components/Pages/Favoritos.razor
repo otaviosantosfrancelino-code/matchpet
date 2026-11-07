@@ -1,0 +1,61 @@
+@page "/favoritos"
+@inject AuthService AuthService
+@inject FavoritosService ServicoFavoritos
+@inject NavigationManager Nav
+
+<PageTitle>Meus favoritos | Match-Pet SP</PageTitle>
+
+<div class="container-xl py-4 py-md-5">
+    <div class="page-header">
+        <div class="d-flex align-items-center gap-3">
+            <div class="icone-bolha vermelho"><i class="bi bi-heart-fill"></i></div>
+            <div>
+                <h1>Meus favoritos</h1>
+                <p>Os pets que você salvou para ver depois. Toque no coração para tirar da lista.</p>
+            </div>
+        </div>
+        <a href="/pets" class="btn btn-light"><i class="bi bi-search-heart me-1"></i> Ver catálogo</a>
+    </div>
+
+    @if (pets == null)
+    {
+        <CardsCarregando />
+    }
+    else if (pets.Count == 0)
+    {
+        <div class="estado-vazio">
+            <div class="emoji">💛</div>
+            <h5>Nenhum favorito ainda</h5>
+            <p class="text-muted">No catálogo, toque no <i class="bi bi-heart"></i> dos pets que chamarem sua atenção.</p>
+            <a href="/pets" class="btn btn-primary">Encontrar um pet</a>
+        </div>
+    }
+    else
+    {
+        <p class="text-muted small"><b class="text-dark">@pets.Count</b> @(pets.Count == 1 ? "pet salvo" : "pets salvos")@(adotados > 0 ? $" · {adotados} já encontrou um lar" : "")</p>
+        <div class="row g-3 g-md-4">
+            @foreach (var pet in pets)
+            {
+                <div class="col-12 col-sm-6 col-md-4 col-lg-3 position-relative">
+                    @if (pet.Status != "Disponível")
+                    {
+                        <span class="badge position-absolute m-2 @(pet.Status == "Adotado" ? "bg-success" : "bg-primary")" style="z-index:3;top:0;right:12px">@(pet.Status == "Adotado" ? "Adotado 💛" : pet.Status)</span>
+                    }
+                    <PetCard Pet="pet" />
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private List<Pet>? pets;
+    private int adotados;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!AuthService.EstaLogado) { Nav.NavigateTo("/login?voltar=/favoritos"); return; }
+        pets = await ServicoFavoritos.ListarAsync();
+        adotados = pets.Count(p => p.Status == "Adotado");
+    }
+}
