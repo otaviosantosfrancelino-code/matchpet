@@ -58,19 +58,6 @@
 }
 .menu-overlay.active .menu-content { transform: translateX(0); }
 
-.cartao-usuario { display: flex; align-items: center; gap: .8rem; padding: .85rem; border-radius: 16px; background: var(--mp-bg); text-decoration: none; margin-bottom: .5rem; }
-.cartao-usuario:hover { background: var(--mp-primary-soft); }
-.min-w-0 { min-width: 0; }
-
-.grupo { font-size: .72rem; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; color: #94a3b8; margin: 1.1rem 0 .4rem .6rem; }
-.item {
-    display: flex; align-items: center; gap: .8rem; width: 100%; text-align: left;
-    text-decoration: none; color: var(--mp-ink); font-weight: 600; padding: .7rem .75rem;
-    border-radius: 12px; background: none; border: none; transition: background .15s;
-}
-.item i { font-size: 1.15rem; color: var(--mp-muted); width: 22px; text-align: center; }
-.item:hover { background: #f1f5f9; }
-.item.text-danger i { color: inherit; }
 
 /* Ícones de Mensagens/Amigos com contador */
 .icone-topo { position: relative; width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center; border-radius: 12px; color: var(--mp-text); font-size: 1.25rem; text-decoration: none; }
@@ -93,15 +80,19 @@
 .painel-lista { max-height: 420px; overflow-y: auto; }
 @keyframes cair { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
 
-/* Interruptor do modo escuro */
-.interruptor { width: 40px; height: 22px; border-radius: 99px; background: #cbd5e1; position: relative; transition: background .2s; flex-shrink: 0; }
-.interruptor span { position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: transform .2s; box-shadow: 0 1px 3px rgba(0,0,0,.25); }
-.interruptor.ligado { background: var(--mp-primary); }
-.interruptor.ligado span { transform: translateX(18px); }
-.item-admin { color: var(--mp-primary) !important; font-weight: 700; }
-
 /* Modo escuro (a variável --mp-surface já cuida dos fundos brancos) */
 [data-tema="escuro"] .topo { background: rgba(11, 18, 32, .85); border-color: var(--mp-line); }
 [data-tema="escuro"] .barra-inferior { background: rgba(11, 18, 32, .95); border-color: var(--mp-line); }
-[data-tema="escuro"] .item:hover, [data-tema="escuro"] .icone-topo:hover { background: #1a2540; }
+[data-tema="escuro"] .icone-topo:hover { background: #1a2540; }
 [data-tema="escuro"] .links ::deep a:hover { background: #1a2540; }
+
+/* Foto de perfil no último botão da barra de baixo */
+.avatar-menu { display: inline-flex; border-radius: 50%; padding: 2px; border: 2px solid transparent; line-height: 0; }
+.barra-inferior ::deep a.active .avatar-menu { border-color: var(--mp-primary); }
+.barra-inferior ::deep a.botao-menu .ponto { right: calc(50% - 18px); }
+
+/* Celular: a barra de cima some ao rolar para baixo e volta ao rolar para cima (como no Instagram) */
+@media (max-width: 991.98px) {
+    .topo { transition: transform .25s ease; will-change: transform; }
+    html.topo-oculto .topo { transform: translateY(-100%); }
+}

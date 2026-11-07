@@ -1,0 +1,125 @@
+@* Itens do menu: usado no menu lateral (computador) e na página /menu (celular) *@
+@inject AuthService AuthService
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+@inject ToastService Toast
+
+@if (AuthService.UsuarioLogado is { } usuario)
+{
+    <a href="/u/@usuario.Id" class="cartao-usuario" @onclick="Fechar">
+        <Avatar Usuario="usuario" Tamanho="52" />
+        <div class="min-w-0">
+            <div class="fw-bold text-dark text-truncate">@usuario.Nome</div>
+            <div class="small text-muted">Ver meu perfil público</div>
+        </div>
+        <i class="bi bi-chevron-right text-muted ms-auto"></i>
+    </a>
+}
+else
+{
+    <div class="cartao-convidado">
+        <div class="fw-bold text-dark mb-1">Entre na sua conta 🐾</div>
+        <div class="small text-muted mb-3">Para adotar, anunciar e conversar com ONGs e tutores.</div>
+        <div class="d-grid gap-2">
+            <a href="/login" class="btn btn-primary" @onclick="Fechar">Entrar</a>
+            <a href="/cadastro" class="btn btn-outline-primary" @onclick="Fechar">Criar conta grátis</a>
+        </div>
+    </div>
+}
+
+@if (AuthService.UsuarioLogado is { } eu)
+{
+    <div class="grupo">Minha conta</div>
+    <a href="/mensagens" class="item" @onclick="Fechar"><i class="bi bi-chat-dots"></i> Mensagens @if (NaoLidas > 0) { <span class="badge bg-primary ms-auto">@NaoLidas</span> }</a>
+    <a href="/notificacoes" class="item" @onclick="Fechar"><i class="bi bi-bell"></i> Notificações @if (Notificacoes > 0) { <span class="badge bg-danger ms-auto">@Notificacoes</span> }</a>
+    <a href="/amigos" class="item" @onclick="Fechar"><i class="bi bi-person-heart"></i> Amigos @if (Pedidos > 0) { <span class="badge bg-danger ms-auto">@Pedidos</span> }</a>
+    <a href="/meus-pets" class="item" @onclick="Fechar"><i class="bi bi-collection"></i> Meus anúncios</a>
+    <a href="/favoritos" class="item" @onclick="Fechar"><i class="bi bi-heart"></i> Favoritos</a>
+    <a href="/questionario-adocao" class="item" @onclick="Fechar"><i class="bi bi-clipboard-heart"></i> Questionário de adoção</a>
+    @if (eu.EhAdmin)
+    {
+        <a href="/admin" class="item item-admin" @onclick="Fechar"><i class="bi bi-shield-check"></i> Painel do administrador @if (PendenciasAdmin > 0) { <span class="badge bg-danger ms-auto">@PendenciasAdmin</span> }</a>
+    }
+    <a href="/perfil" class="item" @onclick="Fechar">
+        <i class="bi bi-person-gear"></i> Configurações da conta
+        @if (eu.StatusValidacaoDocumento != "Aprovado") { <span class="badge bg-warning text-dark ms-auto">verificar</span> }
+    </a>
+}
+
+<div class="grupo">Navegar</div>
+<a href="/" class="item" @onclick="Fechar"><i class="bi bi-house-door"></i> Início</a>
+<a href="/pets" class="item" @onclick="Fechar"><i class="bi bi-search-heart"></i> Adotar um pet</a>
+<a href="/bazar" class="item" @onclick="Fechar"><i class="bi bi-gift"></i> Bazar Solidário</a>
+<a href="/comunidade" class="item" @onclick="Fechar"><i class="bi bi-people"></i> Comunidade</a>
+<a href="/ongs" class="item" @onclick="Fechar"><i class="bi bi-building-check"></i> ONGs parceiras</a>
+<a href="/final-feliz" class="item" @onclick="Fechar"><i class="bi bi-stars"></i> Final Feliz</a>
+<a href="/estatisticas" class="item" @onclick="Fechar"><i class="bi bi-bar-chart-line"></i> Estatísticas</a>
+<a href="/sobre" class="item" @onclick="Fechar"><i class="bi bi-info-circle"></i> Sobre o projeto</a>
+
+<div class="grupo">Preferências</div>
+<button class="item" @onclick="AlternarTema" role="switch" aria-checked="@escuro">
+    <i class="bi @(escuro ? "bi-moon-stars-fill" : "bi-moon-stars")"></i> Modo escuro
+    <span class="interruptor ms-auto @(escuro ? "ligado" : "")" aria-hidden="true"><span></span></span>
+</button>
+@if (podeInstalar)
+{
+    <button class="item" @onclick="Instalar"><i class="bi bi-phone"></i> Instalar o aplicativo</button>
+}
+else if (ehIos)
+{
+    <div class="item small text-muted" style="cursor:default"><i class="bi bi-phone"></i> No iPhone: toque em <i class="bi bi-box-arrow-up"></i> e em "Adicionar à Tela de Início"</div>
+}
+<a href="/avaliar" class="item" @onclick="Fechar"><i class="bi bi-clipboard-data"></i> Avaliar o site</a>
+<a href="/privacidade" class="item" @onclick="Fechar"><i class="bi bi-shield-lock"></i> Privacidade e termos</a>
+
+@if (AuthService.EstaLogado)
+{
+    <button class="item text-danger mt-2" @onclick="Sair"><i class="bi bi-box-arrow-right"></i> Sair</button>
+}
+
+@code {
+    [Parameter] public int NaoLidas { get; set; }
+    [Parameter] public int Notificacoes { get; set; }
+    [Parameter] public int Pedidos { get; set; }
+    [Parameter] public int PendenciasAdmin { get; set; }
+    [Parameter] public EventCallback AoFechar { get; set; }
+
+    private bool escuro, podeInstalar, ehIos;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        try
+        {
+            escuro = await JS.InvokeAsync<string>("mpTema", (object?)null) == "escuro";
+            ehIos = await JS.InvokeAsync<bool>("mpEhIos");
+            podeInstalar = await JS.InvokeAsync<bool>("mpPodeInstalar");
+            StateHasChanged();
+        }
+        catch { }
+    }
+
+    private Task Fechar() => AoFechar.InvokeAsync();
+
+    private async Task AlternarTema()
+    {
+        try { escuro = await JS.InvokeAsync<string>("mpTema", escuro ? "claro" : "escuro") == "escuro"; } catch { }
+    }
+
+    private async Task Instalar()
+    {
+        try
+        {
+            if (await JS.InvokeAsync<bool>("mpInstalar")) Toast.Sucesso("Match-Pet instalado! Procure o ícone na tela inicial. 📱");
+        }
+        catch { }
+        podeInstalar = false;
+    }
+
+    private async Task Sair()
+    {
+        await Fechar();
+        await AuthService.LogoutAsync();
+        Nav.NavigateTo("/");
+    }
+}

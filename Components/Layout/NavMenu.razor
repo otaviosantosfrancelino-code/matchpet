@@ -5,8 +5,6 @@
 @inject NotificacaoService Notificacoes
 @inject NavigationManager Nav
 @inject ModeracaoService Moderacao
-@inject IJSRuntime JS
-@inject ToastService Toast
 @implements IDisposable
 
 @* ===== BARRA SUPERIOR ===== *@
@@ -74,7 +72,7 @@
                         </div>
                     }
                 </div>
-                <button class="usuario" type="button" @onclick="ToggleMenu" aria-label="Abrir menu da conta" aria-expanded="@menuAberto">
+                <button class="usuario d-none d-lg-flex" type="button" @onclick="ToggleMenu" aria-label="Abrir menu da conta" aria-expanded="@menuAberto">
                     <Avatar Usuario="u" Tamanho="34" />
                     <span class="d-none d-xl-inline text-truncate" style="max-width:140px">@PrimeiroNome(u.Nome)</span>
                     <i class="bi bi-chevron-down small d-none d-xl-inline"></i>
@@ -97,70 +95,31 @@
     <NavLink href="/pets"><i class="bi bi-search-heart"></i><span>Adotar</span></NavLink>
     <a href="/pets/novo" class="central" aria-label="Anunciar"><span class="mais"><i class="bi bi-plus-lg"></i></span></a>
     <NavLink href="/comunidade"><i class="bi bi-people"></i><span>Comunidade</span></NavLink>
-    <button type="button" @onclick="ToggleMenu" class="@(menuAberto ? "active" : "") position-relative">
-        <i class="bi bi-list"></i><span>Menu</span>
-        @if (pedidos > 0) { <span class="ponto" aria-label="Novos pedidos de amizade"></span> }
-    </button>
+    @* Último botão: foto de perfil (logado) ou ícone de menu; abre a página /menu *@
+    <NavLink href="/menu" class="botao-menu position-relative" aria-label="Menu e minha conta">
+        @if (AuthService.UsuarioLogado is { } eu)
+        {
+            <span class="avatar-menu"><Avatar Usuario="eu" Tamanho="26" /></span>
+        }
+        else
+        {
+            <i class="bi bi-list"></i>
+        }
+        <span>Menu</span>
+        @if (pedidos + notificacoes > 0 || pendenciasAdmin > 0) { <span class="ponto" aria-label="Há novidades"></span> }
+    </NavLink>
 </nav>
 
-@* ===== MENU LATERAL (conta e demais páginas) ===== *@
+@* ===== MENU LATERAL (computador; no celular o menu é a página /menu) ===== *@
 <div class="menu-overlay @(menuAberto ? "active" : "")" @onclick="FecharMenu">
     <aside class="menu-content" @onclick:stopPropagation="true" aria-label="Menu">
         <div class="d-flex align-items-center justify-content-between mb-3">
             <span class="fw-bold text-dark fs-5">Menu</span>
             <button class="btn btn-light btn-icon" @onclick="FecharMenu" aria-label="Fechar menu"><i class="bi bi-x-lg"></i></button>
         </div>
-
-        @if (AuthService.UsuarioLogado is { } usuarioMenu)
+        @if (menuAberto)
         {
-            <a href="/u/@usuarioMenu.Id" class="cartao-usuario" @onclick="FecharMenu">
-                <Avatar Usuario="usuarioMenu" Tamanho="48" />
-                <div class="min-w-0">
-                    <div class="fw-bold text-dark text-truncate">@usuarioMenu.Nome</div>
-                    <div class="small text-muted">Ver meu perfil público</div>
-                </div>
-            </a>
-        }
-
-        <div class="grupo">Navegar</div>
-        <a href="/" class="item" @onclick="FecharMenu"><i class="bi bi-house-door"></i> Início</a>
-        <a href="/pets" class="item" @onclick="FecharMenu"><i class="bi bi-search-heart"></i> Adotar um pet</a>
-        <a href="/bazar" class="item" @onclick="FecharMenu"><i class="bi bi-gift"></i> Bazar Solidário</a>
-        <a href="/comunidade" class="item" @onclick="FecharMenu"><i class="bi bi-people"></i> Comunidade</a>
-        <a href="/ongs" class="item" @onclick="FecharMenu"><i class="bi bi-building-check"></i> ONGs parceiras</a>
-        <a href="/final-feliz" class="item" @onclick="FecharMenu"><i class="bi bi-stars"></i> Final Feliz</a>
-        <a href="/estatisticas" class="item" @onclick="FecharMenu"><i class="bi bi-bar-chart-line"></i> Estatísticas</a>
-        <a href="/sobre" class="item" @onclick="FecharMenu"><i class="bi bi-info-circle"></i> Sobre o projeto</a>
-
-        @if (AuthService.UsuarioLogado is { } eu)
-        {
-            <div class="grupo">Minha conta</div>
-            <a href="/mensagens" class="item" @onclick="FecharMenu"><i class="bi bi-chat-dots"></i> Mensagens @if (naoLidas > 0) { <span class="badge bg-primary ms-auto">@naoLidas</span> }</a>
-            <a href="/notificacoes" class="item" @onclick="FecharMenu"><i class="bi bi-bell"></i> Notificações @if (notificacoes > 0) { <span class="badge bg-danger ms-auto">@notificacoes</span> }</a>
-            <a href="/amigos" class="item" @onclick="FecharMenu"><i class="bi bi-person-heart"></i> Amigos @if (pedidos > 0) { <span class="badge bg-danger ms-auto">@pedidos</span> }</a>
-            <a href="/meus-pets" class="item" @onclick="FecharMenu"><i class="bi bi-collection"></i> Meus anúncios</a>
-            <a href="/favoritos" class="item" @onclick="FecharMenu"><i class="bi bi-heart"></i> Favoritos</a>
-            <a href="/questionario-adocao" class="item" @onclick="FecharMenu"><i class="bi bi-clipboard-heart"></i> Questionário de adoção</a>
-            @if (eu.EhAdmin)
-            {
-                <a href="/admin" class="item item-admin" @onclick="FecharMenu"><i class="bi bi-shield-check"></i> Painel do administrador @if (pendenciasAdmin > 0) { <span class="badge bg-danger ms-auto">@pendenciasAdmin</span> }</a>
-            }
-            <a href="/perfil" class="item" @onclick="FecharMenu">
-                <i class="bi bi-person-gear"></i> Configurações da conta
-                @if (eu.StatusValidacaoDocumento != "Aprovado") { <span class="badge bg-warning text-dark ms-auto">verificar</span> }
-            </a>
-            <div class="grupo">Preferências</div>
-            @Preferencias
-            <button class="item text-danger mt-2" @onclick="ExecutarSair"><i class="bi bi-box-arrow-right"></i> Sair</button>
-        }
-        else
-        {
-            <div class="mt-4 d-grid gap-2">
-                <a href="/login" class="btn btn-primary" @onclick="FecharMenu">Entrar</a>
-                <a href="/cadastro" class="btn btn-outline-primary" @onclick="FecharMenu">Criar conta grátis</a>
-            </div>
-            <div class="grupo">Preferências</div>
-            @Preferencias
+            <MenuConteudo NaoLidas="naoLidas" Notificacoes="notificacoes" Pedidos="pedidos" PendenciasAdmin="pendenciasAdmin" AoFechar="FecharMenu" />
         }
     </aside>
 </div>
@@ -170,54 +129,6 @@
     private int naoLidas, pedidos, notificacoes, pendenciasAdmin;
     private bool painelAberto;
     private int? usuarioContado;
-    private bool escuro, podeInstalar, ehIos;
-
-    // Preferências do menu lateral (tema e aplicativo)
-    private RenderFragment Preferencias => __builder =>
-    {
-        <button class="item" @onclick="AlternarTema" role="switch" aria-checked="@escuro">
-            <i class="bi @(escuro ? "bi-moon-stars-fill" : "bi-moon-stars")"></i> Modo escuro
-            <span class="interruptor ms-auto @(escuro ? "ligado" : "")" aria-hidden="true"><span></span></span>
-        </button>
-        @if (podeInstalar)
-        {
-            <button class="item" @onclick="Instalar"><i class="bi bi-phone"></i> Instalar o aplicativo</button>
-        }
-        else if (ehIos)
-        {
-            <div class="item small text-muted" style="cursor:default"><i class="bi bi-phone"></i> No iPhone: toque em <i class="bi bi-box-arrow-up"></i> e em "Adicionar à Tela de Início"</div>
-        }
-        <a href="/avaliar" class="item" @onclick="FecharMenu"><i class="bi bi-clipboard-data"></i> Avaliar o site</a>
-    };
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (!firstRender) return;
-        try
-        {
-            escuro = await JS.InvokeAsync<string>("mpTema", (object?)null) == "escuro";
-            ehIos = await JS.InvokeAsync<bool>("mpEhIos");
-            StateHasChanged();
-        }
-        catch { }
-    }
-
-    private async Task AlternarTema()
-    {
-        try { escuro = await JS.InvokeAsync<string>("mpTema", escuro ? "claro" : "escuro") == "escuro"; } catch { }
-    }
-
-    private async Task Instalar()
-    {
-        try
-        {
-            if (await JS.InvokeAsync<bool>("mpInstalar")) Toast.Sucesso("Match-Pet instalado! Procure o ícone na tela inicial. 📱");
-        }
-        catch { }
-        podeInstalar = false;
-        menuAberto = false;
-    }
-
     protected override async Task OnInitializedAsync()
     {
         AuthService.OnChage += AoMudarLogin;
@@ -269,11 +180,7 @@
         _ = InvokeAsync(async () => { await AtualizarContadores(); StateHasChanged(); });
     }
 
-    private async Task ToggleMenu()
-    {
-        menuAberto = !menuAberto;
-        if (menuAberto) { try { podeInstalar = await JS.InvokeAsync<bool>("mpPodeInstalar"); } catch { } }
-    }
+    private void ToggleMenu() => menuAberto = !menuAberto;
 
     private void AlternarPainel() => painelAberto = !painelAberto;
 
@@ -286,13 +193,6 @@
     private void FecharMenu() => menuAberto = false;
 
     private static string PrimeiroNome(string nome) => nome.Trim().Split(' ')[0];
-
-    private async Task ExecutarSair()
-    {
-        menuAberto = false;
-        await AuthService.LogoutAsync();
-        Nav.NavigateTo("/");
-    }
 
     public void Dispose()
     {

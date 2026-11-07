@@ -398,7 +398,7 @@ main > * { animation: entrarPagina .45s cubic-bezier(.2, .7, .2, 1) both; }
 /* Títulos e destaques */
 .eyebrow { background: var(--mp-primary-soft); padding: .35rem .8rem; border-radius: 999px; }
 .texto-gradiente { background: linear-gradient(120deg, var(--mp-primary), #7c3aed 55%, var(--mp-accent)); -webkit-background-clip: text; background-clip: text; color: transparent; }
-.secao { padding: clamp(3rem, 7vw, 5.5rem) 0; }
+.secao { padding-top: clamp(3rem, 7vw, 5.5rem); padding-bottom: clamp(3rem, 7vw, 5.5rem); }
 
 /* Botões com mais presença */
 .btn-primary { background-image: linear-gradient(135deg, #2563eb, #4f46e5); border: none; }
@@ -527,3 +527,7 @@ main:focus { outline: none; }
 @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
 }
+
+/* Nada pode passar da largura da tela: evita o "balanço" para os lados no celular */
+html, body { overflow-x: clip; max-width: 100%; }
+@supports not (overflow-x: clip) { body { overflow-x: hidden; } }

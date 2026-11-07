@@ -206,3 +206,18 @@ window.mpQr = async (id, texto) => {
     qr.make();
     el.innerHTML = qr.createSvgTag({ cellSize: 3, margin: 0, scalable: true });
 };
+
+// ----- CELULAR: a barra de cima some ao rolar para baixo e reaparece ao rolar para cima -----
+(() => {
+    let ultimo = window.scrollY, pendente = false;
+    const atualizar = () => {
+        pendente = false;
+        const y = Math.max(0, window.scrollY);
+        const raiz = document.documentElement;
+        if (window.innerWidth >= 992 || y < 80) raiz.classList.remove('topo-oculto');
+        else if (y > ultimo + 6) raiz.classList.add('topo-oculto');
+        else if (y < ultimo - 6) raiz.classList.remove('topo-oculto');
+        if (Math.abs(y - ultimo) > 6) ultimo = y;
+    };
+    window.addEventListener('scroll', () => { if (!pendente) { pendente = true; requestAnimationFrame(atualizar); } }, { passive: true });
+})();

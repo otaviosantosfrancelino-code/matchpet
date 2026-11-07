@@ -1,0 +1,34 @@
+@page "/menu"
+@inject AuthService AuthService
+@inject ChatService Chat
+@inject SocialService Social
+@inject NotificacaoService Notificacoes
+@inject ModeracaoService Moderacao
+
+<PageTitle>Menu | Match-Pet SP</PageTitle>
+
+@* No celular o menu é uma página inteira (aberta pelo último botão da barra de baixo) *@
+<div class="container py-3 py-md-4" style="max-width: 620px;">
+    <h1 class="h3 mb-3">Menu</h1>
+    <div class="mp-card p-2 p-sm-3">
+        <MenuConteudo NaoLidas="naoLidas" Notificacoes="notificacoes" Pedidos="pedidos" PendenciasAdmin="pendenciasAdmin" />
+    </div>
+    <p class="text-center small text-muted mt-3 mb-0">Match-Pet SP · TCC 2026</p>
+</div>
+
+@code {
+    private int naoLidas, notificacoes, pedidos, pendenciasAdmin;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (AuthService.UsuarioLogado is not { } u) return;
+        try
+        {
+            naoLidas = await Chat.ContarNaoLidasAsync(u.Id);
+            notificacoes = await Notificacoes.ContarNaoLidasAsync(u.Id);
+            pedidos = await Social.ContarPedidosAsync(u.Id);
+            pendenciasAdmin = u.EhAdmin ? await Moderacao.PendenciasAsync() : 0;
+        }
+        catch { /* banco indisponível: só não mostra os números */ }
+    }
+}
