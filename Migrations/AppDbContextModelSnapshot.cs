@@ -161,6 +161,9 @@ namespace crudcomdb.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<bool>("Aprovado")
+                        .HasColumnType("boolean");
+
                     b.Property<int>("AutorId")
                         .HasColumnType("integer");
 
@@ -312,6 +315,9 @@ namespace crudcomdb.Migrations
                         .HasColumnType("integer");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("Aprovado")
+                        .HasColumnType("boolean");
 
                     b.Property<int>("AutorId")
                         .HasColumnType("integer");
@@ -774,6 +780,9 @@ namespace crudcomdb.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<bool>("Aprovado")
+                        .HasColumnType("boolean");
+
                     b.Property<int>("AutorId")
                         .HasColumnType("integer");
 
@@ -882,6 +891,10 @@ namespace crudcomdb.Migrations
                         .HasMaxLength(600)
                         .HasColumnType("character varying(600)");
 
+                    b.Property<string>("BioPendente")
+                        .HasMaxLength(600)
+                        .HasColumnType("character varying(600)");
+
                     b.Property<bool>("Bloqueado")
                         .HasColumnType("boolean");
 
@@ -921,6 +934,9 @@ namespace crudcomdb.Migrations
                     b.Property<string>("DescricaoOng")
                         .HasColumnType("text");
 
+                    b.Property<string>("DescricaoOngPendente")
+                        .HasColumnType("text");
+
                     b.Property<string>("Documento")
                         .IsRequired()
                         .HasColumnType("text");
@@ -952,6 +968,9 @@ namespace crudcomdb.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("FotoPerfilBase64")
+                        .HasColumnType("text");
+
+                    b.Property<string>("FotoPerfilPendente")
                         .HasColumnType("text");
 
                     b.Property<string>("IpAceite")

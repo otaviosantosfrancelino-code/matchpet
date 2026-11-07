@@ -37,6 +37,13 @@ namespace crudcomdb.Services
                 UsuarioDoador = new Usuario { Id = p.UsuarioDoador!.Id, Nome = p.UsuarioDoador.Nome, Cidade = p.UsuarioDoador.Cidade, EhOng = p.UsuarioDoador.EhOng }
             });
 
+        // Moderação prévia: só administradores de verdade publicam sem aprovação.
+        // A conta de demonstração da banca (QR Code) também passa pela aprovação.
+        public static Task<bool> PublicaDiretoAsync(AppDbContext db, int usuarioId) =>
+            db.Usuarios.Where(u => u.Id == usuarioId).Select(u => u.EhAdmin && !u.ContaDemonstracao).FirstOrDefaultAsync();
+
+        public static bool PublicaDireto(Usuario? u) => u is { EhAdmin: true, ContaDemonstracao: false };
+
         // Guarda um arquivo enviado e devolve o endereço dele (/midia/{id})
         public static async Task<string> SalvarMidiaAsync(AppDbContext db, byte[] dados, string contentType, int usuarioId)
         {

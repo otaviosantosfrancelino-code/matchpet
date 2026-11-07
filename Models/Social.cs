@@ -38,6 +38,9 @@ namespace crudcomdb.Models
 
         public DateTime DataCriacao { get; set; } = DateTime.UtcNow;
 
+        // Moderação prévia: só aparece para os outros depois que o administrador aprovar
+        public bool Aprovado { get; set; } = true;
+
         public List<Curtida> Curtidas { get; set; } = new();
         public List<Comentario> Comentarios { get; set; } = new();
     }
@@ -60,6 +63,7 @@ namespace crudcomdb.Models
         [MaxLength(1000)]
         public string Texto { get; set; } = string.Empty;
         public DateTime DataCriacao { get; set; } = DateTime.UtcNow;
+        public bool Aprovado { get; set; } = true;
     }
 
     // Pedido de amizade. Vira amizade quando Status = "Aceita".
@@ -154,6 +158,7 @@ namespace crudcomdb.Models
 
         public string? FotoUrl { get; set; }
         public DateTime DataCriacao { get; set; } = DateTime.UtcNow;
+        public bool Aprovado { get; set; } = true;
     }
 }
 

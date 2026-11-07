@@ -49,8 +49,8 @@ namespace crudcomdb.Services
                 ItensDoados = await db.ItensDoacao.CountAsync(i => i.Status == "Doado"),
                 ItensDisponiveis = await db.ItensDoacao.CountAsync(i => i.Status == "Disponível"),
                 Conversas = await db.Conversas.CountAsync(),
-                Postagens = await db.Postagens.CountAsync(),
-                Depoimentos = await db.Depoimentos.CountAsync()
+                Postagens = await db.Postagens.CountAsync(p => p.Aprovado),
+                Depoimentos = await db.Depoimentos.CountAsync(d => d.Aprovado)
             };
 
             var tempos = adotados.Where(p => p.DataAdocao != null && p.DataAdocao > p.DataCadastro)

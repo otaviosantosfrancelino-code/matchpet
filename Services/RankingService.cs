@@ -92,12 +92,12 @@ namespace crudcomdb.Services
             var adocoes = await db.Pets.Where(p => ongs.Contains(p.UsuarioDoadorId) && p.Status == "Adotado" && p.DataAdocao >= inicio)
                 .GroupBy(p => p.UsuarioDoadorId).Select(g => new { Id = g.Key, N = g.Count() }).ToDictionaryAsync(x => x.Id, x => x.N);
             var curtidas = await db.Curtidas.Where(c => c.DataCriacao >= inicio)
-                .Join(db.Postagens.Where(p => ongs.Contains(p.AutorId)), c => c.PostagemId, p => p.Id, (c, p) => p.AutorId)
+                .Join(db.Postagens.Where(p => p.Aprovado && ongs.Contains(p.AutorId)), c => c.PostagemId, p => p.Id, (c, p) => p.AutorId)
                 .GroupBy(id => id).Select(g => new { Id = g.Key, N = g.Count() }).ToDictionaryAsync(x => x.Id, x => x.N);
             var amigos = await db.Amizades.Where(a => a.Status == "Aceita" && (ongs.Contains(a.SolicitanteId) || ongs.Contains(a.DestinatarioId)))
                 .Select(a => ongs.Contains(a.SolicitanteId) ? a.SolicitanteId : a.DestinatarioId)
                 .GroupBy(id => id).Select(g => new { Id = g.Key, N = g.Count() }).ToDictionaryAsync(x => x.Id, x => x.N);
-            var historias = await db.Depoimentos.Where(d => d.Pet != null && ongs.Contains(d.Pet.UsuarioDoadorId) && d.DataCriacao >= inicio)
+            var historias = await db.Depoimentos.Where(d => d.Aprovado && d.Pet != null && ongs.Contains(d.Pet.UsuarioDoadorId) && d.DataCriacao >= inicio)
                 .GroupBy(d => d.Pet!.UsuarioDoadorId).Select(g => new { Id = g.Key, N = g.Count() }).ToDictionaryAsync(x => x.Id, x => x.N);
 
             var pontuacao = ongs.Select(id =>

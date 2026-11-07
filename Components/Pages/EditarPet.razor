@@ -179,18 +179,17 @@
         if (mudouEspecie && EspeciesPermitidas.Validar(petParaEditar.Especie, petParaEditar.Raca) is string erroEspecie) { Toast.Aviso(erroEspecie); return; }
         // Moderação e remoção não podem ser desfeitas pelo dono do anúncio
         if (statusOriginal == EspeciesPermitidas.StatusModeracao || statusOriginal == ModeracaoService.StatusRemovido) petParaEditar.Status = statusOriginal;
-        else if (mudouEspecie && EspeciesPermitidas.PrecisaModeracao(petParaEditar.Especie) && petParaEditar.Status == "Disponível")
-        {
+        // Texto e fotos novos passam de novo pela aprovação antes de voltar ao catálogo (menos de administradores)
+        else if (petParaEditar.Status == "Disponível" && !Consultas.PublicaDireto(AuthService.UsuarioLogado))
             petParaEditar.Status = EspeciesPermitidas.StatusModeracao;
-            Toast.Info("Anúncios de aves passam pela moderação antes de voltar ao catálogo.");
-        }
         salvando = true;
         try
         {
             petParaEditar.FotoUrl = ""; // a capa é a 1ª imagem (não duplicamos a foto no banco)
             await PetRepository.UpdateAsync(petParaEditar);
             salvo = true;
-            Toast.Sucesso("Anúncio atualizado!");
+            if (petParaEditar.Status == EspeciesPermitidas.StatusModeracao) Toast.Info("Anúncio atualizado! Ele volta ao catálogo assim que a moderação aprovar as mudanças. 🛡️");
+            else Toast.Sucesso("Anúncio atualizado!");
             Nav.NavigateTo("/meus-pets");
         }
         catch (Exception ex) { Toast.Erro("Erro ao salvar: " + (ex.InnerException?.Message ?? ex.Message)); }

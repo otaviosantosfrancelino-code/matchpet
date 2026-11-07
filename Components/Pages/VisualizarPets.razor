@@ -24,7 +24,7 @@
         <div class="estado-vazio mx-auto" style="max-width:560px">
             <div class="emoji">🐾</div>
             <h4>@(pet?.Status == EspeciesPermitidas.StatusModeracao ? "Anúncio em análise" : "Pet não encontrado")</h4>
-            <p class="text-muted">@(pet?.Status == EspeciesPermitidas.StatusModeracao ? "Este anúncio de ave está sendo conferido pela moderação e logo aparece no catálogo." : "Este anúncio pode ter sido removido pelo doador ou pela moderação.")</p>
+            <p class="text-muted">@(pet?.Status == EspeciesPermitidas.StatusModeracao ? "Este anúncio está sendo conferido pela moderação e logo aparece no catálogo." : "Este anúncio pode ter sido removido pelo doador ou pela moderação.")</p>
             <a href="/pets" class="btn btn-primary">Voltar ao catálogo</a>
         </div>
     }
@@ -111,7 +111,7 @@
                 </div>
                 @if (pet.Status == EspeciesPermitidas.StatusModeracao)
                 {
-                    <div class="alert alert-warning small"><i class="bi bi-hourglass-split me-1"></i>Anúncio de ave em <b>análise pela moderação</b>. Ele aparece no catálogo assim que for aprovado.</div>
+                    <div class="alert alert-warning small"><i class="bi bi-hourglass-split me-1"></i>Anúncio <b>aguardando aprovação da moderação</b>. Ele aparece no catálogo assim que for aprovado.</div>
                 }
                 else if (pet.Status == ModeracaoService.StatusRemovido)
                 {

@@ -83,6 +83,7 @@
                                 <img src="@(d.FotoUrl ?? $"/imagens/pet/{d.PetFotoId}")" class="foto" alt="Foto da história" loading="lazy" />
                             }
                             <div class="p-3 p-md-4 flex-grow-1 min-w-0">
+                                @if (d.Pendente) { <div class="tag laranja mb-2"><i class="bi bi-hourglass-split"></i> Aguardando aprovação · só você vê</div> }
                                 <h3 class="h5 mb-2">“@d.Titulo”</h3>
                                 <p class="mb-3 text-muted" style="white-space:pre-line">@d.Texto</p>
                                 <div class="d-flex align-items-center gap-2 flex-wrap">
@@ -156,7 +157,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        depoimentos = await Social.DepoimentosAsync();
+        depoimentos = await Social.DepoimentosAsync(AuthService.UsuarioLogado?.Id);
         petsAdotados = await PetRepository.GetAdoptedPetsAsync();
         if (AuthService.UsuarioLogado is { } u) meusAdotados = await Social.PetsAdotadosPorAsync(u.Id);
     }
@@ -182,12 +183,13 @@
         publicando = true;
         try
         {
-            await Social.PublicarDepoimentoAsync(AuthService.UsuarioLogado!.Id, titulo, texto, petId == 0 ? null : petId, fotoUrl);
+            var direto = await Social.PublicarDepoimentoAsync(AuthService.UsuarioLogado!.Id, titulo, texto, petId == 0 ? null : petId, fotoUrl);
             titulo = texto = "";
             fotoUrl = null;
             petId = 0;
-            Toast.Sucesso("Sua história foi publicada! Obrigado por compartilhar 💛");
-            depoimentos = await Social.DepoimentosAsync();
+            if (direto) Toast.Sucesso("Sua história foi publicada! Obrigado por compartilhar 💛");
+            else Toast.Info("História enviada! Ela aparece na galeria depois que a moderação aprovar. Obrigado por compartilhar 💛");
+            depoimentos = await Social.DepoimentosAsync(AuthService.UsuarioLogado?.Id);
         }
         catch (Exception ex) { Toast.Erro("Não foi possível publicar: " + ex.Message); }
         finally { publicando = false; }
@@ -196,6 +198,6 @@
     private async Task Excluir(int id)
     {
         await Social.ExcluirDepoimentoAsync(id, AuthService.UsuarioLogado!.Id);
-        depoimentos = await Social.DepoimentosAsync();
+        depoimentos = await Social.DepoimentosAsync(AuthService.UsuarioLogado?.Id);
     }
 }

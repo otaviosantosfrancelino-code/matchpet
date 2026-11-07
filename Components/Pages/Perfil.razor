@@ -28,6 +28,10 @@
                         <span class="tag azul">@u.Classificacao</span>
                         @if (u.EhOng) { <span class="tag verde"><i class="bi bi-building-check"></i>ONG</span> }
                     </div>
+                    @if (u.FotoPerfilPendente != null || u.BioPendente != null || u.DescricaoOngPendente != null)
+                    {
+                        <div class="alert alert-warning small py-2 mt-3 mb-0 text-start"><i class="bi bi-hourglass-split me-1"></i>@(u.FotoPerfilPendente != null ? "Sua nova foto" : "Os textos novos do seu perfil")@(u.FotoPerfilPendente != null && (u.BioPendente != null || u.DescricaoOngPendente != null) ? " e os textos novos" : "") aguardam a aprovação da moderação.</div>
+                    }
 
                     <div class="status-doc mt-4 @ClasseStatus(u.StatusValidacaoDocumento)">
                         <i class="bi @IconeStatus(u.StatusValidacaoDocumento)"></i>
@@ -213,9 +217,14 @@
         try
         {
             var (bytes, tipo) = await LerImagem(e.File, 400);
-            AuthService.UsuarioLogado!.FotoPerfilBase64 = $"data:{tipo};base64,{Convert.ToBase64String(bytes)}";
+            var foto = $"data:{tipo};base64,{Convert.ToBase64String(bytes)}";
+            var eu = AuthService.UsuarioLogado!;
+            if (eu.ContaDemonstracao) { await SalvarPerfil(silencioso: true); return; }
+            // A foto nova fica aguardando a aprovação da moderação (administradores trocam na hora)
+            if (Consultas.PublicaDireto(eu)) eu.FotoPerfilBase64 = foto; else eu.FotoPerfilPendente = foto;
             await SalvarPerfil(silencioso: true);
-            Toast.Sucesso("Foto atualizada!");
+            if (Consultas.PublicaDireto(eu)) Toast.Sucesso("Foto atualizada!");
+            else Toast.Info("Foto enviada! Ela aparece no seu perfil depois que a moderação aprovar. 🛡️");
         }
         catch (Exception ex)
         {
@@ -294,13 +303,34 @@
         try
         {
             var u = AuthService.UsuarioLogado!;
+            var bioDigitada = u.Bio;
+            var descricaoDigitada = u.DescricaoOng;
             // O administrador pode ter aprovado o documento ou bloqueado a conta enquanto esta tela estava aberta
             if (!silencioso) await UsuarioRepository.SincronizarModeracaoAsync(u);
+
+            // Textos públicos novos ("Sobre mim" e descrição da ONG) só aparecem depois da aprovação da moderação
+            var emAprovacao = false;
+            if (!silencioso)
+            {
+                var direto = Consultas.PublicaDireto(u);
+                (string? publico, string? pendente) Moderar(string? digitado, string? publicado, string? pendenteAtual)
+                {
+                    var novo = string.IsNullOrWhiteSpace(digitado) ? null : digitado.Trim();
+                    if (direto) return (novo, null);
+                    if (novo == null) return (null, null);                               // apagar o texto não precisa de aprovação
+                    if (novo == (publicado ?? "").Trim()) return (publicado, pendenteAtual); // não mudou
+                    emAprovacao = true;
+                    return (publicado, novo);
+                }
+                (u.Bio, u.BioPendente) = Moderar(bioDigitada, u.Bio, u.BioPendente);
+                if (u.EhOng) (u.DescricaoOng, u.DescricaoOngPendente) = Moderar(descricaoDigitada, u.DescricaoOng, u.DescricaoOngPendente);
+            }
             u.DataUltimaAlteracao = DateTime.UtcNow;
             AuthService.AtualizarClassificacao(u);
             await UsuarioRepository.UpdateAsync(u);
             AuthService.NotifyStateChanged();
-            if (!silencioso) Toast.Sucesso("Perfil atualizado!");
+            if (emAprovacao) Toast.Info("Perfil salvo! Os textos novos aparecem no seu perfil público depois que a moderação aprovar. 🛡️");
+            else if (!silencioso) Toast.Sucesso("Perfil atualizado!");
         }
         catch (Exception ex)
         {

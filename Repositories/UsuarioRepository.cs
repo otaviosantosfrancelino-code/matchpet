@@ -57,7 +57,8 @@ namespace crudcomdb.Repositories
         public async Task SincronizarModeracaoAsync(Usuario usuario)
         {
             var atual = await _context.Usuarios.AsNoTracking().Where(u => u.Id == usuario.Id)
-                .Select(u => new { u.StatusValidacaoDocumento, u.DocumentoObservacao, u.DataValidacaoDocumento, u.FotoDocumentoBase64, u.EhAdmin, u.Bloqueado, u.MotivoBloqueio })
+                .Select(u => new { u.StatusValidacaoDocumento, u.DocumentoObservacao, u.DataValidacaoDocumento, u.FotoDocumentoBase64, u.EhAdmin, u.Bloqueado, u.MotivoBloqueio,
+                    u.Bio, u.BioPendente, u.FotoPerfilBase64, u.FotoPerfilPendente, u.ContaDemonstracao, u.DescricaoOng, u.DescricaoOngPendente })
                 .FirstOrDefaultAsync();
             if (atual == null) return;
             usuario.StatusValidacaoDocumento = atual.StatusValidacaoDocumento;
@@ -67,6 +68,13 @@ namespace crudcomdb.Repositories
             usuario.EhAdmin = atual.EhAdmin;
             usuario.Bloqueado = atual.Bloqueado;
             usuario.MotivoBloqueio = atual.MotivoBloqueio;
+            usuario.Bio = atual.Bio;
+            usuario.BioPendente = atual.BioPendente;
+            usuario.DescricaoOng = atual.DescricaoOng;
+            usuario.DescricaoOngPendente = atual.DescricaoOngPendente;
+            usuario.FotoPerfilBase64 = atual.FotoPerfilBase64;
+            usuario.FotoPerfilPendente = atual.FotoPerfilPendente;
+            usuario.ContaDemonstracao = atual.ContaDemonstracao;
         }
 
         public async Task AddAsync(Usuario usuario)

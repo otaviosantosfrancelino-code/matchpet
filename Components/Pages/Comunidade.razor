@@ -291,10 +291,11 @@
         publicando = true;
         try
         {
-            await Social.PublicarAsync(Eu.Value, texto, midiaUrl, tipoMidia, null);
+            var direto = await Social.PublicarAsync(Eu.Value, texto, midiaUrl, tipoMidia, null);
             texto = "";
             RemoverMidia();
-            Toast.Sucesso("Publicado! 🎉");
+            if (direto) Toast.Sucesso("Publicado! 🎉");
+            else Toast.Info("Publicação enviada! Ela aparece para todos depois que a moderação aprovar. 🛡️");
             aba = "todos";
             await CarregarFeed();
         }

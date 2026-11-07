@@ -46,7 +46,7 @@
                             <div class="position-relative overflow-hidden" style="aspect-ratio: 16/10;">
                                 @if (pet.Imagens.Any()) { <img src="@Url.Pet(pet.Imagens.First())" class="img-cover" alt="Foto de @pet.Nome" loading="lazy" /> }
                                 else { <div class="foto-vazia"><i class="bi bi-camera fs-2"></i></div> }
-                                <span class="badge position-absolute top-0 start-0 m-2 @CorStatus(pet.Status)">@pet.Status</span>
+                                <span class="badge position-absolute top-0 start-0 m-2 @CorStatus(pet.Status)">@(pet.Status == "Em Moderação" ? "Aguardando aprovação" : pet.Status)</span>
                             </div>
                             <div class="p-3 d-flex flex-column gap-2 flex-grow-1">
                                 <div class="d-flex justify-content-between align-items-start gap-2">
@@ -66,7 +66,7 @@
                                 }
                                 @if (pet.Status == EspeciesPermitidas.StatusModeracao)
                                 {
-                                    <div class="small text-info fw-semibold"><i class="bi bi-feather me-1"></i>Aguardando a moderação conferir a espécie da ave.</div>
+                                    <div class="small text-info fw-semibold"><i class="bi bi-hourglass-split me-1"></i>Aguardando a aprovação da moderação para aparecer no catálogo.</div>
                                 }
                                 else if (pet.Status == ModeracaoService.StatusRemovido)
                                 {
@@ -117,7 +117,7 @@
                             <div class="p-3 d-flex flex-column gap-2 flex-grow-1 min-w-0">
                                 <div class="d-flex justify-content-between gap-2">
                                     <h3 class="h6 mb-0 text-truncate" title="@item.Nome">@item.Nome</h3>
-                                    <span class="badge flex-shrink-0 @(item.Status == "Disponível" ? "bg-success" : "bg-secondary")">@item.Status</span>
+                                    <span class="badge flex-shrink-0 @(item.Status == "Disponível" ? "bg-success" : item.Status == "Em Moderação" ? "bg-info text-dark" : item.Status == "Removido" ? "bg-danger" : "bg-secondary")">@(item.Status == "Em Moderação" ? "Aguardando aprovação" : item.Status)</span>
                                 </div>
                                 <small class="text-muted">@item.Categoria · Para: @item.EspecieDestino</small>
                                 <div class="d-flex gap-1 mt-auto">

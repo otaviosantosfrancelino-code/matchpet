@@ -81,6 +81,10 @@ namespace crudcomdb.Models
         public bool EhAdmin { get; set; }               // acessa o Painel do administrador (/admin)
         public bool Bloqueado { get; set; }             // conta bloqueada não consegue entrar
         public bool ContaDemonstracao { get; set; }     // conta do QR Code da banca: vê tudo, mas dados pessoais aparecem mascarados e ações de moderação são simuladas
+        // Foto e "sobre mim" novos ficam aqui até o administrador aprovar
+        public string? FotoPerfilPendente { get; set; }
+        [MaxLength(600)] public string? BioPendente { get; set; }
+        public string? DescricaoOngPendente { get; set; }
         [MaxLength(300)] public string? MotivoBloqueio { get; set; }
 
         public DateTime DataCadastro { get; set; } = DateTime.UtcNow;

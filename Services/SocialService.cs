@@ -21,9 +21,9 @@ namespace crudcomdb.Services
         public const int PorPagina = 12;
 
         public record PostagemView(int Id, Usuario Autor, string Texto, string? MidiaUrl, string? TipoMidia,
-            int? PetId, string? PetNome, DateTime Data, int Curtidas, int Comentarios, bool Curti);
+            int? PetId, string? PetNome, DateTime Data, int Curtidas, int Comentarios, bool Curti, bool Pendente = false);
 
-        public record ComentarioView(int Id, Usuario Autor, string Texto, DateTime Data);
+        public record ComentarioView(int Id, Usuario Autor, string Texto, DateTime Data, bool Pendente = false);
 
         public record Perfil(Usuario Usuario, int Amigos, int Postagens, int PetsAnunciados, int PetsDoados, int PetsAdotados);
 
@@ -36,6 +36,8 @@ namespace crudcomdb.Services
         {
             await using var db = await _fabrica.CreateDbContextAsync();
             var q = db.Postagens.AsNoTracking();
+            // Publicação aguardando aprovação: só o próprio autor vê
+            q = q.Where(p => p.Aprovado || p.AutorId == eu);
 
             if (autorId != null) q = q.Where(p => p.AutorId == autorId);
             if (aba == "videos") q = q.Where(p => p.TipoMidia == "video");
@@ -52,23 +54,27 @@ namespace crudcomdb.Services
                     p.Id, p.AutorId, p.Texto, p.MidiaUrl, p.TipoMidia, p.PetId, p.DataCriacao,
                     PetNome = p.Pet != null ? p.Pet.Nome : null,
                     Curtidas = p.Curtidas.Count,
-                    Comentarios = p.Comentarios.Count,
-                    Curti = eu != null && p.Curtidas.Any(c => c.UsuarioId == eu)
+                    Comentarios = p.Comentarios.Count(c => c.Aprovado),
+                    Curti = eu != null && p.Curtidas.Any(c => c.UsuarioId == eu),
+                    p.Aprovado
                 })
                 .ToListAsync();
 
             var autores = await Consultas.UsuariosPublicosAsync(db, linhas.Select(l => l.AutorId));
             return linhas.Where(l => autores.ContainsKey(l.AutorId))
                 .Select(l => new PostagemView(l.Id, autores[l.AutorId], l.Texto, l.MidiaUrl, l.TipoMidia, l.PetId, l.PetNome,
-                    l.DataCriacao, l.Curtidas, l.Comentarios, l.Curti))
+                    l.DataCriacao, l.Curtidas, l.Comentarios, l.Curti, !l.Aprovado))
                 .ToList();
         }
 
-        public async Task PublicarAsync(int autorId, string texto, string? midiaUrl, string? tipoMidia, int? petId)
+            // Devolve true se já ficou visível (administrador) ou false se aguarda aprovação
+        public async Task<bool> PublicarAsync(int autorId, string texto, string? midiaUrl, string? tipoMidia, int? petId)
         {
             await using var db = await _fabrica.CreateDbContextAsync();
-            db.Postagens.Add(new Postagem { AutorId = autorId, Texto = texto.Trim(), MidiaUrl = midiaUrl, TipoMidia = tipoMidia, PetId = petId });
+            var direto = await Consultas.PublicaDiretoAsync(db, autorId);
+            db.Postagens.Add(new Postagem { AutorId = autorId, Texto = texto.Trim(), MidiaUrl = midiaUrl, TipoMidia = tipoMidia, PetId = petId, Aprovado = direto });
             await db.SaveChangesAsync();
+            return direto;
         }
 
         public async Task ExcluirPostagemAsync(int postagemId, int usuarioId)
@@ -101,26 +107,39 @@ namespace crudcomdb.Services
             return (existente == null, await db.Curtidas.CountAsync(c => c.PostagemId == postagemId));
         }
 
-        public async Task<List<ComentarioView>> ComentariosAsync(int postagemId)
+        // Comentários aprovados + os do próprio usuário que ainda aguardam aprovação
+        public async Task<List<ComentarioView>> ComentariosAsync(int postagemId, int? eu = null)
         {
             await using var db = await _fabrica.CreateDbContextAsync();
-            var linhas = await db.Comentarios.AsNoTracking().Where(c => c.PostagemId == postagemId)
-                .OrderBy(c => c.DataCriacao).Select(c => new { c.Id, c.AutorId, c.Texto, c.DataCriacao }).ToListAsync();
+            var linhas = await db.Comentarios.AsNoTracking().Where(c => c.PostagemId == postagemId && (c.Aprovado || c.AutorId == eu))
+                .OrderBy(c => c.DataCriacao).Select(c => new { c.Id, c.AutorId, c.Texto, c.DataCriacao, c.Aprovado }).ToListAsync();
             var autores = await Consultas.UsuariosPublicosAsync(db, linhas.Select(l => l.AutorId));
             return linhas.Where(l => autores.ContainsKey(l.AutorId))
-                .Select(l => new ComentarioView(l.Id, autores[l.AutorId], l.Texto, l.DataCriacao)).ToList();
+                .Select(l => new ComentarioView(l.Id, autores[l.AutorId], l.Texto, l.DataCriacao, !l.Aprovado)).ToList();
         }
 
-        public async Task ComentarAsync(int postagemId, int autorId, string texto)
+        // Devolve true se já ficou visível ou false se aguarda aprovação
+        public async Task<bool> ComentarAsync(int postagemId, int autorId, string texto)
         {
             await using var db = await _fabrica.CreateDbContextAsync();
-            db.Comentarios.Add(new Comentario { PostagemId = postagemId, AutorId = autorId, Texto = texto.Trim() });
+            var direto = await Consultas.PublicaDiretoAsync(db, autorId);
+            var comentario = new Comentario { PostagemId = postagemId, AutorId = autorId, Texto = texto.Trim(), Aprovado = direto };
+            db.Comentarios.Add(comentario);
             await db.SaveChangesAsync();
+            if (direto) await AvisarComentarioAsync(comentario.Id); // senão, avisa quando o administrador aprovar
+            return direto;
+        }
 
-            var donoId = await db.Postagens.Where(p => p.Id == postagemId).Select(p => p.AutorId).FirstOrDefaultAsync();
-            var nome = await NomeAsync(db, autorId);
-            var resumo = texto.Trim().Length > 60 ? texto.Trim()[..60] + "…" : texto.Trim();
-            await _notificacoes.CriarAsync(donoId, autorId, "comentario", $"{nome} comentou: “{resumo}”", $"/comunidade?post={postagemId}");
+        // Avisa o dono da publicação sobre um comentário (chamado na hora ou depois da aprovação)
+        public async Task AvisarComentarioAsync(int comentarioId)
+        {
+            await using var db = await _fabrica.CreateDbContextAsync();
+            var c = await db.Comentarios.AsNoTracking().Where(x => x.Id == comentarioId).Select(x => new { x.PostagemId, x.AutorId, x.Texto }).FirstOrDefaultAsync();
+            if (c == null) return;
+            var donoId = await db.Postagens.Where(p => p.Id == c.PostagemId).Select(p => p.AutorId).FirstOrDefaultAsync();
+            var nome = await NomeAsync(db, c.AutorId);
+            var resumo = c.Texto.Length > 60 ? c.Texto[..60] + "…" : c.Texto;
+            await _notificacoes.CriarAsync(donoId, c.AutorId, "comentario", $"{nome} comentou: “{resumo}”", $"/comunidade?post={c.PostagemId}");
         }
 
         private static async Task<string> NomeAsync(AppDbContext db, int usuarioId) =>
@@ -130,16 +149,16 @@ namespace crudcomdb.Services
         public async Task<PostagemView?> PostagemAsync(int postagemId, int? eu)
         {
             await using var db = await _fabrica.CreateDbContextAsync();
-            var p = await db.Postagens.AsNoTracking().Where(x => x.Id == postagemId)
+            var p = await db.Postagens.AsNoTracking().Where(x => x.Id == postagemId && (x.Aprovado || x.AutorId == eu))
                 .Select(x => new
                 {
                     x.Id, x.AutorId, x.Texto, x.MidiaUrl, x.TipoMidia, x.PetId, x.DataCriacao,
-                    PetNome = x.Pet != null ? x.Pet.Nome : null, Curtidas = x.Curtidas.Count, Comentarios = x.Comentarios.Count,
-                    Curti = eu != null && x.Curtidas.Any(c => c.UsuarioId == eu)
+                    PetNome = x.Pet != null ? x.Pet.Nome : null, Curtidas = x.Curtidas.Count, Comentarios = x.Comentarios.Count(c => c.Aprovado),
+                    Curti = eu != null && x.Curtidas.Any(c => c.UsuarioId == eu), x.Aprovado
                 }).FirstOrDefaultAsync();
             if (p == null) return null;
             var autor = (await Consultas.UsuariosPublicosAsync(db, new[] { p.AutorId })).GetValueOrDefault(p.AutorId);
-            return autor == null ? null : new PostagemView(p.Id, autor, p.Texto, p.MidiaUrl, p.TipoMidia, p.PetId, p.PetNome, p.DataCriacao, p.Curtidas, p.Comentarios, p.Curti);
+            return autor == null ? null : new PostagemView(p.Id, autor, p.Texto, p.MidiaUrl, p.TipoMidia, p.PetId, p.PetNome, p.DataCriacao, p.Curtidas, p.Comentarios, p.Curti, !p.Aprovado);
         }
 
         // ================= PERFIS =================
@@ -151,7 +170,7 @@ namespace crudcomdb.Services
             if (!usuarios.TryGetValue(usuarioId, out var u)) return null;
 
             var amigos = await db.Amizades.CountAsync(a => a.Status == "Aceita" && (a.SolicitanteId == usuarioId || a.DestinatarioId == usuarioId));
-            var postagens = await db.Postagens.CountAsync(p => p.AutorId == usuarioId);
+            var postagens = await db.Postagens.CountAsync(p => p.AutorId == usuarioId && p.Aprovado);
             var anunciados = await db.Pets.CountAsync(p => p.UsuarioDoadorId == usuarioId && p.Status != "Adotado");
             var doados = await db.Pets.CountAsync(p => p.UsuarioDoadorId == usuarioId && p.Status == "Adotado");
             var adotados = await db.Pets.CountAsync(p => p.AdotanteId == usuarioId);
@@ -290,37 +309,45 @@ namespace crudcomdb.Services
 
         // ================= DEPOIMENTOS (Final Feliz) =================
 
-        public record DepoimentoView(int Id, Usuario Autor, string Titulo, string Texto, string? FotoUrl, int? PetId, string? PetNome, int? PetFotoId, DateTime Data);
+        public record DepoimentoView(int Id, Usuario Autor, string Titulo, string Texto, string? FotoUrl, int? PetId, string? PetNome, int? PetFotoId, DateTime Data, bool Pendente = false);
 
-        public async Task<List<DepoimentoView>> DepoimentosAsync()
+        public async Task<List<DepoimentoView>> DepoimentosAsync(int? eu = null)
         {
             await using var db = await _fabrica.CreateDbContextAsync();
-            var linhas = await db.Depoimentos.AsNoTracking().OrderByDescending(d => d.DataCriacao)
+            var linhas = await db.Depoimentos.AsNoTracking().Where(d => d.Aprovado || d.AutorId == eu).OrderByDescending(d => d.DataCriacao)
                 .Select(d => new
                 {
-                    d.Id, d.AutorId, d.Titulo, d.Texto, d.FotoUrl, d.PetId, d.DataCriacao,
+                    d.Id, d.AutorId, d.Titulo, d.Texto, d.FotoUrl, d.PetId, d.DataCriacao, d.Aprovado,
                     PetNome = d.Pet != null ? d.Pet.Nome : null,
                     PetFotoId = d.Pet != null ? d.Pet.Imagens.OrderBy(i => i.Id).Select(i => (int?)i.Id).FirstOrDefault() : null
                 }).ToListAsync();
             var autores = await Consultas.UsuariosPublicosAsync(db, linhas.Select(l => l.AutorId));
             return linhas.Where(l => autores.ContainsKey(l.AutorId))
-                .Select(l => new DepoimentoView(l.Id, autores[l.AutorId], l.Titulo, l.Texto, l.FotoUrl, l.PetId, l.PetNome, l.PetFotoId, l.DataCriacao))
+                .Select(l => new DepoimentoView(l.Id, autores[l.AutorId], l.Titulo, l.Texto, l.FotoUrl, l.PetId, l.PetNome, l.PetFotoId, l.DataCriacao, !l.Aprovado))
                 .ToList();
         }
 
-        public async Task PublicarDepoimentoAsync(int autorId, string titulo, string texto, int? petId, string? fotoUrl)
+        // Devolve true se já ficou visível ou false se aguarda aprovação
+        public async Task<bool> PublicarDepoimentoAsync(int autorId, string titulo, string texto, int? petId, string? fotoUrl)
         {
             await using var db = await _fabrica.CreateDbContextAsync();
-            db.Depoimentos.Add(new Depoimento { AutorId = autorId, Titulo = titulo.Trim(), Texto = texto.Trim(), PetId = petId, FotoUrl = fotoUrl });
+            var direto = await Consultas.PublicaDiretoAsync(db, autorId);
+            var dep = new Depoimento { AutorId = autorId, Titulo = titulo.Trim(), Texto = texto.Trim(), PetId = petId, FotoUrl = fotoUrl, Aprovado = direto };
+            db.Depoimentos.Add(dep);
             await db.SaveChangesAsync();
+            if (direto) await AvisarDepoimentoAsync(dep.Id);
+            return direto;
+        }
 
-            // Quem doou o pet fica sabendo da história 💛
-            if (petId != null)
-            {
-                var pet = await db.Pets.Where(p => p.Id == petId).Select(p => new { p.UsuarioDoadorId, p.Nome }).FirstOrDefaultAsync();
-                if (pet != null)
-                    await _notificacoes.CriarAsync(pet.UsuarioDoadorId, autorId, "historia", $"{await NomeAsync(db, autorId)} contou como está a vida de {pet.Nome} no Final Feliz 💛", "/final-feliz");
-            }
+        // Quem doou o pet fica sabendo da história 💛 (na hora ou depois da aprovação)
+        public async Task AvisarDepoimentoAsync(int depoimentoId)
+        {
+            await using var db = await _fabrica.CreateDbContextAsync();
+            var d = await db.Depoimentos.AsNoTracking().Where(x => x.Id == depoimentoId).Select(x => new { x.AutorId, x.PetId }).FirstOrDefaultAsync();
+            if (d?.PetId == null) return;
+            var pet = await db.Pets.Where(p => p.Id == d.PetId).Select(p => new { p.UsuarioDoadorId, p.Nome }).FirstOrDefaultAsync();
+            if (pet != null)
+                await _notificacoes.CriarAsync(pet.UsuarioDoadorId, d.AutorId, "historia", $"{await NomeAsync(db, d.AutorId)} contou como está a vida de {pet.Nome} no Final Feliz 💛", "/final-feliz");
         }
 
         public async Task ExcluirDepoimentoAsync(int id, int autorId)

@@ -45,10 +45,17 @@
                     </div>
                     <div class="col-md-4">
                         <label class="form-label">Status</label>
-                        <InputSelect class="form-select" @bind-Value="item.Status">
-                            <option value="Disponível">Disponível</option>
-                            <option value="Doado">Doado</option>
-                        </InputSelect>
+                        @if (statusOriginal == EspeciesPermitidas.StatusModeracao || statusOriginal == ModeracaoService.StatusRemovido)
+                        {
+                            <input class="form-control" value="@(statusOriginal == ModeracaoService.StatusRemovido ? "Removido pela moderação" : "Aguardando aprovação")" disabled />
+                        }
+                        else
+                        {
+                            <InputSelect class="form-select" @bind-Value="item.Status">
+                                <option value="Disponível">Disponível</option>
+                                <option value="Doado">Doado</option>
+                            </InputSelect>
+                        }
                     </div>
                     <div class="col-md-4">
                         <label class="form-label">Categoria</label>
@@ -93,9 +100,12 @@
             return;
         }
         item = encontrado;
+        statusOriginal = encontrado.Status;
     }
 
     // Sai sem salvar: descarta o que foi alterado na memória
+    private string statusOriginal = "";
+
     private void DescartarAlteracoes() { if (!salvo && item != null) Db.ChangeTracker.Clear(); }
 
     private void Voltar()
@@ -133,9 +143,13 @@
         try
         {
             item!.FotoUrl = ""; // a capa é a 1ª imagem (não duplicamos a foto no banco)
+            // Moderação e remoção não podem ser desfeitas pelo dono; mudanças voltam para a aprovação
+            if (statusOriginal == EspeciesPermitidas.StatusModeracao || statusOriginal == ModeracaoService.StatusRemovido) item.Status = statusOriginal;
+            else if (item.Status == "Disponível" && !Consultas.PublicaDireto(AuthService.UsuarioLogado)) item.Status = EspeciesPermitidas.StatusModeracao;
             await ItemRepository.UpdateAsync(item);
             salvo = true;
-            Toast.Sucesso("Item atualizado!");
+            if (item.Status == EspeciesPermitidas.StatusModeracao) Toast.Info("Item atualizado! Ele volta ao Bazar assim que a moderação aprovar. 🛡️");
+            else Toast.Sucesso("Item atualizado!");
             Nav.NavigateTo("/meus-pets?aba=itens");
         }
         catch (Exception ex) { Toast.Erro("Erro ao salvar: " + (ex.InnerException?.Message ?? ex.Message)); }

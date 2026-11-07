@@ -77,7 +77,7 @@
                                 <option value="">Escolha a espécie da ave</option>
                                 @foreach (var ave in EspeciesPermitidas.AvesDomesticas) { <option value="@ave">@ave</option> }
                             </select>
-                            <div class="form-text text-warning"><i class="bi bi-feather me-1"></i>Anúncios de aves passam pela moderação antes de aparecer no catálogo.</div>
+                            <div class="form-text text-warning"><i class="bi bi-feather me-1"></i>A moderação confere a espécie antes de publicar.</div>
                         }
                         else
                         {
@@ -300,7 +300,8 @@
         if (string.IsNullOrWhiteSpace(novoPet.Raca) && novoPet.Especie != "Pássaro") novoPet.Raca = "SRD";
         // RN04: só animais domésticos
         if (EspeciesPermitidas.Validar(novoPet.Especie, novoPet.Raca) is string erroEspecie) { Toast.Aviso(erroEspecie); return; }
-        var emModeracao = EspeciesPermitidas.PrecisaModeracao(novoPet.Especie);
+        // Todo anúncio passa pela aprovação da moderação (menos os de administradores)
+        var emModeracao = !Consultas.PublicaDireto(AuthService.UsuarioLogado);
         novoPet.Status = emModeracao ? EspeciesPermitidas.StatusModeracao : "Disponível";
         novoPet.Nome = novoPet.Nome.Trim();
         novoPet.FotoUrl = ""; // a capa é a 1ª imagem (não duplicamos a foto no banco)
@@ -310,7 +311,7 @@
         try
         {
             await PetRepository.AddAsync(novoPet);
-            if (emModeracao) Toast.Info($"Anúncio de {novoPet.Nome} enviado! Aves passam pela moderação e logo aparecem no catálogo. 🐦");
+            if (emModeracao) Toast.Info($"Anúncio de {novoPet.Nome} enviado! Ele aparece no catálogo assim que a moderação aprovar. 🛡️");
             else Toast.Sucesso($"{novoPet.Nome} já está no catálogo! 🎉");
             Nav.NavigateTo("/meus-pets");
         }
@@ -326,12 +327,15 @@
         novoItem.EspecieDestino = especieDestinoItem == "Outros" && !string.IsNullOrWhiteSpace(especieDestinoPersonalizadaItem) ? especieDestinoPersonalizadaItem.Trim() : especieDestinoItem;
         novoItem.FotoUrl = "";
         novoItem.UsuarioDoadorId = AuthService.UsuarioLogado!.Id;
+        var itemEmModeracao = !Consultas.PublicaDireto(AuthService.UsuarioLogado);
+        novoItem.Status = itemEmModeracao ? EspeciesPermitidas.StatusModeracao : "Disponível";
 
         salvando = true;
         try
         {
             await ItemRepository.AddAsync(novoItem);
-            Toast.Sucesso("Doação publicada no Bazar Solidário! 🎁");
+            if (itemEmModeracao) Toast.Info("Doação enviada! Ela aparece no Bazar assim que a moderação aprovar. 🛡️");
+            else Toast.Sucesso("Doação publicada no Bazar Solidário! 🎁");
             Nav.NavigateTo("/meus-pets?aba=itens");
         }
         catch (Exception ex) { Toast.Erro("Erro ao publicar: " + (ex.InnerException?.Message ?? ex.Message)); }

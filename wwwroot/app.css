@@ -534,3 +534,8 @@ html, body { overflow-x: clip; max-width: 100%; }
 
 /* Com o menu lateral aberto, a página de trás não rola (nem ao chegar no fim do menu) */
 html:has(.menu-overlay.active) { overflow: hidden; scrollbar-gutter: stable; }
+
+/* Conteúdo aguardando aprovação da moderação (só o autor vê) */
+.post.pendente { border: 1.5px dashed #fbbf24; }
+.faixa-pendente { background: var(--mp-warning-soft); color: #b45309; font-size: .8rem; font-weight: 700; padding: .5rem 1rem; border-radius: var(--mp-radius) var(--mp-radius) 0 0; }
+[data-tema="escuro"] .faixa-pendente { color: #fcd34d; }

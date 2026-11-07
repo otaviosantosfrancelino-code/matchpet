@@ -214,7 +214,7 @@
         new("bi-person-vcard", "verde", "Identidade verificada com IA", "A foto do documento é lida por inteligência artificial e comparada ao cadastro. Fotos repetidas ou adulteradas são barradas."),
         new("bi-chat-heart", "azul", "Chat sem expor o telefone", "Toda a conversa acontece dentro do site. Telefone e endereço nunca são mostrados, e o mapa indica só a região."),
         new("bi-file-earmark-check", "verde", "Termo eletrônico rastreável", "Registra data, hora e IP das duas partes, com código de autenticidade, QR code e impressão digital SHA-256."),
-        new("bi-shield-check", "vermelho", "Moderação e denúncias", "Qualquer pessoa denuncia maus-tratos, venda ou golpes. A equipe remove conteúdos e bloqueia contas pelo painel."),
+        new("bi-shield-check", "vermelho", "Moderação prévia e denúncias", "Publicações, comentários, anúncios e fotos só aparecem depois de aprovados pela equipe. Qualquer pessoa também denuncia maus-tratos, venda ou golpes."),
     };
 
     private static readonly (string, string, string)[] Fluxo =
@@ -232,7 +232,7 @@
         ("RN01", "Um único cadastro por CPF ou CNPJ, com validação dos dígitos e consulta do CNPJ na Receita Federal."),
         ("RN02", "Só usuários com documento verificado podem enviar ou assinar o termo de adoção."),
         ("RN03", "O selo \"Usuário Verificado\" ou \"ONG Verificada\" depende da verificação do documento."),
-        ("RN04", "Só animais domésticos (Portaria Ibama nº 93/1998); anúncios de aves passam por moderação prévia."),
+        ("RN04", "Só animais domésticos (Portaria Ibama nº 93/1998) e nenhum conteúdo impróprio: tudo o que é publicado passa pela aprovação da moderação."),
         ("RN05", "Telefone e endereço do doador não são exibidos: o contato ocorre apenas pelo chat."),
         ("RN06", "Todo termo assinado gera registro permanente com data, hora, IP das partes e código de autenticidade."),
     };

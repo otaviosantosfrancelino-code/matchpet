@@ -66,7 +66,7 @@ else
             <div class="row g-3 mb-4">
                 <Pendente Icone="bi-flag-fill" Cor="vermelho" Titulo="Denúncias abertas" Total="@resumo.DenunciasAbertas" AoClicar='() => MudarAba("denuncias")' />
                 <Pendente Icone="bi-person-vcard" Cor="laranja" Titulo="Documentos em análise" Total="@resumo.DocumentosAnalise" AoClicar='() => MudarAba("documentos")' />
-                <Pendente Icone="bi-feather" Cor="azul" Titulo="Aves aguardando aprovação" Total="@resumo.PetsModeracao" AoClicar='() => MudarAba("aves")' />
+                <Pendente Icone="bi-hourglass-split" Cor="azul" Titulo="Conteúdos aguardando aprovação" Total="@resumo.Aprovacoes" AoClicar='() => MudarAba("aprovacoes")' />
                 <Pendente Icone="bi-person-slash" Cor="cinza" Titulo="Contas bloqueadas" Total="@resumo.Bloqueados" AoClicar='() => { filtroUsuarios = "bloqueados"; MudarAba("usuarios"); }' />
             </div>
 
@@ -198,28 +198,59 @@ else
                 </div>
             }
         }
-        else if (aba == "aves")
+        else if (aba == "aprovacoes")
         {
-            <div class="alert alert-info small"><i class="bi bi-feather me-1"></i>Anúncios de aves só entram no catálogo depois da sua aprovação. Confira se a espécie consta como <b>doméstica</b> no Anexo I da Portaria Ibama nº 93/1998 (ex.: calopsita, periquito-australiano, canário-belga, agapornis, manon).</div>
-            @if (aves == null) { <div class="skeleton" style="height:240px;border-radius:18px"></div> }
-            else if (aves.Count == 0)
+            <div class="alert alert-info small"><i class="bi bi-shield-lock me-1"></i>Tudo o que os usuários publicam (publicações, comentários, histórias, anúncios de pets e itens, foto e "sobre mim" do perfil) só aparece para o público <b>depois da sua aprovação</b>. Em anúncios de pets, confira se a espécie é doméstica (Portaria Ibama nº 93/1998).</div>
+            @if (pendentes == null) { <div class="skeleton" style="height:240px;border-radius:18px"></div> }
+            else if (pendentes.Count == 0)
             {
-                <div class="estado-vazio"><div class="emoji">🐦</div><h5>Nenhum anúncio aguardando</h5></div>
+                <div class="estado-vazio"><div class="emoji">✅</div><h5>Nada aguardando aprovação</h5><p class="text-muted mb-0">Tudo o que foi enviado já foi conferido.</p></div>
             }
             else
             {
-                <div class="row g-3">
-                    @foreach (var p in aves)
+                <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+                    @foreach (var grupo in pendentes.GroupBy(p => p.Tipo))
                     {
-                        <div class="col-12 col-sm-6 col-lg-4">
-                            <div class="d-grid gap-2">
-                                <PetCard Pet="p" MostrarBotao="false" />
-                                <div class="small text-muted text-center">Raça/espécie informada: <b>@p.Raca</b> · por @p.UsuarioDoador?.Nome</div>
-                                <div class="d-flex gap-2">
-                                    <button class="btn btn-success btn-sm flex-fill" disabled="@ocupado" @onclick="() => DecidirPet(p, true)"><i class="bi bi-check-lg me-1"></i>Aprovar</button>
-                                    <button class="btn btn-outline-danger btn-sm flex-fill" disabled="@ocupado" @onclick="() => DecidirPet(p, false)"><i class="bi bi-x-lg me-1"></i>Recusar</button>
+                        <button class="chip @(filtroPendentes == grupo.Key ? "ativo" : "")" @onclick="() => filtroPendentes = filtroPendentes == grupo.Key ? null : grupo.Key">
+                            @ModeracaoService.NomeTipoPendente(grupo.Key) <span class="badge rounded-pill bg-secondary ms-1">@grupo.Count()</span>
+                        </button>
+                    }
+                    <button class="btn btn-success btn-sm ms-auto" disabled="@ocupado" @onclick="AprovarTodos">
+                        <i class="bi bi-check2-all me-1"></i>Aprovar @(filtroPendentes == null ? "tudo" : "todos deste tipo") (@PendentesVisiveis.Count())
+                    </button>
+                </div>
+                <div class="row g-3">
+                    @foreach (var p in PendentesVisiveis)
+                    {
+                        <div class="col-md-6 col-xl-4">
+                            <article class="mp-card h-100 d-flex flex-column overflow-hidden">
+                                @if (p.VideoUrl != null)
+                                {
+                                    <video src="@p.VideoUrl" controls preload="metadata" class="midia-pendente"></video>
+                                }
+                                else if (p.ImagemUrl != null)
+                                {
+                                    <img src="@p.ImagemUrl" alt="" class="midia-pendente @(p.Tipo == "perfil" ? "perfil" : "")" loading="lazy" />
+                                }
+                                <div class="p-3 d-flex flex-column gap-2 flex-grow-1">
+                                    <div class="d-flex flex-wrap gap-1 align-items-center">
+                                        <span class="tag laranja">@ModeracaoService.NomeTipoPendente(p.Tipo)</span>
+                                        <small class="text-muted ms-auto">@Consultas.TempoRelativo(p.Data)</small>
+                                    </div>
+                                    <b class="text-dark text-break">@p.Titulo</b>
+                                    @if (!string.IsNullOrWhiteSpace(p.Texto))
+                                    {
+                                        <p class="small mb-0 texto-pendente">@p.Texto</p>
+                                    }
+                                    <div class="small text-muted">por <a href="/u/@p.AutorId" target="_blank" rel="noopener">@p.AutorNome</a>
+                                        @if (p.Link != null) { <span> · <a href="@p.Link" target="_blank" rel="noopener">abrir <i class="bi bi-box-arrow-up-right"></i></a></span> }
+                                    </div>
+                                    <div class="d-flex gap-2 mt-auto pt-1">
+                                        <button class="btn btn-success btn-sm flex-fill" disabled="@ocupado" @onclick="() => DecidirPendente(p, true)"><i class="bi bi-check-lg me-1"></i>Aprovar</button>
+                                        <button class="btn btn-outline-danger btn-sm flex-fill" disabled="@ocupado" @onclick="() => DecidirPendente(p, false)"><i class="bi bi-x-lg me-1"></i>Recusar</button>
+                                    </div>
                                 </div>
-                            </div>
+                            </article>
                         </div>
                     }
                 </div>
@@ -342,6 +373,9 @@ else
 <style>
     .abas-admin { display: flex; gap: .5rem; flex-wrap: wrap; }
     .foto-doc { width: 100%; max-height: 340px; object-fit: contain; background: #0f172a; border-radius: 12px; margin-bottom: .75rem; }
+    .midia-pendente { width: 100%; height: 190px; object-fit: cover; background: #0f172a; display: block; }
+    .midia-pendente.perfil { object-fit: contain; background: var(--mp-bg); }
+    .texto-pendente { white-space: pre-line; max-height: 140px; overflow: auto; background: var(--mp-bg); border-radius: 10px; padding: .5rem .65rem; }
     .lista-sus { padding-left: 1.2rem; }
     .lista-sus li { margin-bottom: .7rem; }
     .lista-sus .barra { height: 8px; background: var(--mp-line); border-radius: 99px; overflow: hidden; margin-top: .25rem; }
@@ -356,7 +390,7 @@ else
     private static readonly (string id, string rotulo, string icone)[] Abas =
     {
         ("visao", "Visão geral", "bi-speedometer2"), ("denuncias", "Denúncias", "bi-flag"), ("documentos", "Documentos", "bi-person-vcard"),
-        ("aves", "Aves", "bi-feather"), ("usuarios", "Usuários", "bi-people"), ("avaliacoes", "Avaliação SUS", "bi-clipboard-data"),
+        ("aprovacoes", "Aprovações", "bi-hourglass-split"), ("usuarios", "Usuários", "bi-people"), ("avaliacoes", "Avaliação SUS", "bi-clipboard-data"),
     };
 
     private string aba = "visao";
@@ -367,7 +401,9 @@ else
     private List<ModeracaoService.DocumentoPendente>? documentos;
     private readonly Dictionary<int, string?> fotosAbertas = new();
     private readonly Dictionary<int, string?> motivosRecusa = new();
-    private List<Pet>? aves;
+    private List<ModeracaoService.Pendente>? pendentes;
+    private string? filtroPendentes;
+    private IEnumerable<ModeracaoService.Pendente> PendentesVisiveis => (pendentes ?? new()).Where(p => filtroPendentes == null || p.Tipo == filtroPendentes);
     private List<ModeracaoService.UsuarioAdmin>? usuarios;
     private string? buscaUsuarios;
     private string filtroUsuarios = "todos";
@@ -377,13 +413,14 @@ else
     protected override async Task OnInitializedAsync()
     {
         if (!AuthService.EhAdmin) return;
-        if (Abas.Any(a => a.id == AbaQuery)) aba = AbaQuery!;
+        if (AbaQuery == "aves") aba = "aprovacoes";
+        else if (Abas.Any(a => a.id == AbaQuery)) aba = AbaQuery!;
         await Recarregar();
     }
 
     private int Pendencia(string id) => resumo == null ? 0 : id switch
     {
-        "denuncias" => resumo.DenunciasAbertas, "documentos" => resumo.DocumentosAnalise, "aves" => resumo.PetsModeracao, _ => 0
+        "denuncias" => resumo.DenunciasAbertas, "documentos" => resumo.DocumentosAnalise, "aprovacoes" => resumo.Aprovacoes, _ => 0
     };
 
     private async Task MudarAba(string id)
@@ -416,7 +453,7 @@ else
                 documentos = await Moderacao.DocumentosEmAnaliseAsync();
                 foreach (var d in documentos) motivosRecusa.TryAdd(d.UsuarioId, null);
                 break;
-            case "aves": aves = null; StateHasChanged(); aves = await Moderacao.PetsEmModeracaoAsync(); break;
+            case "aprovacoes": pendentes = null; StateHasChanged(); pendentes = await Moderacao.ListarPendentesAsync(); if (filtroPendentes != null && !pendentes.Any(p => p.Tipo == filtroPendentes)) filtroPendentes = null; break;
             case "usuarios": await CarregarUsuarios(); break;
             case "avaliacoes": sus = null; StateHasChanged(); sus = await Questionarios.ResultadoAsync(); break;
         }
@@ -480,8 +517,12 @@ else
         Executar(admin => Moderacao.DecidirDocumentoAsync(doc.UsuarioId, aprovar, motivosRecusa.GetValueOrDefault(doc.UsuarioId), admin),
             aprovar ? $"Documento de {doc.Nome} aprovado." : $"Documento de {doc.Nome} recusado.");
 
-    private Task DecidirPet(Pet p, bool aprovar) =>
-        Executar(admin => Moderacao.DecidirPetAsync(p.Id, aprovar, admin), aprovar ? $"{p.Nome} entrou no catálogo." : $"Anúncio de {p.Nome} recusado.");
+    private Task DecidirPendente(ModeracaoService.Pendente p, bool aprovar) =>
+        Executar(admin => Moderacao.DecidirPendenteAsync(p.Tipo, p.Id, aprovar, admin),
+            aprovar ? $"{ModeracaoService.NomeTipoPendente(p.Tipo)} aprovado(a): já está visível para todos." : $"{ModeracaoService.NomeTipoPendente(p.Tipo)} recusado(a).");
+
+    private Task AprovarTodos() =>
+        Executar(admin => Moderacao.AprovarTodosAsync(admin, filtroPendentes), "Conteúdos aprovados: já estão visíveis para todos.");
 
     private Task AlternarBloqueio(ModeracaoService.UsuarioAdmin u) =>
         Executar(_ => Moderacao.BloquearAsync(u.Id, !u.Bloqueado, "Bloqueado pela moderação"), u.Bloqueado ? $"{u.Nome} desbloqueado." : $"{u.Nome} bloqueado.");

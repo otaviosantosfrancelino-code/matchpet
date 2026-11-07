@@ -4,7 +4,11 @@
 @inject NavigationManager Nav
 @inject ToastService Toast
 
-<article class="mp-card post">
+<article class="mp-card post @(Post.Pendente ? "pendente" : "")">
+    @if (Post.Pendente)
+    {
+        <div class="faixa-pendente"><i class="bi bi-hourglass-split me-1"></i>Aguardando aprovação da moderação. Só você está vendo esta publicação.</div>
+    }
     <header class="d-flex align-items-center gap-2 p-3 pb-2">
         <a href="/u/@Post.Autor.Id"><Avatar Usuario="Post.Autor" Tamanho="42" /></a>
         <div class="min-w-0 flex-grow-1">
@@ -73,6 +77,7 @@
                         <div class="bolha">
                             <a href="/u/@c.Autor.Id" class="fw-bold text-dark text-decoration-none small">@c.Autor.Nome</a>
                             <div class="small">@c.Texto</div>
+                            @if (c.Pendente) { <div class="text-warning fw-semibold" style="font-size:.7rem"><i class="bi bi-hourglass-split"></i> aguardando aprovação</div> }
                             <div class="text-muted" style="font-size:.7rem">@Consultas.TempoRelativo(c.Data)</div>
                         </div>
                     </div>
@@ -132,7 +137,7 @@
     private async Task AlternarComentarios()
     {
         mostrarComentarios = !mostrarComentarios;
-        if (mostrarComentarios && comentarios == null) comentarios = await Social.ComentariosAsync(Post.Id);
+        if (mostrarComentarios && comentarios == null) comentarios = await Social.ComentariosAsync(Post.Id, AuthService.UsuarioLogado?.Id);
     }
 
     private async Task Comentar()
@@ -140,9 +145,10 @@
         if (string.IsNullOrWhiteSpace(novoComentario) || !AuthService.EstaLogado) return;
         var texto = novoComentario;
         novoComentario = "";
-        await Social.ComentarAsync(Post.Id, AuthService.UsuarioLogado!.Id, texto);
-        comentarios = await Social.ComentariosAsync(Post.Id);
-        totalComentarios = comentarios.Count;
+        var direto = await Social.ComentarAsync(Post.Id, AuthService.UsuarioLogado!.Id, texto);
+        if (!direto) Toast.Info("Comentário enviado! Ele aparece para todos depois que a moderação aprovar. 🛡️");
+        comentarios = await Social.ComentariosAsync(Post.Id, AuthService.UsuarioLogado?.Id);
+        totalComentarios = comentarios.Count(c => !c.Pendente);
     }
 
     private async Task Excluir()

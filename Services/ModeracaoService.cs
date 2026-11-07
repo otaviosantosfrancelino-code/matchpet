@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace crudcomdb.Services
 {
-    // Moderação (RF04): denúncias, conferência manual de documentos, anúncios de aves, bloqueio de contas
+    // Moderação (RF04): aprovação prévia de conteúdo, denúncias, conferência de documentos, bloqueio de contas
     // e os números do Painel do administrador.
     public class ModeracaoService
     {
@@ -14,9 +14,11 @@ namespace crudcomdb.Services
         private readonly NotificacaoService _notificacoes;
         private readonly CofreDocumentos _cofre;
         private readonly ILogger<ModeracaoService> _log;
+        private readonly SocialService _social;
 
-        public ModeracaoService(IDbContextFactory<AppDbContext> fabrica, NotificacaoService notificacoes, CofreDocumentos cofre, ILogger<ModeracaoService> log)
+        public ModeracaoService(IDbContextFactory<AppDbContext> fabrica, NotificacaoService notificacoes, CofreDocumentos cofre, SocialService social, ILogger<ModeracaoService> log)
         {
+            _social = social;
             _fabrica = fabrica;
             _notificacoes = notificacoes;
             _cofre = cofre;
@@ -282,24 +284,157 @@ namespace crudcomdb.Services
             _log.LogInformation("{Total} fotos de documento antigas foram criptografadas ou descartadas", antigos.Count);
         }
 
-        // ===================== ANÚNCIOS DE AVES (moderação prévia) =====================
+        // ===================== APROVAÇÕES (moderação prévia de tudo que é público) =====================
+        // Publicações, comentários, histórias, pets, itens do Bazar e foto/"sobre mim" do perfil
+        // só aparecem para os outros depois que um administrador aprova.
 
-        public async Task<List<Pet>> PetsEmModeracaoAsync()
+        public record Pendente(string Tipo, int Id, int AutorId, string AutorNome, string Titulo, string? Texto,
+            string? ImagemUrl, string? VideoUrl, string? Link, DateTime Data);
+
+        public static string NomeTipoPendente(string tipo) => tipo switch
+        {
+            "post" => "Publicação", "comentario" => "Comentário", "historia" => "História (Final Feliz)",
+            "pet" => "Anúncio de pet", "item" => "Item do Bazar", "perfil" => "Perfil (foto e textos)", _ => tipo
+        };
+
+        public async Task<int> ContarPendentesAsync()
         {
             await using var db = await _fabrica.CreateDbContextAsync();
-            return await Consultas.PetsLeves(db.Pets.Where(p => p.Status == EspeciesPermitidas.StatusModeracao).OrderBy(p => p.DataCadastro)).ToListAsync();
+            return await ContarPendentesAsync(db);
         }
 
-        public async Task DecidirPetAsync(int petId, bool aprovar, int adminId)
+        private static async Task<int> ContarPendentesAsync(AppDbContext db) =>
+            await db.Postagens.CountAsync(p => !p.Aprovado)
+            + await db.Comentarios.CountAsync(c => !c.Aprovado)
+            + await db.Depoimentos.CountAsync(d => !d.Aprovado)
+            + await db.Pets.CountAsync(p => p.Status == EspeciesPermitidas.StatusModeracao)
+            + await db.ItensDoacao.CountAsync(i => i.Status == EspeciesPermitidas.StatusModeracao)
+            + await db.Usuarios.CountAsync(u => u.FotoPerfilPendente != null || u.BioPendente != null || u.DescricaoOngPendente != null);
+
+        public async Task<List<Pendente>> ListarPendentesAsync()
         {
             await using var db = await _fabrica.CreateDbContextAsync();
-            var pet = await db.Pets.FirstOrDefaultAsync(p => p.Id == petId) ?? throw new InvalidOperationException("Pet não encontrado.");
-            pet.Status = aprovar ? "Disponível" : StatusRemovido;
+            var lista = new List<Pendente>();
+
+            var posts = await db.Postagens.AsNoTracking().Where(p => !p.Aprovado).OrderBy(p => p.DataCriacao).Take(100)
+                .Select(p => new { p.Id, p.AutorId, p.Texto, p.MidiaUrl, p.TipoMidia, p.DataCriacao }).ToListAsync();
+            lista.AddRange(posts.Select(p => new Pendente("post", p.Id, p.AutorId, "", "Publicação na Comunidade", p.Texto,
+                p.TipoMidia == "video" ? null : p.MidiaUrl, p.TipoMidia == "video" ? p.MidiaUrl : null, null, p.DataCriacao)));
+
+            var comentarios = await db.Comentarios.AsNoTracking().Where(c => !c.Aprovado).OrderBy(c => c.DataCriacao).Take(200)
+                .Select(c => new { c.Id, c.AutorId, c.Texto, c.PostagemId, c.DataCriacao }).ToListAsync();
+            lista.AddRange(comentarios.Select(c => new Pendente("comentario", c.Id, c.AutorId, "", "Comentário", c.Texto, null, null,
+                $"/comunidade?post={c.PostagemId}", c.DataCriacao)));
+
+            var historias = await db.Depoimentos.AsNoTracking().Where(d => !d.Aprovado).OrderBy(d => d.DataCriacao).Take(100)
+                .Select(d => new { d.Id, d.AutorId, d.Titulo, d.Texto, d.FotoUrl, d.DataCriacao }).ToListAsync();
+            lista.AddRange(historias.Select(d => new Pendente("historia", d.Id, d.AutorId, "", $"“{d.Titulo}”", d.Texto, d.FotoUrl, null, null, d.DataCriacao)));
+
+            var pets = await db.Pets.AsNoTracking().Where(p => p.Status == EspeciesPermitidas.StatusModeracao).OrderBy(p => p.DataCadastro).Take(100)
+                .Select(p => new { p.Id, p.UsuarioDoadorId, p.Nome, p.Especie, p.Raca, p.Descricao, p.DataCadastro,
+                    Foto = p.Imagens.OrderBy(i => i.Id).Select(i => (int?)i.Id).FirstOrDefault() }).ToListAsync();
+            lista.AddRange(pets.Select(p => new Pendente("pet", p.Id, p.UsuarioDoadorId, "", $"{p.Nome} · {p.Especie} ({p.Raca})", p.Descricao,
+                p.Foto != null ? $"/imagens/pet/{p.Foto}" : null, null, $"/pets/detalhes/{p.Id}", p.DataCadastro)));
+
+            var itens = await db.ItensDoacao.AsNoTracking().Where(i => i.Status == EspeciesPermitidas.StatusModeracao).OrderBy(i => i.DataCadastro).Take(100)
+                .Select(i => new { i.Id, i.UsuarioDoadorId, i.Nome, i.Categoria, i.Descricao, i.DataCadastro,
+                    Foto = i.Imagens.OrderBy(x => x.Id).Select(x => (int?)x.Id).FirstOrDefault() }).ToListAsync();
+            lista.AddRange(itens.Select(i => new Pendente("item", i.Id, i.UsuarioDoadorId, "", $"{i.Nome} · {i.Categoria}", i.Descricao,
+                i.Foto != null ? $"/imagens/item/{i.Foto}" : null, null, null, i.DataCadastro)));
+
+            var perfis = await db.Usuarios.AsNoTracking().Where(u => u.FotoPerfilPendente != null || u.BioPendente != null || u.DescricaoOngPendente != null).Take(100)
+                .Select(u => new { u.Id, u.FotoPerfilPendente, u.BioPendente, u.DescricaoOngPendente, Data = u.DataUltimaAlteracao ?? u.DataCadastro }).ToListAsync();
+            lista.AddRange(perfis.Select(u => new Pendente("perfil", u.Id, u.Id, "",
+                u.FotoPerfilPendente != null ? (u.BioPendente != null || u.DescricaoOngPendente != null ? "Nova foto e textos do perfil" : "Nova foto de perfil") : "Novos textos do perfil",
+                string.Join("\n\n", new[] { u.BioPendente is { } b ? $"Sobre mim: {b}" : null, u.DescricaoOngPendente is { } d ? $"Descrição da ONG: {d}" : null }.Where(t => t != null)),
+                u.FotoPerfilPendente, null, $"/u/{u.Id}", u.Data)));
+
+            var nomes = await Consultas.UsuariosPublicosAsync(db, lista.Select(p => p.AutorId));
+            return lista.Select(p => p with { AutorNome = nomes.GetValueOrDefault(p.AutorId)?.Nome ?? "Usuário" })
+                .OrderBy(p => p.Data).ToList();
+        }
+
+        public async Task DecidirPendenteAsync(string tipo, int id, bool aprovar, int adminId)
+        {
+            await using var db = await _fabrica.CreateDbContextAsync();
+            int? autor = null;
+            string texto = "";
+            string? link = null;
+
+            switch (tipo)
+            {
+                case "post":
+                    var post = await db.Postagens.FirstOrDefaultAsync(p => p.Id == id);
+                    if (post == null) return;
+                    autor = post.AutorId;
+                    if (aprovar) { post.Aprovado = true; texto = "Sua publicação foi aprovada e já aparece na Comunidade! 🎉"; link = $"/comunidade?post={id}"; }
+                    else { db.Postagens.Remove(post); texto = "Sua publicação não foi aprovada por não seguir os Termos de Uso."; link = "/privacidade#termos"; }
+                    break;
+                case "comentario":
+                    var com = await db.Comentarios.FirstOrDefaultAsync(c => c.Id == id);
+                    if (com == null) return;
+                    autor = com.AutorId;
+                    if (aprovar) com.Aprovado = true;
+                    else { db.Comentarios.Remove(com); texto = "Seu comentário não foi aprovado por não seguir os Termos de Uso."; link = "/privacidade#termos"; }
+                    break;
+                case "historia":
+                    var dep = await db.Depoimentos.FirstOrDefaultAsync(d => d.Id == id);
+                    if (dep == null) return;
+                    autor = dep.AutorId;
+                    if (aprovar) { dep.Aprovado = true; texto = "Sua história foi aprovada e já está na galeria Final Feliz! 💛"; link = "/final-feliz"; }
+                    else { db.Depoimentos.Remove(dep); texto = "Sua história não foi aprovada por não seguir os Termos de Uso."; link = "/privacidade#termos"; }
+                    break;
+                case "pet":
+                    var pet = await db.Pets.FirstOrDefaultAsync(p => p.Id == id);
+                    if (pet == null) return;
+                    autor = pet.UsuarioDoadorId;
+                    pet.Status = aprovar ? "Disponível" : StatusRemovido;
+                    texto = aprovar ? $"O anúncio de {pet.Nome} foi aprovado e já está no catálogo! 🎉"
+                                    : $"O anúncio de {pet.Nome} não foi aprovado: confira os Termos de Uso (só animais domésticos, sem venda e com fotos adequadas).";
+                    link = $"/pets/detalhes/{id}";
+                    break;
+                case "item":
+                    var item = await db.ItensDoacao.FirstOrDefaultAsync(i => i.Id == id);
+                    if (item == null) return;
+                    autor = item.UsuarioDoadorId;
+                    item.Status = aprovar ? "Disponível" : StatusRemovido;
+                    texto = aprovar ? $"Sua doação \"{item.Nome}\" foi aprovada e já está no Bazar! 🎁" : $"A doação \"{item.Nome}\" não foi aprovada por não seguir os Termos de Uso.";
+                    link = aprovar ? "/bazar" : "/meus-pets?aba=itens";
+                    break;
+                case "perfil":
+                    var u = await db.Usuarios.FirstOrDefaultAsync(x => x.Id == id);
+                    if (u == null) return;
+                    autor = u.Id;
+                    if (aprovar)
+                    {
+                        if (u.FotoPerfilPendente != null) u.FotoPerfilBase64 = u.FotoPerfilPendente;
+                        if (u.BioPendente != null) u.Bio = u.BioPendente;
+                        if (u.DescricaoOngPendente != null) u.DescricaoOng = u.DescricaoOngPendente;
+                        u.DataUltimaAlteracao = DateTime.UtcNow; // atualiza a foto guardada em cache nos navegadores
+                    }
+                    u.FotoPerfilPendente = null;
+                    u.BioPendente = null;
+                    u.DescricaoOngPendente = null;
+                    texto = aprovar ? "As mudanças do seu perfil foram aprovadas! ✅" : "As mudanças do seu perfil (foto ou \"sobre mim\") não foram aprovadas.";
+                    link = "/perfil";
+                    break;
+                default: return;
+            }
             await db.SaveChangesAsync();
-            await _notificacoes.CriarAsync(pet.UsuarioDoadorId, null, "moderacao",
-                aprovar ? $"O anúncio de {pet.Nome} foi aprovado e já está no catálogo! 🎉"
-                        : $"O anúncio de {pet.Nome} não foi aprovado: a espécie não consta como doméstica na Portaria Ibama nº 93/1998.", $"/pets/detalhes/{pet.Id}");
-            _log.LogInformation("Admin {Admin} {Decisao} o pet {Pet}", adminId, aprovar ? "aprovou" : "recusou", petId);
+
+            // Comentário e história aprovados: agora sim avisam o dono da publicação / do pet
+            if (aprovar && tipo == "comentario") await _social.AvisarComentarioAsync(id);
+            if (aprovar && tipo == "historia") await _social.AvisarDepoimentoAsync(id);
+            if (autor != null && texto != "") await _notificacoes.CriarAsync(autor.Value, null, "moderacao", texto, link);
+            _log.LogInformation("Admin {Admin} {Decisao} {Tipo} {Id}", adminId, aprovar ? "aprovou" : "recusou", tipo, id);
+        }
+
+        // Aprova de uma vez tudo o que está na fila (útil no dia da apresentação)
+        public async Task<int> AprovarTodosAsync(int adminId, string? tipo = null)
+        {
+            var pendentes = (await ListarPendentesAsync()).Where(p => tipo == null || p.Tipo == tipo).ToList();
+            foreach (var p in pendentes) await DecidirPendenteAsync(p.Tipo, p.Id, true, adminId);
+            return pendentes.Count;
         }
 
         // ===================== ACESSO PELO QR CODE DA BANCA =====================
@@ -341,7 +476,7 @@ namespace crudcomdb.Services
 
         // ===================== VISÃO GERAL =====================
 
-        public record Resumo(int Usuarios, int Ongs, int Verificados, int Bloqueados, int PetsDisponiveis, int PetsAdotados, int PetsModeracao,
+        public record Resumo(int Usuarios, int Ongs, int Verificados, int Bloqueados, int PetsDisponiveis, int PetsAdotados, int Aprovacoes,
             int TermosAssinados, int DenunciasAbertas, int DocumentosAnalise, int Avaliacoes, double MediaSus, List<(string Rotulo, int Valor)> CadastrosPorDia);
 
         public async Task<Resumo> ResumoAsync()
@@ -361,7 +496,7 @@ namespace crudcomdb.Services
                 await db.Usuarios.CountAsync(u => u.Bloqueado),
                 await db.Pets.CountAsync(p => p.Status == "Disponível"),
                 await db.Pets.CountAsync(p => p.Status == "Adotado"),
-                await db.Pets.CountAsync(p => p.Status == EspeciesPermitidas.StatusModeracao),
+                await ContarPendentesAsync(db),
                 await db.TermosAdocao.CountAsync(t => t.Status == "Assinado"),
                 await db.Denuncias.CountAsync(d => d.Status == "Aberta"),
                 await db.Usuarios.CountAsync(u => u.StatusValidacaoDocumento == "Em Análise" || u.StatusValidacaoDocumento == "Em Analise"),
@@ -376,7 +511,7 @@ namespace crudcomdb.Services
             await using var db = await _fabrica.CreateDbContextAsync();
             return await db.Denuncias.CountAsync(d => d.Status == "Aberta")
                  + await db.Usuarios.CountAsync(u => u.StatusValidacaoDocumento == "Em Análise" || u.StatusValidacaoDocumento == "Em Analise")
-                 + await db.Pets.CountAsync(p => p.Status == EspeciesPermitidas.StatusModeracao);
+                 + await ContarPendentesAsync(db);
         }
     }
 }
