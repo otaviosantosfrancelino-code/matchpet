@@ -102,6 +102,7 @@ using (var escopo = app.Services.CreateScope())
             await DadosDemonstracao.CriarAsync(db, log);
             await DadosDemonstracaoComunidade.CriarAsync(db, log);
             await DadosDemonstracaoV3.CriarAsync(db, log);
+            await DadosDemonstracaoPainel.CriarAsync(db, log);
         }
         await ContasBanca.PrepararAsync(db, app.Configuration, app.Environment, log);
         await escopo.ServiceProvider.GetRequiredService<ModeracaoService>().ProtegerDocumentosAntigosAsync();

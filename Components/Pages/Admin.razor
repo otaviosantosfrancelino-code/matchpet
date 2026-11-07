@@ -93,8 +93,83 @@ else
                 </div>
             }
 
-            <GraficoColunas Titulo="Novos cadastros por dia" Subtitulo="Últimos 14 dias" Unidade="Cadastros"
-                            Dados="@resumo.CadastrosPorDia.Select(d => new EstatisticasService.Barra(d.Rotulo, d.Valor)).ToList()" />
+            @if (painel == null)
+            {
+                <div class="row g-3 mb-4">@for (var i = 0; i < 4; i++) { <div class="col-6 col-lg-3"><div class="skeleton" style="height:110px;border-radius:18px"></div></div> }</div>
+            }
+            @if (painel != null)
+            {
+                <h2 class="h6 fw-bold text-muted text-uppercase small mb-2">Engajamento</h2>
+                <div class="row g-3 mb-4">
+                    <Kpi Icone="bi-person-plus" Rotulo="Cadastros na semana" Valor="@painel.CadastrosSemana" Detalhe="@($"{painel.TaxaVerificacao:0}% dos usuários verificados")" />
+                    <Kpi Icone="bi-house-heart" Rotulo="Adoções no mês" Valor="@painel.AdocoesMes" Detalhe="Últimos 30 dias" />
+                    <Kpi Icone="bi-chat-dots" Rotulo="Conversas no chat" Valor="@painel.Conversas" Detalhe="@($"{painel.Mensagens7Dias} mensagens em 7 dias")" />
+                    <Kpi Icone="bi-images" Rotulo="Comunidade" Valor="@painel.Publicacoes" Detalhe="@($"publicações · {painel.Comentarios} comentários · {painel.Historias} histórias")" />
+                </div>
+            }
+
+            <div class="row g-3 mb-4">
+                <div class="col-lg-6">
+                    <GraficoColunas Titulo="Novos cadastros por dia" Subtitulo="Últimos 14 dias" Unidade="Cadastros"
+                                    Dados="@resumo.CadastrosPorDia.Select(d => new EstatisticasService.Barra(d.Rotulo, d.Valor)).ToList()" />
+                </div>
+                @if (painel != null)
+                {
+                    <div class="col-lg-6">
+                        <GraficoColunas Titulo="Conteúdo enviado por dia" Subtitulo="Publicações, comentários e histórias · 14 dias" Unidade="Envios" Dados="@painel.ConteudoPorDia" />
+                    </div>
+                }
+            </div>
+
+            @if (painel != null)
+            {
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6 col-xl-4">
+                        <GraficoBarras Titulo="Situação dos documentos" Subtitulo="Verificação de identidade" Coluna="Situação" Unidade="Usuários" Dados="@painel.DocumentosPorSituacao" />
+                    </div>
+                    <div class="col-md-6 col-xl-4">
+                        <GraficoBarras Titulo="Pets por situação" Subtitulo="Todos os anúncios" Coluna="Situação" Unidade="Pets" Dados="@painel.PetsPorSituacao" />
+                    </div>
+                    <div class="col-md-6 col-xl-4">
+                        <GraficoBarras Titulo="Fila de aprovação" Subtitulo="O que aguarda a moderação" Coluna="Tipo" Unidade="Itens" Dados="@painel.PendentesPorTipo" />
+                    </div>
+                    <div class="col-md-6 col-xl-4">
+                        <GraficoBarras Titulo="Denúncias por motivo" Subtitulo="Desde o início" Coluna="Motivo" Unidade="Denúncias" Dados="@painel.DenunciasPorMotivo" />
+                    </div>
+                    <div class="col-md-6 col-xl-4">
+                        <GraficoBarras Titulo="Usuários por cidade" Subtitulo="As 7 cidades com mais cadastros" Coluna="Cidade" Unidade="Usuários" Dados="@painel.UsuariosPorCidade" />
+                    </div>
+                    <div class="col-md-6 col-xl-4">
+                        <div class="mp-card p-3 p-md-4 h-100">
+                            <h3 class="h6 fw-bold mb-1">Bazar Solidário</h3>
+                            <small class="text-muted">Doações de itens</small>
+                            <div class="d-flex gap-3 mt-3">
+                                <div class="flex-fill text-center p-3 rounded-4" style="background:var(--mp-success-soft)"><b class="fs-3 d-block text-dark">@painel.ItensDisponiveis</b><small class="text-muted">disponíveis</small></div>
+                                <div class="flex-fill text-center p-3 rounded-4" style="background:var(--mp-primary-soft)"><b class="fs-3 d-block text-dark">@painel.ItensDoados</b><small class="text-muted">já doados</small></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mp-card p-3 p-md-4">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h3 class="h6 fw-bold mb-0">Atividade recente</h3>
+                        <small class="text-muted">Últimos acontecimentos da plataforma</small>
+                    </div>
+                    <ul class="list-unstyled mb-0 atividade">
+                        @foreach (var a in painel.Recentes)
+                        {
+                            <li>
+                                <span class="icone-bolha @a.Cor"><i class="bi @a.Icone"></i></span>
+                                <span class="flex-grow-1 min-w-0">
+                                    @if (a.Link != null) { <a href="@a.Link" class="text-dark text-decoration-none">@a.Texto</a> } else { @a.Texto }
+                                </span>
+                                <small class="text-muted text-nowrap">@Consultas.TempoRelativo(a.Data)</small>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            }
         }
         else if (aba == "denuncias")
         {
@@ -376,6 +451,9 @@ else
     .midia-pendente { width: 100%; height: 190px; object-fit: cover; background: #0f172a; display: block; }
     .midia-pendente.perfil { object-fit: contain; background: var(--mp-bg); }
     .texto-pendente { white-space: pre-line; max-height: 140px; overflow: auto; background: var(--mp-bg); border-radius: 10px; padding: .5rem .65rem; }
+    .atividade li { display: flex; align-items: center; gap: .75rem; padding: .55rem 0; border-bottom: 1px solid var(--mp-line); font-size: .9rem; }
+    .atividade li:last-child { border-bottom: none; }
+    .atividade .icone-bolha { width: 36px; height: 36px; border-radius: 11px; font-size: 1rem; }
     .lista-sus { padding-left: 1.2rem; }
     .lista-sus li { margin-bottom: .7rem; }
     .lista-sus .barra { height: 8px; background: var(--mp-line); border-radius: 99px; overflow: hidden; margin-top: .25rem; }
@@ -409,6 +487,7 @@ else
     private string filtroUsuarios = "todos";
     private QuestionariosService.ResultadoSus? sus;
     private List<AcessoRapido> acessos = new();
+    private ModeracaoService.Painel? painel;
 
     protected override async Task OnInitializedAsync()
     {
@@ -441,6 +520,10 @@ else
         }
         catch { Toast.Erro("Não foi possível carregar o painel. Tente atualizar."); }
         finally { carregando = false; }
+
+        // Gráficos e atividade recente chegam logo depois dos números principais
+        StateHasChanged();
+        try { painel = await Moderacao.PainelAsync(); } catch { }
     }
 
     private async Task CarregarAba()

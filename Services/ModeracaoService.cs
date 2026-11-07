@@ -474,6 +474,91 @@ namespace crudcomdb.Services
             await db.AcessosRapidos.Where(a => a.Id == id).ExecuteUpdateAsync(s => s.SetProperty(a => a.Ativo, ativo));
         }
 
+        // ===================== PAINEL: GRÁFICOS E ATIVIDADE RECENTE =====================
+
+        public record Atividade(string Icone, string Cor, string Texto, string? Link, DateTime Data);
+
+        public record Painel(
+            int Publicacoes, int Comentarios, int Historias, int Conversas, int Mensagens7Dias, int ItensDisponiveis, int ItensDoados,
+            int CadastrosSemana, int AdocoesMes, double TaxaVerificacao,
+            List<EstatisticasService.Barra> DocumentosPorSituacao, List<EstatisticasService.Barra> PetsPorSituacao,
+            List<EstatisticasService.Barra> DenunciasPorMotivo, List<EstatisticasService.Barra> UsuariosPorCidade,
+            List<EstatisticasService.Barra> PendentesPorTipo, List<EstatisticasService.Barra> ConteudoPorDia,
+            List<Atividade> Recentes);
+
+        public async Task<Painel> PainelAsync()
+        {
+            await using var db = await _fabrica.CreateDbContextAsync();
+            var agora = DateTime.UtcNow;
+            var inicio = agora.Date.AddDays(-13);
+
+            List<EstatisticasService.Barra> Barras(IEnumerable<(string Rotulo, int Valor)> itens) =>
+                itens.Where(i => i.Valor > 0).OrderByDescending(i => i.Valor).Select(i => new EstatisticasService.Barra(i.Rotulo, i.Valor)).ToList();
+
+            var docs = await db.Usuarios.GroupBy(u => u.StatusValidacaoDocumento).Select(g => new { g.Key, N = g.Count() }).ToListAsync();
+            var pets = await db.Pets.GroupBy(p => p.Status).Select(g => new { g.Key, N = g.Count() }).ToListAsync();
+            var motivos = await db.Denuncias.GroupBy(d => d.Motivo).Select(g => new { g.Key, N = g.Count() }).ToListAsync();
+            var cidades = await db.Usuarios.GroupBy(u => u.Cidade).Select(g => new { g.Key, N = g.Count() }).OrderByDescending(x => x.N).Take(7).ToListAsync();
+
+            // Conteúdo enviado por dia (publicações + comentários + histórias)
+            var posts = await db.Postagens.Where(p => p.DataCriacao >= inicio).Select(p => p.DataCriacao).ToListAsync();
+            var coms = await db.Comentarios.Where(c => c.DataCriacao >= inicio).Select(c => c.DataCriacao).ToListAsync();
+            var hist = await db.Depoimentos.Where(d => d.DataCriacao >= inicio).Select(d => d.DataCriacao).ToListAsync();
+            var datas = posts.Concat(coms).Concat(hist).Select(d => d.Date).ToList();
+            var porDia = Enumerable.Range(0, 14).Select(i => inicio.AddDays(i))
+                .Select(d => new EstatisticasService.Barra(d.ToString("dd/MM"), datas.Count(x => x == d))).ToList();
+
+            var pendentes = new (string, int)[]
+            {
+                ("Publicações", await db.Postagens.CountAsync(p => !p.Aprovado)),
+                ("Comentários", await db.Comentarios.CountAsync(c => !c.Aprovado)),
+                ("Histórias", await db.Depoimentos.CountAsync(d => !d.Aprovado)),
+                ("Pets", await db.Pets.CountAsync(p => p.Status == EspeciesPermitidas.StatusModeracao)),
+                ("Itens do Bazar", await db.ItensDoacao.CountAsync(i => i.Status == EspeciesPermitidas.StatusModeracao)),
+                ("Perfis", await db.Usuarios.CountAsync(u => u.FotoPerfilPendente != null || u.BioPendente != null || u.DescricaoOngPendente != null)),
+            };
+
+            // Atividade recente: junta os últimos acontecimentos de cada tipo
+            var recentes = new List<Atividade>();
+            recentes.AddRange((await db.Usuarios.OrderByDescending(u => u.DataCadastro).Take(6)
+                .Select(u => new { u.Id, u.Nome, u.EhOng, u.DataCadastro }).ToListAsync())
+                .Select(u => new Atividade(u.EhOng ? "bi-building-add" : "bi-person-plus", "azul", $"{u.Nome} criou {(u.EhOng ? "a conta da ONG" : "uma conta")}", $"/u/{u.Id}", u.DataCadastro)));
+            recentes.AddRange((await db.TermosAdocao.Where(t => t.DataAssinatura != null).OrderByDescending(t => t.DataAssinatura).Take(4)
+                .Select(t => new { t.Codigo, Pet = t.Pet!.Nome, Data = t.DataAssinatura!.Value }).ToListAsync())
+                .Select(t => new Atividade("bi-file-earmark-check", "verde", $"Termo {t.Codigo} assinado: {t.Pet} foi adotado(a)", $"/verificar-termo/{t.Codigo}", t.Data)));
+            recentes.AddRange((await db.Denuncias.OrderByDescending(d => d.DataCriacao).Take(4)
+                .Select(d => new { d.Tipo, d.Motivo, d.Status, d.DataCriacao }).ToListAsync())
+                .Select(d => new Atividade("bi-flag", "vermelho", $"Denúncia de {NomeTipo(d.Tipo).ToLower()}: {d.Motivo.ToLower()} ({d.Status.ToLower()})", "/admin?aba=denuncias", d.DataCriacao)));
+            recentes.AddRange((await db.Pets.OrderByDescending(p => p.DataCadastro).Take(4)
+                .Select(p => new { p.Id, p.Nome, p.Status, p.DataCadastro }).ToListAsync())
+                .Select(p => new Atividade("bi-search-heart", "laranja",
+                    p.Status == EspeciesPermitidas.StatusModeracao ? $"{p.Nome} foi anunciado e aguarda aprovação" : $"{p.Nome} foi anunciado", $"/pets/detalhes/{p.Id}", p.DataCadastro)));
+            recentes.AddRange((await db.Postagens.OrderByDescending(p => p.DataCriacao).Take(4)
+                .Select(p => new { p.Id, p.Aprovado, p.DataCriacao, Autor = db.Usuarios.Where(u => u.Id == p.AutorId).Select(u => u.Nome).FirstOrDefault() }).ToListAsync())
+                .Select(p => new Atividade("bi-chat-square-text", "cinza",
+                    $"{p.Autor ?? "Alguém"} publicou na Comunidade{(p.Aprovado ? "" : " (aguarda aprovação)")}", p.Aprovado ? $"/comunidade?post={p.Id}" : "/admin?aba=aprovacoes", p.DataCriacao)));
+
+            var totalUsuarios = await db.Usuarios.CountAsync();
+            return new Painel(
+                await db.Postagens.CountAsync(p => p.Aprovado),
+                await db.Comentarios.CountAsync(c => c.Aprovado),
+                await db.Depoimentos.CountAsync(d => d.Aprovado),
+                await db.Conversas.CountAsync(),
+                await db.Mensagens.CountAsync(m => m.DataEnvio >= agora.AddDays(-7)),
+                await db.ItensDoacao.CountAsync(i => i.Status == "Disponível"),
+                await db.ItensDoacao.CountAsync(i => i.Status == "Doado"),
+                await db.Usuarios.CountAsync(u => u.DataCadastro >= agora.AddDays(-7)),
+                await db.Pets.CountAsync(p => p.Status == "Adotado" && p.DataAdocao >= agora.AddDays(-30)),
+                totalUsuarios == 0 ? 0 : 100.0 * docs.Where(d => d.Key == "Aprovado").Sum(d => d.N) / totalUsuarios,
+                Barras(docs.Select(d => (d.Key == "Em Analise" ? "Em Análise" : d.Key, d.N))),
+                Barras(pets.Select(p => (p.Key == EspeciesPermitidas.StatusModeracao ? "Aguardando aprovação" : p.Key, p.N))),
+                Barras(motivos.Select(m => (m.Key, m.N))),
+                cidades.Select(c => new EstatisticasService.Barra(c.Key, c.N)).ToList(),
+                Barras(pendentes),
+                porDia,
+                recentes.OrderByDescending(r => r.Data).Take(14).ToList());
+        }
+
         // ===================== VISÃO GERAL =====================
 
         public record Resumo(int Usuarios, int Ongs, int Verificados, int Bloqueados, int PetsDisponiveis, int PetsAdotados, int Aprovacoes,
