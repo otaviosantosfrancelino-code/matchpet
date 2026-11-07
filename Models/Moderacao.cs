@@ -61,6 +61,20 @@ namespace crudcomdb.Models
         public DateTime DataAtualizacao { get; set; } = DateTime.UtcNow;
     }
 
+    // Acesso rápido por QR Code (banner da apresentação): entra numa conta de demonstração sem digitar senha.
+    // Guardamos só o hash (SHA-256) do código; o código em si fica apenas no QR Code.
+    public class AcessoRapido
+    {
+        [Key] public int Id { get; set; }
+        [MaxLength(80)] public string Nome { get; set; } = "";
+        public string TokenHash { get; set; } = "";
+        public int UsuarioId { get; set; }
+        public bool Ativo { get; set; } = true;
+        public int Usos { get; set; }
+        public DateTime? UltimoUso { get; set; }
+        public DateTime DataCriacao { get; set; } = DateTime.UtcNow;
+    }
+
     // Avaliação de usabilidade com o questionário padronizado SUS (System Usability Scale)
     public class AvaliacaoUso
     {

@@ -80,6 +80,7 @@ namespace crudcomdb.Models
         // MODERAÇÃO
         public bool EhAdmin { get; set; }               // acessa o Painel do administrador (/admin)
         public bool Bloqueado { get; set; }             // conta bloqueada não consegue entrar
+        public bool ContaDemonstracao { get; set; }     // conta do QR Code da banca: vê tudo, mas dados pessoais aparecem mascarados e ações de moderação são simuladas
         [MaxLength(300)] public string? MotivoBloqueio { get; set; }
 
         public DateTime DataCadastro { get; set; } = DateTime.UtcNow;

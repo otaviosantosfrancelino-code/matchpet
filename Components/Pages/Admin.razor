@@ -33,6 +33,10 @@ else
             <button class="btn btn-light" @onclick="Recarregar" disabled="@carregando"><i class="bi bi-arrow-clockwise me-1"></i>Atualizar</button>
         </div>
 
+        @if (Demonstracao)
+        {
+            <div class="alert alert-info small"><i class="bi bi-mortarboard me-1"></i><b>Modo demonstração (banca):</b> você vê o painel completo, mas e-mails e documentos aparecem mascarados e as ações de moderação são apenas simuladas.</div>
+        }
         <nav class="abas-admin mb-4" aria-label="Seções do painel">
             @foreach (var (id, rotulo, icone) in Abas)
             {
@@ -65,6 +69,29 @@ else
                 <Pendente Icone="bi-feather" Cor="azul" Titulo="Aves aguardando aprovação" Total="@resumo.PetsModeracao" AoClicar='() => MudarAba("aves")' />
                 <Pendente Icone="bi-person-slash" Cor="cinza" Titulo="Contas bloqueadas" Total="@resumo.Bloqueados" AoClicar='() => { filtroUsuarios = "bloqueados"; MudarAba("usuarios"); }' />
             </div>
+
+            @if (acessos.Count > 0)
+            {
+                <h2 class="h6 fw-bold text-muted text-uppercase small mb-2">Acesso pelo QR Code da banca</h2>
+                <div class="row g-3 mb-4">
+                    @foreach (var a in acessos)
+                    {
+                        <div class="col-md-6">
+                            <div class="mp-card p-3 d-flex align-items-center gap-3 h-100">
+                                <span class="icone-bolha @(a.Ativo ? "verde" : "cinza")"><i class="bi bi-qr-code"></i></span>
+                                <div class="min-w-0 flex-grow-1">
+                                    <b class="d-block text-dark">@a.Nome</b>
+                                    <small class="text-muted">@(a.Ativo ? "Ativo" : "Desativado") · @a.Usos @(a.Usos == 1 ? "entrada" : "entradas")@(a.UltimoUso is { } u ? $" · última {Consultas.TempoRelativo(u)}" : "")</small>
+                                </div>
+                                <button class="btn btn-sm @(a.Ativo ? "btn-outline-danger" : "btn-success")" disabled="@ocupado"
+                                        @onclick='() => Executar(_ => Moderacao.AlternarAcessoRapidoAsync(a.Id, !a.Ativo), a.Ativo ? "QR Code desativado." : "QR Code reativado.")'>
+                                    @(a.Ativo ? "Desativar" : "Reativar")
+                                </button>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
 
             <GraficoColunas Titulo="Novos cadastros por dia" Subtitulo="Últimos 14 dias" Unidade="Cadastros"
                             Dados="@resumo.CadastrosPorDia.Select(d => new EstatisticasService.Barra(d.Rotulo, d.Valor)).ToList()" />
@@ -143,7 +170,7 @@ else
                                     <div class="min-w-0">
                                         <a href="/u/@doc.UsuarioId" target="_blank" rel="noopener" class="fw-bold text-dark">@doc.Nome</a>
                                         @if (doc.EhOng) { <span class="tag verde ms-1">ONG</span> }
-                                        <div class="small text-muted">@(doc.EhOng ? "CNPJ" : "CPF") do cadastro: <b>@DocumentoUtil.Formatar(doc.Documento)</b> · @doc.Cidade</div>
+                                        <div class="small text-muted">@(doc.EhOng ? "CNPJ" : "CPF") do cadastro: <b>@Doc(doc.Documento)</b> · @doc.Cidade</div>
                                     </div>
                                     <small class="text-muted text-nowrap">@(doc.Data != null ? Consultas.TempoRelativo(doc.Data.Value) : "")</small>
                                 </div>
@@ -231,9 +258,9 @@ else
                                             <a href="/u/@u.Id" target="_blank" rel="noopener" class="fw-bold text-dark">@u.Nome</a>
                                             @if (u.EhOng) { <span class="tag verde ms-1">ONG</span> }
                                             @if (u.EhAdmin) { <span class="tag azul ms-1">Admin</span> }
-                                            <div class="text-muted">@u.Email · @u.Cidade · desde @u.DataCadastro.ToString("dd/MM/yyyy")</div>
+                                            <div class="text-muted">@Email(u.Email) · @u.Cidade · desde @u.DataCadastro.ToString("dd/MM/yyyy")</div>
                                         </td>
-                                        <td class="text-nowrap">@DocumentoUtil.Formatar(u.Documento)</td>
+                                        <td class="text-nowrap">@Doc(u.Documento)</td>
                                         <td><span class="tag @(u.StatusDocumento == "Aprovado" ? "verde" : u.StatusDocumento == "Reprovado" ? "vermelho" : "laranja")">@u.StatusDocumento</span>@if (u.Bloqueado) { <span class="tag vermelho ms-1">Bloqueado</span> }</td>
                                         <td class="text-center">@u.Pets</td>
                                         <td class="text-center">@(u.Denuncias > 0 ? u.Denuncias : "–")</td>
@@ -345,6 +372,7 @@ else
     private string? buscaUsuarios;
     private string filtroUsuarios = "todos";
     private QuestionariosService.ResultadoSus? sus;
+    private List<AcessoRapido> acessos = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -371,6 +399,7 @@ else
         try
         {
             resumo = await Moderacao.ResumoAsync();
+            acessos = await Moderacao.AcessosRapidosAsync();
             await CarregarAba();
         }
         catch { Toast.Erro("Não foi possível carregar o painel. Tente atualizar."); }
@@ -407,8 +436,20 @@ else
     }
 
     // Toda ação confere de novo se quem clicou é administrador
+    // Conta de demonstração (QR Code da banca): vê tudo, mas com dados pessoais mascarados e ações apenas simuladas
+    private bool Demonstracao => AuthService.UsuarioLogado?.ContaDemonstracao == true;
+    private string Doc(string d) => Demonstracao ? MascararDoc(d) : DocumentoUtil.Formatar(d);
+    private string Email(string e) => Demonstracao ? MascararEmail(e) : e;
+    private static string MascararDoc(string d) { var f = DocumentoUtil.Formatar(d); return f.Length > 6 ? f[..3] + new string(f[3..^2].Select(c => char.IsLetterOrDigit(c) ? '•' : c).ToArray()) + f[^2..] : "•••"; }
+    private static string MascararEmail(string e) { var i = e.IndexOf('@'); return i <= 1 ? "•••" : e[0] + new string('•', Math.Min(i - 1, 6)) + e[i..]; }
+
     private async Task Executar(Func<int, Task> acao, string sucesso)
     {
+        if (Demonstracao)
+        {
+            Toast.Info("Modo demonstração: a ação funcionaria aqui, mas não é aplicada para manter os dados de exemplo para todos. ✅");
+            return;
+        }
         if (!AuthService.EhAdmin || ocupado) return;
         ocupado = true;
         try
@@ -416,6 +457,7 @@ else
             await acao(AuthService.UsuarioLogado!.Id);
             Toast.Sucesso(sucesso);
             resumo = await Moderacao.ResumoAsync();
+            acessos = await Moderacao.AcessosRapidosAsync();
             await CarregarAba();
         }
         catch (InvalidOperationException ex) { Toast.Erro(ex.Message); }
@@ -429,6 +471,7 @@ else
 
     private async Task AbrirFoto(int usuarioId)
     {
+        if (Demonstracao) { Toast.Info("Modo demonstração: as fotos de documentos não são exibidas para proteger os usuários (LGPD)."); return; }
         if (!AuthService.EhAdmin) return;
         fotosAbertas[usuarioId] = await Moderacao.AbrirDocumentoAsync(usuarioId, AuthService.UsuarioLogado!.Id);
     }

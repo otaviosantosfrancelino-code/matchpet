@@ -302,6 +302,43 @@ namespace crudcomdb.Services
             _log.LogInformation("Admin {Admin} {Decisao} o pet {Pet}", adminId, aprovar ? "aprovou" : "recusou", petId);
         }
 
+        // ===================== ACESSO PELO QR CODE DA BANCA =====================
+
+        public static string HashCodigo(string codigo) =>
+            Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(codigo.Trim())));
+
+        // Devolve a conta ligada ao código (ou null se o código não existir ou estiver desativado)
+        public async Task<Usuario?> UsuarioDoCodigoAsync(string? codigo, bool registrarUso)
+        {
+            if (string.IsNullOrWhiteSpace(codigo) || codigo.Length < 20 || codigo.Length > 100) return null;
+            var hash = HashCodigo(codigo);
+            await using var db = await _fabrica.CreateDbContextAsync();
+            var acesso = await db.AcessosRapidos.AsNoTracking().FirstOrDefaultAsync(a => a.TokenHash == hash && a.Ativo);
+            if (acesso == null) return null;
+            var usuario = await db.Usuarios.AsNoTracking().FirstOrDefaultAsync(u => u.Id == acesso.UsuarioId && !u.Bloqueado);
+            if (usuario != null && registrarUso)
+            {
+                // Várias pessoas entram ao mesmo tempo: o contador soma direto no banco (nenhuma entrada se perde)
+                await db.AcessosRapidos.Where(a => a.Id == acesso.Id).ExecuteUpdateAsync(s => s
+                    .SetProperty(a => a.Usos, a => a.Usos + 1)
+                    .SetProperty(a => a.UltimoUso, DateTime.UtcNow));
+                _log.LogInformation("Entrada pelo QR Code \"{Nome}\"", acesso.Nome);
+            }
+            return usuario;
+        }
+
+        public async Task<List<AcessoRapido>> AcessosRapidosAsync()
+        {
+            await using var db = await _fabrica.CreateDbContextAsync();
+            return await db.AcessosRapidos.AsNoTracking().OrderBy(a => a.Id).ToListAsync();
+        }
+
+        public async Task AlternarAcessoRapidoAsync(int id, bool ativo)
+        {
+            await using var db = await _fabrica.CreateDbContextAsync();
+            await db.AcessosRapidos.Where(a => a.Id == id).ExecuteUpdateAsync(s => s.SetProperty(a => a.Ativo, ativo));
+        }
+
         // ===================== VISÃO GERAL =====================
 
         public record Resumo(int Usuarios, int Ongs, int Verificados, int Bloqueados, int PetsDisponiveis, int PetsAdotados, int PetsModeracao,

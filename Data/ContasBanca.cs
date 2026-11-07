@@ -29,6 +29,7 @@ namespace crudcomdb.Data
                     .ExecuteUpdateAsync(s => s.SetProperty(u => u.EhAdmin, true));
 
             if (!ambiente.IsDevelopment()) return;
+            await CriarVisitanteMasterAsync(db, ambiente, log);
             if (await db.Usuarios.AnyAsync(u => u.Email == EmailAdmin)) return;
 
             log.LogInformation("Criando as contas da banca...");
@@ -114,6 +115,55 @@ namespace crudcomdb.Data
                 $"ONG:            {EmailOng}  /  {senhas[EmailOng]}\n\n" +
                 "O administrador acessa o painel em /admin. Para trocar uma senha, use \"Esqueci minha senha\" ou o perfil.\n");
             log.LogInformation("Contas da banca criadas. Senhas gravadas em {Arquivo}", Arquivo);
+        }
+
+        public const string EmailVisitante = "visitante@matchpet.example";
+        public const string ArquivoQr = "QR_BANCA.local.txt";
+
+        // Conta "Visitante Master" do QR Code do banner: vê tudo (inclusive o painel do administrador),
+        // mas com dados pessoais mascarados e ações de moderação apenas simuladas (ContaDemonstracao).
+        private static async Task CriarVisitanteMasterAsync(AppDbContext db, IWebHostEnvironment ambiente, ILogger log)
+        {
+            if (await db.AcessosRapidos.AnyAsync()) return;
+
+            var agora = DateTime.UtcNow;
+            var visitante = await db.Usuarios.FirstOrDefaultAsync(u => u.Email == EmailVisitante);
+            if (visitante == null)
+            {
+                visitante = new Usuario
+                {
+                    Nome = "Visitante Master", Email = EmailVisitante, Documento = DadosDemonstracao.GerarCpf("640187253"),
+                    Telefone = "(16) 3700-0000", Senha = SenhaService.GerarHash(GerarSenha() + GerarSenha()),
+                    CEP = "14400-000", Logradouro = "Av. Champagnat", Numero = "1808", Bairro = "Centro", Cidade = "Franca", Estado = "SP",
+                    Bio = "Conta de demonstração para a banca avaliadora do TCC. 🎓🐾",
+                    EhAdmin = true, ContaDemonstracao = true,
+                    StatusValidacaoDocumento = "Aprovado", DocumentoObservacao = "Conta de demonstração para a banca.", DataValidacaoDocumento = agora,
+                    Classificacao = "Usuário Verificado", EmailConfirmado = true, CodigoConfirmacao = "ISENTO",
+                    AceitouTermos = true, DataAceiteTermos = agora, IpAceite = "seed", DataCadastro = agora.AddDays(-30)
+                };
+                db.Usuarios.Add(visitante);
+                await db.SaveChangesAsync();
+
+                db.PerfisAdotante.Add(new PerfilAdotante
+                {
+                    UsuarioId = visitante.Id, Moradia = "Casa", MoradiaPropria = true, TemQuintal = true, TemCriancas = true,
+                    HorasSozinho = 4, JaTevePets = true, TodosConcordam = true, CienteDosCustos = true, AceitaAcompanhamento = true,
+                    Motivacao = "Conta de demonstração: questionário já respondido para mostrar a compatibilidade."
+                });
+                var pets = await db.Pets.Where(p => p.Status == "Disponível").OrderByDescending(p => p.Id).Select(p => p.Id).Take(3).ToListAsync();
+                db.Favoritos.AddRange(pets.Select(id => new Favorito { UsuarioId = visitante.Id, PetId = id }));
+            }
+
+            // Código aleatório de 32 caracteres: só o hash vai para o banco
+            var codigo = Convert.ToBase64String(RandomNumberGenerator.GetBytes(24)).Replace('+', '-').Replace('/', '_').TrimEnd('=');
+            db.AcessosRapidos.Add(new AcessoRapido { Nome = "QR Code do banner da banca", TokenHash = ModeracaoService.HashCodigo(codigo), UsuarioId = visitante.Id });
+            await db.SaveChangesAsync();
+
+            await File.WriteAllTextAsync(Path.Combine(ambiente.ContentRootPath, ArquivoQr),
+                "LINK DO QR CODE DA BANCA (arquivo local, NÃO enviar ao GitHub)\n" +
+                $"https://matchpet.onrender.com/banca/{codigo}\n\n" +
+                "Quem abrir este link entra como \"Visitante Master\". Para desativar, use o Painel do administrador > Visão geral.\n");
+            log.LogInformation("Acesso da banca por QR Code criado. Link gravado em {Arquivo}", ArquivoQr);
         }
 
         // 14 caracteres com letras, números e símbolo (sem caracteres parecidos como 0/O e l/1)

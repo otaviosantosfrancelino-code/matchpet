@@ -14,3 +14,4 @@ CONTAS_BANCA.local.txt
 
 # Resultados dos testes
 TestResults/
+*.local.png

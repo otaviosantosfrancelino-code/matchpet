@@ -1,0 +1,110 @@
+@page "/banca/{Codigo}"
+@layout Layout.TelaCheiaLayout
+@inject AuthService AuthService
+@inject ModeracaoService Moderacao
+@inject IUsuarioRepository Usuarios
+@inject LimiteTentativasService Limite
+@inject NavigationManager Nav
+@inject ToastService Toast
+
+<PageTitle>Bem-vindo(a), banca! | Match-Pet SP</PageTitle>
+
+@* Página aberta pelo QR Code do banner: entra na conta "Visitante Master" sem digitar senha.
+   Cada aparelho guarda a sua própria sessão, então várias pessoas podem usar a conta ao mesmo tempo. *@
+<div class="fundo-banca">
+    <div class="cartao-banca mp-card">
+        <img src="/logo-match-pet.png" alt="Match-Pet SP" class="logo" />
+
+        @if (carregando)
+        {
+            <div class="py-5"><div class="spinner-border text-primary"></div></div>
+        }
+        else if (visitante == null)
+        {
+            <div class="emoji">🔒</div>
+            <h1 class="h4">QR Code inválido ou desativado</h1>
+            <p class="text-muted">Este acesso não está mais disponível. Você ainda pode conhecer o site ou criar sua conta grátis.</p>
+            <div class="d-grid gap-2">
+                <a href="/" class="btn btn-primary btn-lg">Conhecer o Match-Pet</a>
+                <a href="/cadastro" class="btn btn-light">Criar minha conta</a>
+            </div>
+        }
+        else
+        {
+            <span class="eyebrow"><i class="bi bi-mortarboard"></i> Banca avaliadora</span>
+            <h1 class="h3 mt-3 mb-2">Entrar como <span class="destaque">Visitante Master</span>?</h1>
+            <p class="text-muted mb-4">Aqui você terá acesso a <b>tudo no site</b>: catálogo, chat, termo de adoção, comunidade e até o <b>painel do administrador</b>, sem precisar fazer login.</p>
+
+            <ul class="lista-banca text-start">
+                <li><i class="bi bi-check-circle-fill"></i> Conta já verificada e com questionário de adoção respondido</li>
+                <li><i class="bi bi-check-circle-fill"></i> Painel de moderação no modo demonstração (dados pessoais protegidos)</li>
+                <li><i class="bi bi-check-circle-fill"></i> Pode ser usada por várias pessoas ao mesmo tempo</li>
+            </ul>
+
+            <div class="d-grid gap-2 mt-4">
+                <button class="btn btn-primary btn-lg" @onclick="Entrar" disabled="@entrando">
+                    @if (entrando) { <span class="spinner-border spinner-border-sm me-2"></span> } else { <i class="bi bi-stars me-2"></i> }
+                    Entrar como Visitante Master
+                </button>
+                <a href="/cadastro" class="btn btn-outline-primary btn-lg">Prefiro criar minha conta</a>
+                <a href="/login" class="btn btn-ghost">Já tenho conta: entrar</a>
+            </div>
+            @if (AuthService.UsuarioLogado is { } atual && atual.Id != visitante.Id)
+            {
+                <p class="small text-muted mt-3 mb-0">Você está conectado como <b>@atual.Nome</b>. Ao entrar como visitante, essa sessão é trocada neste aparelho.</p>
+            }
+        }
+    </div>
+    <p class="rodape-banca">Match-Pet SP · Adoção responsável em Franca e região · TCC 2026</p>
+</div>
+
+<style>
+    .fundo-banca { min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1.25rem; gap: 1rem;
+        background: radial-gradient(900px 500px at 85% -10%, rgba(249,115,22,.35), transparent), linear-gradient(150deg, #1e3a8a 0%, #2563eb 55%, #7c3aed 100%); }
+    .cartao-banca { width: 100%; max-width: 460px; padding: clamp(1.5rem, 5vw, 2.5rem); text-align: center; border-radius: 28px; box-shadow: 0 30px 80px -20px rgba(0,0,0,.45); }
+    .cartao-banca .logo { height: 64px; margin-bottom: 1rem; }
+    .cartao-banca .emoji { font-size: 3rem; }
+    .cartao-banca .destaque { background: linear-gradient(90deg, #2563eb, #f97316); -webkit-background-clip: text; background-clip: text; color: transparent; }
+    .lista-banca { list-style: none; padding: 0; margin: 0; display: grid; gap: .5rem; font-size: .9rem; }
+    .lista-banca i { color: var(--mp-success); margin-right: .4rem; }
+    .rodape-banca { color: rgba(255,255,255,.8); font-size: .8rem; margin: 0; text-align: center; }
+</style>
+
+@code {
+    [Parameter] public string Codigo { get; set; } = "";
+    [CascadingParameter(Name = "IpCliente")] public string IpCliente { get; set; } = "";
+
+    private Usuario? visitante;
+    private bool carregando = true, entrando;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Evita que alguém fique "chutando" códigos
+        var chave = "qr:ip:" + IpCliente;
+        if (Limite.Bloqueio(chave, 20, TimeSpan.FromMinutes(15)) == null)
+        {
+            try { visitante = await Moderacao.UsuarioDoCodigoAsync(Codigo, registrarUso: false); } catch { }
+            if (visitante == null) Limite.Registrar(chave);
+        }
+        carregando = false;
+    }
+
+    private async Task Entrar()
+    {
+        if (entrando || visitante == null) return;
+        entrando = true;
+        try
+        {
+            // Confere de novo (o QR pode ter sido desativado) e carrega a conta completa
+            var conta = await Moderacao.UsuarioDoCodigoAsync(Codigo, registrarUso: true);
+            var usuario = conta == null ? null : await Usuarios.GetByIdAsync(conta.Id);
+            if (usuario == null) { visitante = null; return; }
+
+            await AuthService.LoginAsync(usuario);
+            Toast.Sucesso("Bem-vindo(a), banca! Fique à vontade para explorar tudo. 🐾");
+            Nav.NavigateTo("/", replace: true); // tira o código do histórico do navegador
+        }
+        catch { Toast.Erro("Não foi possível entrar agora. Tente novamente."); }
+        finally { entrando = false; }
+    }
+}

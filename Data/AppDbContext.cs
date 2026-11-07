@@ -32,6 +32,7 @@ namespace crudcomdb.Data
         public DbSet<Favorito> Favoritos { get; set; }
         public DbSet<PerfilAdotante> PerfisAdotante { get; set; }
         public DbSet<AvaliacaoUso> AvaliacoesUso { get; set; }
+        public DbSet<AcessoRapido> AcessosRapidos { get; set; }
 
         // Chaves de criptografia do site (sessões e documentos): ficam no banco para não se perderem a cada publicação
         public DbSet<DataProtectionKey> DataProtectionKeys { get; set; } = null!;
@@ -154,6 +155,10 @@ namespace crudcomdb.Data
             modelBuilder.Entity<PerfilAdotante>()
                 .HasOne<Usuario>().WithMany().HasForeignKey(p => p.UsuarioId).OnDelete(DeleteBehavior.Cascade);
             modelBuilder.Entity<PerfilAdotante>().HasIndex(p => p.UsuarioId).IsUnique();
+
+            modelBuilder.Entity<AcessoRapido>()
+                .HasOne<Usuario>().WithMany().HasForeignKey(a => a.UsuarioId).OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<AcessoRapido>().HasIndex(a => a.TokenHash).IsUnique();
 
             modelBuilder.Entity<AvaliacaoUso>()
                 .HasOne<Usuario>().WithMany().HasForeignKey(a => a.UsuarioId).OnDelete(DeleteBehavior.SetNull);

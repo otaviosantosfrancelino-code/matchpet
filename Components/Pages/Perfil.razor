@@ -284,6 +284,12 @@
 
     private async Task SalvarPerfil(bool silencioso = false)
     {
+        // Conta do QR Code da banca: usada por várias pessoas ao mesmo tempo, então ninguém altera os dados dela
+        if (AuthService.UsuarioLogado?.ContaDemonstracao == true)
+        {
+            Toast.Info("Esta é a conta de demonstração da banca: as alterações do perfil não são salvas. 😉");
+            return;
+        }
         salvando = true;
         try
         {

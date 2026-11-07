@@ -41,6 +41,48 @@ namespace crudcomdb.Migrations
                     b.ToTable("DataProtectionKeys");
                 });
 
+            modelBuilder.Entity("crudcomdb.Models.AcessoRapido", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("Ativo")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime>("DataCriacao")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("UltimoUso")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Usos")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("UsuarioId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique();
+
+                    b.HasIndex("UsuarioId");
+
+                    b.ToTable("AcessosRapidos");
+                });
+
             modelBuilder.Entity("crudcomdb.Models.Amizade", b =>
                 {
                     b.Property<int>("Id")
@@ -861,6 +903,9 @@ namespace crudcomdb.Migrations
                     b.Property<string>("CodigoConfirmacao")
                         .HasColumnType("text");
 
+                    b.Property<bool>("ContaDemonstracao")
+                        .HasColumnType("boolean");
+
                     b.Property<DateTime?>("DataAceiteTermos")
                         .HasColumnType("timestamp with time zone");
 
@@ -950,6 +995,15 @@ namespace crudcomdb.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Usuarios");
+                });
+
+            modelBuilder.Entity("crudcomdb.Models.AcessoRapido", b =>
+                {
+                    b.HasOne("crudcomdb.Models.Usuario", null)
+                        .WithMany()
+                        .HasForeignKey("UsuarioId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("crudcomdb.Models.Amizade", b =>
