@@ -561,3 +561,16 @@ html:has(.menu-overlay.active) { overflow: hidden; scrollbar-gutter: stable; }
 .paleta-cor { display: flex; flex-wrap: wrap; gap: .4rem; }
 .paleta-cor button { border: 1.5px solid var(--mp-line); background: var(--mp-surface); color: var(--mp-text); border-radius: 999px; padding: .35rem .8rem; font-size: .85rem; font-weight: 600; }
 .paleta-cor button.ativo { border-color: var(--mp-primary); background: var(--mp-primary-soft); color: var(--mp-primary); }
+
+/* ---------- CELULAR: rodapé travado como num aplicativo ----------
+   A página rola dentro da área do site (.page), e não a janela inteira.
+   Assim a barra de endereço do navegador não aparece e some durante a rolagem
+   e a barra de baixo (Início, Adotar, +, Comunidade, Menu) fica sempre parada. */
+@media (max-width: 991.98px) {
+    html, body { height: 100%; overflow: hidden; }
+    .page {
+        height: 100%; min-height: 0 !important;
+        overflow-y: auto; overflow-x: hidden;
+        overscroll-behavior-y: contain;
+    }
+}

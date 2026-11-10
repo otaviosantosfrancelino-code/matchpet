@@ -4,7 +4,11 @@
 document.documentElement.classList.add("anim");
 
 // Volta ao topo ao trocar de página
-window.mpRolarTopo = () => window.scrollTo({ top: 0, behavior: 'instant' });
+// Volta ao topo ao trocar de página (no celular quem rola é a área .page, não a janela)
+window.mpRolarTopo = () => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    document.querySelector('.page')?.scrollTo({ top: 0, behavior: 'instant' });
+};
 
 // Copiar texto (Pix etc.); devolve false se o navegador bloquear
 window.mpCopiar = async (texto) => {
@@ -209,15 +213,18 @@ window.mpQr = async (id, texto) => {
 
 // ----- CELULAR: a barra de cima some ao rolar para baixo e reaparece ao rolar para cima -----
 (() => {
-    let ultimo = window.scrollY, pendente = false;
+    // No celular quem rola é a área .page; no computador, a janela
+    const posicao = () => Math.max(0, window.scrollY, document.querySelector('.page')?.scrollTop || 0);
+    let ultimo = posicao(), pendente = false;
     const atualizar = () => {
         pendente = false;
-        const y = Math.max(0, window.scrollY);
+        const y = posicao();
         const raiz = document.documentElement;
         if (window.innerWidth >= 992 || y < 80) raiz.classList.remove('topo-oculto');
         else if (y > ultimo + 6) raiz.classList.add('topo-oculto');
         else if (y < ultimo - 6) raiz.classList.remove('topo-oculto');
         if (Math.abs(y - ultimo) > 6) ultimo = y;
     };
-    window.addEventListener('scroll', () => { if (!pendente) { pendente = true; requestAnimationFrame(atualizar); } }, { passive: true });
+    // capture: true recebe também a rolagem da área .page (o evento de rolagem de um elemento não sobe até a janela)
+    document.addEventListener('scroll', () => { if (!pendente) { pendente = true; requestAnimationFrame(atualizar); } }, { passive: true, capture: true });
 })();
