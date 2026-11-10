@@ -1,11 +1,11 @@
 // Service worker do Match-Pet (aplicativo instalável).
 // O site é Blazor Server (precisa de conexão em tempo real), então o service worker NÃO guarda páginas:
 // ele só mostra uma tela amigável quando a pessoa abre o app sem internet.
-const CACHE = 'matchpet-offline-v1';
+const CACHE = 'matchpet-offline-v2';
 const OFFLINE = '/offline.html';
 
 self.addEventListener('install', (e) => {
-    e.waitUntil(caches.open(CACHE).then((c) => c.addAll([OFFLINE, '/icones/icone-192.png'])).then(() => self.skipWaiting()));
+    e.waitUntil(caches.open(CACHE).then((c) => c.addAll([OFFLINE, '/icones/app-192.png'])).then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', (e) => {
