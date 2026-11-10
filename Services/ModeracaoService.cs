@@ -39,7 +39,7 @@ namespace crudcomdb.Services
 
         public static string NomeTipo(string tipo) => tipo switch
         {
-            "pet" => "Pet", "item" => "Item do Bazar", "post" => "Publicação", "comentario" => "Comentário", "usuario" => "Perfil", _ => tipo
+            "pet" => "Pet", "item" => "Item do Bazar", "achado" => "Anúncio de Achados e Perdidos", "post" => "Publicação", "comentario" => "Comentário", "usuario" => "Perfil", _ => tipo
         };
 
         // ===================== DENÚNCIAS =====================
@@ -47,7 +47,7 @@ namespace crudcomdb.Services
         // Devolve false se a pessoa já tinha denunciado o mesmo conteúdo (denúncia ainda aberta)
         public async Task<bool> DenunciarAsync(int denuncianteId, string tipo, int alvoId, string motivo, string? detalhes)
         {
-            if (!new[] { "pet", "item", "post", "comentario", "usuario" }.Contains(tipo)) throw new ArgumentException("Tipo inválido");
+            if (!new[] { "pet", "item", "post", "comentario", "usuario", "achado" }.Contains(tipo)) throw new ArgumentException("Tipo inválido");
             if (!Motivos.Contains(motivo)) motivo = "Outro motivo";
 
             await using var db = await _fabrica.CreateDbContextAsync();
@@ -103,6 +103,10 @@ namespace crudcomdb.Services
                 case "item":
                     var i = await db.ItensDoacao.AsNoTracking().Where(x => x.Id == id).Select(x => new { x.Nome, x.UsuarioDoadorId, x.Status }).FirstOrDefaultAsync();
                     return i == null ? ("Item excluído", null, null, false) : ($"{i.Nome} · {i.Status}", "/bazar", i.UsuarioDoadorId, i.Status != StatusRemovido);
+                case "achado":
+                    var ap = await db.AnimaisPerdidos.AsNoTracking().Where(x => x.Id == id).Select(x => new { x.Nome, x.Especie, x.Sexo, x.Tipo, x.UsuarioId, x.Status }).FirstOrDefaultAsync();
+                    return ap == null ? ("Anúncio excluído", null, null, false)
+                        : ($"{new AnimalPerdido { Nome = ap.Nome, Especie = ap.Especie, Sexo = ap.Sexo, Tipo = ap.Tipo }.Titulo} · {ap.Status}", $"/achados-e-perdidos/{id}", ap.UsuarioId, ap.Status != StatusRemovido);
                 case "post":
                     var po = await db.Postagens.AsNoTracking().Where(x => x.Id == id).Select(x => new { x.Texto, x.AutorId }).FirstOrDefaultAsync();
                     return po == null ? ("Publicação excluída", null, null, false) : ($"\"{ResumoTexto(po.Texto)}\"", $"/comunidade?post={id}", po.AutorId, true);
@@ -168,6 +172,7 @@ namespace crudcomdb.Services
                 // Pets e itens não são apagados: termos de adoção assinados precisam continuar existindo (prova jurídica)
                 case "pet": await db.Pets.Where(p => p.Id == id).ExecuteUpdateAsync(s => s.SetProperty(p => p.Status, StatusRemovido)); break;
                 case "item": await db.ItensDoacao.Where(i => i.Id == id).ExecuteUpdateAsync(s => s.SetProperty(i => i.Status, StatusRemovido)); break;
+                case "achado": await db.AnimaisPerdidos.Where(a => a.Id == id).ExecuteUpdateAsync(s => s.SetProperty(a => a.Status, StatusRemovido)); break;
                 case "post": await db.Postagens.Where(p => p.Id == id).ExecuteDeleteAsync(); break;
                 case "comentario": await db.Comentarios.Where(c => c.Id == id).ExecuteDeleteAsync(); break;
                 case "usuario": await BloquearAsync(db, id, true, "Perfil removido pela moderação"); break;
@@ -294,7 +299,7 @@ namespace crudcomdb.Services
         public static string NomeTipoPendente(string tipo) => tipo switch
         {
             "post" => "Publicação", "comentario" => "Comentário", "historia" => "História (Final Feliz)",
-            "pet" => "Anúncio de pet", "item" => "Item do Bazar", "perfil" => "Perfil (foto e textos)", _ => tipo
+            "pet" => "Anúncio de pet", "item" => "Item do Bazar", "achado" => "Achados e Perdidos", "perfil" => "Perfil (foto e textos)", _ => tipo
         };
 
         public async Task<int> ContarPendentesAsync()
@@ -309,6 +314,7 @@ namespace crudcomdb.Services
             + await db.Depoimentos.CountAsync(d => !d.Aprovado)
             + await db.Pets.CountAsync(p => p.Status == EspeciesPermitidas.StatusModeracao)
             + await db.ItensDoacao.CountAsync(i => i.Status == EspeciesPermitidas.StatusModeracao)
+            + await db.AnimaisPerdidos.CountAsync(a => a.Status == AchadosPerdidosService.StatusModeracao)
             + await db.Usuarios.CountAsync(u => u.FotoPerfilPendente != null || u.BioPendente != null || u.DescricaoOngPendente != null);
 
         public async Task<List<Pendente>> ListarPendentesAsync()
@@ -341,6 +347,13 @@ namespace crudcomdb.Services
                     Foto = i.Imagens.OrderBy(x => x.Id).Select(x => (int?)x.Id).FirstOrDefault() }).ToListAsync();
             lista.AddRange(itens.Select(i => new Pendente("item", i.Id, i.UsuarioDoadorId, "", $"{i.Nome} · {i.Categoria}", i.Descricao,
                 i.Foto != null ? $"/imagens/item/{i.Foto}" : null, null, null, i.DataCadastro)));
+
+            var achados = await db.AnimaisPerdidos.AsNoTracking().Where(a => a.Status == AchadosPerdidosService.StatusModeracao).OrderBy(a => a.DataCadastro).Take(100)
+                .Select(a => new { a.Id, a.UsuarioId, a.Nome, a.Especie, a.Sexo, a.Tipo, a.Cor, a.Bairro, a.Cidade, a.Descricao, a.DataCadastro,
+                    Foto = a.Imagens.OrderBy(i => i.Id).Select(i => (int?)i.Id).FirstOrDefault() }).ToListAsync();
+            lista.AddRange(achados.Select(a => new Pendente("achado", a.Id, a.UsuarioId, "",
+                $"{(a.Tipo == AnimalPerdido.TipoPerdido ? "🔴 Perdido" : "🟢 Encontrado")}: {new AnimalPerdido { Nome = a.Nome, Especie = a.Especie, Sexo = a.Sexo, Tipo = a.Tipo }.Titulo} · {a.Cor} · {a.Bairro}, {a.Cidade}",
+                a.Descricao, a.Foto != null ? $"/imagens/achado/{a.Foto}" : null, null, $"/achados-e-perdidos/{a.Id}", a.DataCadastro)));
 
             var perfis = await db.Usuarios.AsNoTracking().Where(u => u.FotoPerfilPendente != null || u.BioPendente != null || u.DescricaoOngPendente != null).Take(100)
                 .Select(u => new { u.Id, u.FotoPerfilPendente, u.BioPendente, u.DescricaoOngPendente, Data = u.DataUltimaAlteracao ?? u.DataCadastro }).ToListAsync();
@@ -400,6 +413,16 @@ namespace crudcomdb.Services
                     item.Status = aprovar ? "Disponível" : StatusRemovido;
                     texto = aprovar ? $"Sua doação \"{item.Nome}\" foi aprovada e já está no Bazar! 🎁" : $"A doação \"{item.Nome}\" não foi aprovada por não seguir os Termos de Uso.";
                     link = aprovar ? "/bazar" : "/meus-pets?aba=itens";
+                    break;
+                case "achado":
+                    var ach = await db.AnimaisPerdidos.FirstOrDefaultAsync(x => x.Id == id);
+                    if (ach == null) return;
+                    autor = ach.UsuarioId;
+                    ach.Status = aprovar ? AnimalPerdido.StatusAtivo : StatusRemovido;
+                    ach.UltimoLembrete = aprovar ? DateTime.UtcNow : null; // o 1º lembrete vem 2 dias depois de aparecer no catálogo
+                    texto = aprovar ? $"Seu anúncio \"{ach.Titulo}\" foi aprovado e já aparece em Achados e Perdidos. Torcemos pelo reencontro! 🔎"
+                                    : $"O anúncio \"{ach.Titulo}\" não foi aprovado por não seguir os Termos de Uso.";
+                    link = $"/achados-e-perdidos/{id}";
                     break;
                 case "perfil":
                     var u = await db.Usuarios.FirstOrDefaultAsync(x => x.Id == id);
@@ -515,6 +538,7 @@ namespace crudcomdb.Services
                 ("Histórias", await db.Depoimentos.CountAsync(d => !d.Aprovado)),
                 ("Pets", await db.Pets.CountAsync(p => p.Status == EspeciesPermitidas.StatusModeracao)),
                 ("Itens do Bazar", await db.ItensDoacao.CountAsync(i => i.Status == EspeciesPermitidas.StatusModeracao)),
+                ("Achados e Perdidos", await db.AnimaisPerdidos.CountAsync(a => a.Status == AchadosPerdidosService.StatusModeracao)),
                 ("Perfis", await db.Usuarios.CountAsync(u => u.FotoPerfilPendente != null || u.BioPendente != null || u.DescricaoOngPendente != null)),
             };
 

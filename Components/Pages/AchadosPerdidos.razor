@@ -1,0 +1,178 @@
+@page "/achados-e-perdidos"
+@inject AchadosPerdidosService Achados
+@inject AuthService AuthService
+@inject NavigationManager Nav
+
+<PageTitle>Achados e Perdidos | Match-Pet SP</PageTitle>
+
+<div class="container-xl py-4 py-md-5">
+    <div class="page-header">
+        <div class="d-flex align-items-center gap-3">
+            <div class="icone-bolha vermelho"><i class="bi bi-search"></i></div>
+            <div>
+                <h1>Achados e Perdidos</h1>
+                <p>Ajude pets perdidos a voltarem para casa. Se você perdeu ou encontrou um animal, anuncie aqui.</p>
+            </div>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            @if (AuthService.EstaLogado)
+            {
+                <a href="/achados-e-perdidos/meus" class="btn btn-light"><i class="bi bi-collection me-1"></i>Meus anúncios</a>
+            }
+            <a href="/achados-e-perdidos/novo" class="btn btn-danger"><i class="bi bi-megaphone me-1"></i>Anunciar perdido ou achado</a>
+        </div>
+    </div>
+
+    @if (numeros is { } n)
+    {
+        <div class="row g-3 mb-4">
+            <div class="col-4"><div class="mp-card kpi pequeno"><span class="rotulo"><i class="bi bi-exclamation-triangle"></i> Perdidos</span><b>@n.perdidos</b><small>procurando a família</small></div></div>
+            <div class="col-4"><div class="mp-card kpi pequeno"><span class="rotulo"><i class="bi bi-house-heart"></i> Achados</span><b>@n.encontrados</b><small>esperando o dono</small></div></div>
+            <div class="col-4"><div class="mp-card kpi pequeno"><span class="rotulo"><i class="bi bi-stars"></i> Reencontros</span><b>@n.reencontros</b><small>pelo Match-Pet</small></div></div>
+        </div>
+    }
+
+    @* ===== FILTROS ===== *@
+    <div class="mp-card p-3 p-md-4 mb-4">
+        <div class="d-flex flex-wrap gap-2 mb-3" role="group" aria-label="Tipo de anúncio">
+            <button class="aba-achado todos @(string.IsNullOrEmpty(filtro.Tipo) ? "ativo" : "")" @onclick='() => MudarTipo(null)'>🐾 Todos</button>
+            <button class="aba-achado perdido @(filtro.Tipo == AnimalPerdido.TipoPerdido ? "ativo" : "")" @onclick="() => MudarTipo(AnimalPerdido.TipoPerdido)">🔴 Perdidos</button>
+            <button class="aba-achado achado @(filtro.Tipo == AnimalPerdido.TipoEncontrado ? "ativo" : "")" @onclick="() => MudarTipo(AnimalPerdido.TipoEncontrado)">🟢 Encontrados (procuram o dono)</button>
+        </div>
+
+        <div class="row g-2 g-md-3">
+            <div class="col-12 col-md-5">
+                <div class="campo-icone">
+                    <i class="bi bi-search"></i>
+                    <input type="search" class="form-control" placeholder="Nome, bairro, raça, sinais (ex.: coleira azul)" aria-label="Buscar" @bind="filtro.Texto" @bind:after="Aplicar" />
+                </div>
+            </div>
+            <div class="col-6 col-md-4">
+                <div class="campo-icone">
+                    <i class="bi bi-geo-alt"></i>
+                    <select class="form-select" aria-label="Cidade" @bind="filtro.Cidade" @bind:after="Aplicar">
+                        <option value="">Todas as cidades</option>
+                        @foreach (var c in cidades) { <option value="@c">@c</option> }
+                    </select>
+                </div>
+            </div>
+            <div class="col-6 col-md-3 d-grid">
+                <button class="btn @(maisFiltros || FiltrosExtras > 0 ? "btn-primary" : "btn-light")" @onclick="() => maisFiltros = !maisFiltros" aria-expanded="@maisFiltros">
+                    <i class="bi bi-sliders me-1"></i> Filtros @(FiltrosExtras > 0 ? $"({FiltrosExtras})" : "")
+                </button>
+            </div>
+        </div>
+
+        <div class="chips mt-3">
+            @foreach (var (valor, rotulo) in Especies)
+            {
+                <button class="chip @((filtro.Especie ?? "") == valor ? "ativo" : "")" @onclick="() => MudarEspecie(valor)">@rotulo</button>
+            }
+        </div>
+
+        @if (maisFiltros)
+        {
+            <div class="row g-3 mt-1 pt-3 border-top">
+                <div class="col-6 col-md-3">
+                    <label class="form-label small" for="f-porte">Porte</label>
+                    <select id="f-porte" class="form-select" @bind="filtro.Porte" @bind:after="Aplicar">
+                        <option value="">Qualquer</option><option>Pequeno</option><option>Médio</option><option>Grande</option>
+                    </select>
+                </div>
+                <div class="col-6 col-md-3">
+                    <label class="form-label small" for="f-sexo">Sexo</label>
+                    <select id="f-sexo" class="form-select" @bind="filtro.Sexo" @bind:after="Aplicar">
+                        <option value="">Qualquer</option><option>Macho</option><option>Fêmea</option><option>Não sei</option>
+                    </select>
+                </div>
+                <div class="col-6 col-md-3">
+                    <label class="form-label small" for="f-cor">Cor</label>
+                    <select id="f-cor" class="form-select" @bind="filtro.Cor" @bind:after="Aplicar">
+                        <option value="">Qualquer</option>
+                        @foreach (var cor in AchadosPerdidosService.Cores) { <option>@cor</option> }
+                    </select>
+                </div>
+                <div class="col-6 col-md-3">
+                    <label class="form-label small" for="f-ordem">Ordenar</label>
+                    <select id="f-ordem" class="form-select" @bind="filtro.Ordem" @bind:after="Aplicar">
+                        <option value="recentes">Mais recentes</option><option value="antigos">Mais antigos</option>
+                    </select>
+                </div>
+                <div class="col-12">
+                    <label class="form-check-label d-inline-flex align-items-center gap-2">
+                        <input type="checkbox" class="form-check-input m-0" checked="@filtro.MostrarReencontrados" @onchange="MostrarReencontrados" />
+                        Mostrar também os pets que já foram encontrados 💛
+                    </label>
+                </div>
+            </div>
+        }
+    </div>
+
+    @* ===== RESULTADOS ===== *@
+    @if (anuncios == null)
+    {
+        <CardsCarregando />
+    }
+    else if (anuncios.Count == 0)
+    {
+        <div class="estado-vazio">
+            <div class="emoji">🔎</div>
+            <h5>Nenhum anúncio com esses filtros</h5>
+            <p class="text-muted">Perdeu ou encontrou um pet? Publique um anúncio para a comunidade ajudar.</p>
+            <a href="/achados-e-perdidos/novo" class="btn btn-danger">Anunciar agora</a>
+        </div>
+    }
+    else
+    {
+        <p class="text-muted small"><b class="text-dark">@anuncios.Count</b> @(anuncios.Count == 1 ? "anúncio" : "anúncios")</p>
+        <div class="row g-3 g-md-4">
+            @foreach (var a in anuncios)
+            {
+                <div class="col-12 col-sm-6 col-md-4 col-lg-3"><CardAchado Anuncio="a" /></div>
+            }
+        </div>
+    }
+
+    <div class="mp-card p-3 p-md-4 mt-4 small d-flex gap-3 align-items-start">
+        <span class="icone-bolha azul" style="width:44px;height:44px;font-size:1.2rem"><i class="bi bi-lightbulb"></i></span>
+        <div>
+            <b class="text-dark d-block mb-1">Dicas para encontrar um pet perdido</b>
+            Procure nas ruas próximas logo nas primeiras horas, avise os vizinhos e pet shops do bairro, confira a lista de animais recolhidos pelo Centro de Controle de Zoonoses e compartilhe o anúncio nas redes. Ao encontrar um animal, verifique se ele tem coleira ou plaquinha antes de anunciar.
+        </div>
+    </div>
+</div>
+
+@code {
+    [SupplyParameterFromQuery(Name = "tipo")] public string? TipoQuery { get; set; }
+
+    private List<AnimalPerdido>? anuncios;
+    private List<string> cidades = new();
+    private (int perdidos, int encontrados, int reencontros)? numeros;
+    private readonly AchadosPerdidosService.Filtro filtro = new();
+    private bool maisFiltros;
+    private readonly SemaphoreSlim trava = new(1, 1);
+
+    private static readonly (string, string)[] Especies =
+        { ("", "🐾 Todos"), ("Cão", "🐶 Cães"), ("Gato", "🐱 Gatos"), ("Outros", "🐰 Outros") };
+
+    private int FiltrosExtras => new[] { filtro.Porte, filtro.Sexo, filtro.Cor }.Count(v => !string.IsNullOrEmpty(v)) + (filtro.MostrarReencontrados ? 1 : 0);
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (TipoQuery is AnimalPerdido.TipoPerdido or AnimalPerdido.TipoEncontrado) filtro.Tipo = TipoQuery;
+        cidades = await Achados.CidadesAsync();
+        await Aplicar();
+        numeros = await Achados.NumerosAsync();
+    }
+
+    private async Task Aplicar()
+    {
+        await trava.WaitAsync();
+        try { anuncios = await Achados.BuscarAsync(filtro); }
+        finally { trava.Release(); }
+    }
+
+    private Task MudarTipo(string? tipo) { filtro.Tipo = tipo; return Aplicar(); }
+    private Task MudarEspecie(string e) { filtro.Especie = e; return Aplicar(); }
+    private Task MostrarReencontrados(ChangeEventArgs e) { filtro.MostrarReencontrados = (bool)(e.Value ?? false); return Aplicar(); }
+}

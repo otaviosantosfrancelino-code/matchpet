@@ -44,7 +44,8 @@ builder.Services.AddSingleton<LimiteTentativasService>(); // bloqueia quem erra 
 builder.Services.AddScoped<ModeracaoService>();
 builder.Services.AddScoped<FavoritosService>();
 builder.Services.AddScoped<QuestionariosService>();
-builder.Services.AddScoped<AvisoAnaliseService>();   // janela "enviado para análise do administrador"
+builder.Services.AddScoped<AvisoAnaliseService>();
+builder.Services.AddScoped<AchadosPerdidosService>();   // janela "enviado para análise do administrador"
 builder.Services.AddSingleton<CofreDocumentos>();          // criptografa a foto do documento (LGPD)
 builder.Services.AddHostedService<AcompanhamentoService>(); // lembretes 7 e 30 dias depois da adoção
 
@@ -103,6 +104,7 @@ using (var escopo = app.Services.CreateScope())
             await DadosDemonstracaoComunidade.CriarAsync(db, log);
             await DadosDemonstracaoV3.CriarAsync(db, log);
             await DadosDemonstracaoPainel.CriarAsync(db, log);
+            await DadosDemonstracaoAchados.CriarAsync(db, log);
         }
         await ContasBanca.PrepararAsync(db, app.Configuration, app.Environment, log);
         await escopo.ServiceProvider.GetRequiredService<ModeracaoService>().ProtegerDocumentosAntigosAsync();

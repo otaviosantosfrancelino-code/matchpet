@@ -309,7 +309,7 @@ namespace crudcomdb.Services
 
         // ================= DEPOIMENTOS (Final Feliz) =================
 
-        public record DepoimentoView(int Id, Usuario Autor, string Titulo, string Texto, string? FotoUrl, int? PetId, string? PetNome, int? PetFotoId, DateTime Data, bool Pendente = false);
+        public record DepoimentoView(int Id, Usuario Autor, string Titulo, string Texto, string? FotoUrl, int? PetId, string? PetNome, int? PetFotoId, DateTime Data, bool Pendente = false, int? AchadoId = null);
 
         public async Task<List<DepoimentoView>> DepoimentosAsync(int? eu = null)
         {
@@ -317,13 +317,13 @@ namespace crudcomdb.Services
             var linhas = await db.Depoimentos.AsNoTracking().Where(d => d.Aprovado || d.AutorId == eu).OrderByDescending(d => d.DataCriacao)
                 .Select(d => new
                 {
-                    d.Id, d.AutorId, d.Titulo, d.Texto, d.FotoUrl, d.PetId, d.DataCriacao, d.Aprovado,
+                    d.Id, d.AutorId, d.Titulo, d.Texto, d.FotoUrl, d.PetId, d.DataCriacao, d.Aprovado, d.AnimalPerdidoId,
                     PetNome = d.Pet != null ? d.Pet.Nome : null,
                     PetFotoId = d.Pet != null ? d.Pet.Imagens.OrderBy(i => i.Id).Select(i => (int?)i.Id).FirstOrDefault() : null
                 }).ToListAsync();
             var autores = await Consultas.UsuariosPublicosAsync(db, linhas.Select(l => l.AutorId));
             return linhas.Where(l => autores.ContainsKey(l.AutorId))
-                .Select(l => new DepoimentoView(l.Id, autores[l.AutorId], l.Titulo, l.Texto, l.FotoUrl, l.PetId, l.PetNome, l.PetFotoId, l.DataCriacao, !l.Aprovado))
+                .Select(l => new DepoimentoView(l.Id, autores[l.AutorId], l.Titulo, l.Texto, l.FotoUrl, l.PetId, l.PetNome, l.PetFotoId, l.DataCriacao, !l.Aprovado, l.AnimalPerdidoId))
                 .ToList();
         }
 

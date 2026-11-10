@@ -23,9 +23,9 @@ namespace crudcomdb.Services
         }
 
         public record ResumoConversa(int Id, Usuario Outro, int? PetId, string? PetNome, int? PetFotoId, string? PetStatus,
-            int? ItemId, string? ItemNome, string UltimaMensagem, DateTime UltimaEm, int NaoLidas);
+            int? ItemId, string? ItemNome, string UltimaMensagem, DateTime UltimaEm, int NaoLidas, string? AchadoTitulo = null);
 
-        public record DetalheConversa(Conversa Conversa, Usuario Eu, Usuario Outro, Pet? Pet, ItemDoacao? Item)
+        public record DetalheConversa(Conversa Conversa, Usuario Eu, Usuario Outro, Pet? Pet, ItemDoacao? Item, AnimalPerdido? Achado = null)
         {
             public bool SouDoadorDoPet => Pet != null && Pet.UsuarioDoadorId == Eu.Id;
         }
@@ -44,6 +44,7 @@ namespace crudcomdb.Services
                     PetStatus = c.Pet != null ? c.Pet.Status : null,
                     PetFotoId = c.Pet != null ? c.Pet.Imagens.OrderBy(i => i.Id).Select(i => (int?)i.Id).FirstOrDefault() : null,
                     ItemNome = c.ItemDoacao != null ? c.ItemDoacao.Nome : null,
+                    Achado = c.AnimalPerdido != null ? new { c.AnimalPerdido.Nome, c.AnimalPerdido.Especie, c.AnimalPerdido.Sexo, c.AnimalPerdido.Tipo } : null,
                     Ultima = c.Mensagens.OrderByDescending(m => m.DataEnvio).Select(m => new { m.Texto, m.Tipo, m.RemetenteId }).FirstOrDefault(),
                     NaoLidas = c.Mensagens.Count(m => !m.Lida && m.RemetenteId != usuarioId)
                 })
@@ -60,7 +61,8 @@ namespace crudcomdb.Services
                         : c.Ultima.Tipo == "imagem" ? "📷 Foto"
                         : (c.Ultima.RemetenteId == usuarioId ? "Você: " : "") + c.Ultima.Texto;
                     return new ResumoConversa(c.Id, usuarios[c.IniciadorId == usuarioId ? c.DestinatarioId : c.IniciadorId],
-                        c.PetId, c.PetNome, c.PetFotoId, c.PetStatus, c.ItemDoacaoId, c.ItemNome, ultima, c.UltimaMensagemEm, c.NaoLidas);
+                        c.PetId, c.PetNome, c.PetFotoId, c.PetStatus, c.ItemDoacaoId, c.ItemNome, ultima, c.UltimaMensagemEm, c.NaoLidas,
+                        c.Achado == null ? null : new AnimalPerdido { Nome = c.Achado.Nome, Especie = c.Achado.Especie, Sexo = c.Achado.Sexo, Tipo = c.Achado.Tipo }.Titulo);
                 })
                 .ToList();
         }
@@ -90,7 +92,15 @@ namespace crudcomdb.Services
                     Imagens = i.Imagens.OrderBy(x => x.Id).Take(1).Select(x => new ItemImagem { Id = x.Id }).ToList()
                 }).FirstOrDefaultAsync();
 
-            return new DetalheConversa(c, usuarios[usuarioId], usuarios[outroId], pet, item);
+            AnimalPerdido? achado = c.AnimalPerdidoId == null ? null : await db.AnimaisPerdidos.AsNoTracking()
+                .Where(a => a.Id == c.AnimalPerdidoId)
+                .Select(a => new AnimalPerdido
+                {
+                    Id = a.Id, Nome = a.Nome, Tipo = a.Tipo, Especie = a.Especie, Sexo = a.Sexo, Cor = a.Cor, Bairro = a.Bairro, Cidade = a.Cidade, Status = a.Status, UsuarioId = a.UsuarioId,
+                    Imagens = a.Imagens.OrderBy(i => i.Id).Take(1).Select(i => new AnimalPerdidoImagem { Id = i.Id }).ToList()
+                }).FirstOrDefaultAsync();
+
+            return new DetalheConversa(c, usuarios[usuarioId], usuarios[outroId], pet, item, achado);
         }
 
         public async Task<List<Mensagem>> MensagensAsync(int conversaId)
@@ -106,17 +116,17 @@ namespace crudcomdb.Services
         // ---------- AÇÕES ----------
 
         // Abre a conversa (ou reaproveita a que já existe sobre o mesmo assunto)
-        public async Task<int> ObterOuCriarAsync(int deId, int paraId, int? petId = null, int? itemId = null, string? primeiraMensagem = null)
+        public async Task<int> ObterOuCriarAsync(int deId, int paraId, int? petId = null, int? itemId = null, string? primeiraMensagem = null, int? achadoId = null)
         {
             if (deId == paraId) throw new InvalidOperationException("Você não pode conversar com você mesmo.");
             await using var db = await _fabrica.CreateDbContextAsync();
 
             var existente = await db.Conversas.FirstOrDefaultAsync(c =>
                 ((c.IniciadorId == deId && c.DestinatarioId == paraId) || (c.IniciadorId == paraId && c.DestinatarioId == deId)) &&
-                c.PetId == petId && c.ItemDoacaoId == itemId);
+                c.PetId == petId && c.ItemDoacaoId == itemId && c.AnimalPerdidoId == achadoId);
             if (existente != null) return existente.Id;
 
-            var conversa = new Conversa { IniciadorId = deId, DestinatarioId = paraId, PetId = petId, ItemDoacaoId = itemId };
+            var conversa = new Conversa { IniciadorId = deId, DestinatarioId = paraId, PetId = petId, ItemDoacaoId = itemId, AnimalPerdidoId = achadoId };
             db.Conversas.Add(conversa);
             await db.SaveChangesAsync();
 

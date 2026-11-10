@@ -48,7 +48,7 @@
                                 <b class="text-truncate">@c.Outro.Nome</b>
                                 <small class="text-muted flex-shrink-0">@Consultas.TempoRelativo(c.UltimaEm)</small>
                             </div>
-                            <div class="small text-primary text-truncate fw-semibold">@(c.PetNome != null ? $"🐾 {c.PetNome}" : c.ItemNome != null ? $"🎁 {c.ItemNome}" : "Conversa direta")</div>
+                            <div class="small text-primary text-truncate fw-semibold">@(c.PetNome != null ? $"🐾 {c.PetNome}" : c.ItemNome != null ? $"🎁 {c.ItemNome}" : c.AchadoTitulo != null ? $"🔎 {c.AchadoTitulo}" : "Conversa direta")</div>
                             <div class="d-flex justify-content-between gap-2">
                                 <span class="small text-truncate @(c.NaoLidas > 0 ? "fw-bold text-dark" : "text-muted")">@c.UltimaMensagem</span>
                                 @if (c.NaoLidas > 0) { <span class="badge bg-primary flex-shrink-0">@c.NaoLidas</span> }
@@ -118,6 +118,22 @@
                             <div class="fw-bold text-dark text-truncate">@item.Nome</div>
                             <small class="text-muted">@item.Categoria · @item.Status</small>
                         </div>
+                    </div>
+                }
+                else if (detalhe.Achado is { } achado)
+                {
+                    <div class="contexto">
+                        <a href="/achados-e-perdidos/@achado.Id" class="d-flex align-items-center gap-2 text-decoration-none min-w-0">
+                            @if (achado.Imagens.Any()) { <img src="@Url.Achado(achado.Imagens[0])" alt="" /> }
+                            <div class="min-w-0">
+                                <div class="fw-bold text-dark text-truncate">🔎 @achado.Titulo</div>
+                                <small class="text-muted">Achados e Perdidos · @(achado.Tipo == AnimalPerdido.TipoPerdido ? "pet perdido" : "pet encontrado") · @achado.Bairro, @achado.Cidade@(achado.Status == AnimalPerdido.StatusResolvido ? " · ENCONTRADO 💛" : "")</small>
+                            </div>
+                        </a>
+                        @if (achado.UsuarioId == eu && achado.Status == AnimalPerdido.StatusAtivo)
+                        {
+                            <a href="/achados-e-perdidos/@achado.Id/encontrado" class="btn btn-success btn-sm ms-auto flex-shrink-0"><i class="bi bi-stars me-1"></i><span class="d-none d-sm-inline">Foi encontrado!</span><span class="d-sm-none">Achado!</span></a>
+                        }
                     </div>
                 }
 

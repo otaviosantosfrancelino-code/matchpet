@@ -1,0 +1,209 @@
+@page "/achados-e-perdidos/novo"
+@inject AchadosPerdidosService Achados
+@inject AuthService AuthService
+@inject ToastService Toast
+@inject AvisoAnaliseService Analise
+@inject NavigationManager Nav
+
+<PageTitle>Anunciar pet perdido ou achado | Match-Pet SP</PageTitle>
+
+<div class="container py-4 py-md-5" style="max-width: 860px;">
+    <a href="/achados-e-perdidos" class="btn btn-ghost px-2 mb-3"><i class="bi bi-arrow-left me-1"></i> Achados e Perdidos</a>
+    <div class="page-header">
+        <div class="d-flex align-items-center gap-3">
+            <div class="icone-bolha vermelho"><i class="bi bi-megaphone"></i></div>
+            <div>
+                <h1>Anunciar pet perdido ou achado</h1>
+                <p>Quanto mais detalhes, maior a chance de o pet voltar para casa.</p>
+            </div>
+        </div>
+    </div>
+
+    <form class="mp-card p-4 p-md-5" @onsubmit="Publicar" @onsubmit:preventDefault>
+        <div class="secao-form mt-0">O que aconteceu?</div>
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="cartao-tipo perdido @(anuncio.Tipo == AnimalPerdido.TipoPerdido ? "marcado" : "")">
+                    <input type="radio" name="tipo" checked="@(anuncio.Tipo == AnimalPerdido.TipoPerdido)" @onchange="() => anuncio.Tipo = AnimalPerdido.TipoPerdido" />
+                    <span class="emoji">😢</span>
+                    <span><b class="text-dark d-block">Perdi meu pet</b><small class="text-muted">Ele fugiu ou se perdeu e eu estou procurando.</small></span>
+                </label>
+            </div>
+            <div class="col-md-6">
+                <label class="cartao-tipo achado @(anuncio.Tipo == AnimalPerdido.TipoEncontrado ? "marcado" : "")">
+                    <input type="radio" name="tipo" checked="@(anuncio.Tipo == AnimalPerdido.TipoEncontrado)" @onchange="() => anuncio.Tipo = AnimalPerdido.TipoEncontrado" />
+                    <span class="emoji">🙋</span>
+                    <span><b class="text-dark d-block">Encontrei um pet</b><small class="text-muted">Achei um animal que parece ter dono e quero devolver.</small></span>
+                </label>
+            </div>
+        </div>
+
+        <div class="secao-form">Fotos</div>
+        <div class="d-flex flex-wrap gap-2">
+            @for (var i = 0; i < fotos.Count; i++)
+            {
+                var indice = i;
+                <div class="position-relative">
+                    <img src="@fotos[indice]" alt="Foto @(indice + 1)" style="width:110px;height:110px;object-fit:cover;border-radius:14px" />
+                    <button type="button" class="btn btn-sm btn-light position-absolute top-0 end-0 m-1 py-0 px-1" @onclick="() => fotos.RemoveAt(indice)" aria-label="Remover foto"><i class="bi bi-x"></i></button>
+                </div>
+            }
+            @if (fotos.Count < MaxFotos)
+            {
+                <label class="upload-area d-flex flex-column justify-content-center align-items-center m-0" style="width:110px;height:110px;padding:.5rem;cursor:pointer">
+                    @if (carregandoFoto) { <span class="spinner-border spinner-border-sm"></span> }
+                    else { <i class="bi bi-camera fs-3 text-primary"></i><small class="text-muted">Adicionar</small> }
+                    <InputFile OnChange="CarregarFotos" multiple accept="image/*" class="d-none" />
+                </label>
+            }
+        </div>
+        <div class="form-text">Até @MaxFotos fotos. Mostre o corpo inteiro e manchas ou detalhes que ajudem a reconhecer.</div>
+
+        <div class="secao-form">Como é o pet</div>
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label" for="nomeAchado">Nome <span class="text-muted fw-normal">(se souber)</span></label>
+                <input id="nomeAchado" class="form-control" maxlength="60" @bind="anuncio.Nome" placeholder="@(anuncio.Tipo == AnimalPerdido.TipoPerdido ? "Ex.: Thor" : "Deixe em branco se não souber")" />
+            </div>
+            <div class="col-6 col-md-3">
+                <label class="form-label" for="especieAchado">Espécie</label>
+                <select id="especieAchado" class="form-select" @bind="anuncio.Especie">
+                    @foreach (var e in EspeciesPermitidas.Especies) { <option value="@e.Valor">@e.Emoji @e.Rotulo</option> }
+                </select>
+            </div>
+            <div class="col-6 col-md-3">
+                <label class="form-label" for="sexoAchado">Sexo</label>
+                <select id="sexoAchado" class="form-select" @bind="anuncio.Sexo">
+                    <option>Macho</option><option>Fêmea</option><option>Não sei</option>
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label" for="racaAchado">Raça <span class="text-muted fw-normal">(se souber)</span></label>
+                <input id="racaAchado" class="form-control" maxlength="60" @bind="anuncio.Raca" placeholder="SRD (vira-lata), Poodle, Siamês..." />
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Porte</label>
+                <div class="d-flex gap-2">
+                    @foreach (var porte in new[] { "Pequeno", "Médio", "Grande" })
+                    {
+                        <button type="button" class="btn flex-fill @(anuncio.Porte == porte ? "btn-primary" : "btn-light")" @onclick="() => anuncio.Porte = porte">@porte</button>
+                    }
+                </div>
+            </div>
+            <div class="col-12">
+                <label class="form-label">Cor principal</label>
+                <div class="paleta-cor" role="group" aria-label="Cor principal">
+                    @foreach (var cor in AchadosPerdidosService.Cores)
+                    {
+                        <button type="button" class="@(anuncio.Cor == cor ? "ativo" : "")" aria-pressed="@(anuncio.Cor == cor)" @onclick="() => anuncio.Cor = cor">@cor</button>
+                    }
+                </div>
+            </div>
+            <div class="col-12">
+                <label class="opcao-card @(anuncio.UsaColeira ? "marcada" : "")" style="height:auto">
+                    <input type="checkbox" checked="@anuncio.UsaColeira" @onchange="e => anuncio.UsaColeira = (bool)(e.Value ?? false)" />
+                    <span class="emoji">🦮</span><span class="fw-semibold small">Está com coleira ou plaquinha</span>
+                </label>
+            </div>
+            <div class="col-12">
+                <label class="form-label" for="sinaisAchado">Sinais particulares</label>
+                <input id="sinaisAchado" class="form-control" maxlength="300" @bind="anuncio.SinaisParticulares" placeholder="Ex.: mancha branca no peito, orelha caída, coleira azul com guizo, manca da pata traseira" />
+            </div>
+            <div class="col-12">
+                <label class="form-label" for="descricaoAchado">Descrição</label>
+                <textarea id="descricaoAchado" class="form-control" rows="4" maxlength="2000" @bind="anuncio.Descricao"
+                          placeholder="@(anuncio.Tipo == AnimalPerdido.TipoPerdido ? "Como ele se perdeu, como reage a estranhos, se atende pelo nome..." : "Onde e como você o encontrou, como ele está, se está com você ou ficou na rua...")"></textarea>
+            </div>
+        </div>
+
+        <div class="secao-form">Onde e quando</div>
+        <div class="row g-3">
+            <div class="col-md-5">
+                <label class="form-label" for="bairroAchado">Bairro</label>
+                <input id="bairroAchado" class="form-control" maxlength="80" @bind="anuncio.Bairro" placeholder="Ex.: Jardim Paulista" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" for="cidadeAchado">Cidade</label>
+                <input id="cidadeAchado" class="form-control" maxlength="80" @bind="anuncio.Cidade" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label" for="dataAchado">@(anuncio.Tipo == AnimalPerdido.TipoPerdido ? "Perdido em" : "Encontrado em")</label>
+                <input id="dataAchado" type="date" class="form-control" max="@Hoje" @bind="dataOcorrido" />
+            </div>
+        </div>
+        <p class="form-text mb-0"><i class="bi bi-shield-lock me-1"></i>Só o bairro e a cidade aparecem. O contato é feito pelo chat do site, sem mostrar seu telefone.</p>
+
+        <button type="submit" class="btn btn-danger btn-lg w-100 mt-4" disabled="@salvando">
+            @if (salvando) { <span class="spinner-border spinner-border-sm me-2"></span> }
+            Publicar anúncio
+        </button>
+    </form>
+</div>
+
+@code {
+    private const int MaxFotos = 5;
+    private AnimalPerdido anuncio = new() { Tipo = AnimalPerdido.TipoPerdido, Especie = "Cão", Porte = "Médio", Sexo = "Não sei" };
+    private readonly List<string> fotos = new();
+    private DateTime dataOcorrido = DateTime.Today;
+    private bool salvando, carregandoFoto;
+    private string Hoje => DateTime.Today.ToString("yyyy-MM-dd");
+
+    [SupplyParameterFromQuery(Name = "tipo")] public string? TipoQuery { get; set; }
+
+    protected override void OnInitialized()
+    {
+        if (AuthService.UsuarioLogado is not { } eu)
+        {
+            Toast.Info("Entre na sua conta para anunciar.");
+            Nav.NavigateTo("/login?voltar=/achados-e-perdidos/novo");
+            return;
+        }
+        anuncio.Cidade = string.IsNullOrWhiteSpace(eu.Cidade) ? "Franca" : eu.Cidade;
+        anuncio.Estado = string.IsNullOrWhiteSpace(eu.Estado) ? "SP" : eu.Estado;
+        if (TipoQuery == AnimalPerdido.TipoEncontrado) anuncio.Tipo = AnimalPerdido.TipoEncontrado;
+    }
+
+    // Reduz cada foto para no máximo 1000 px antes de enviar
+    private async Task CarregarFotos(InputFileChangeEventArgs e)
+    {
+        carregandoFoto = true;
+        try
+        {
+            foreach (var arquivo in e.GetMultipleFiles(20).Take(MaxFotos - fotos.Count))
+            {
+                if (!arquivo.ContentType.StartsWith("image/")) { Toast.Erro($"\"{arquivo.Name}\" não é uma imagem."); continue; }
+                var reduzida = await arquivo.RequestImageFileAsync("image/jpeg", 1000, 1000);
+                using var stream = reduzida.OpenReadStream(10 * 1024 * 1024);
+                using var ms = new MemoryStream();
+                await stream.CopyToAsync(ms);
+                fotos.Add($"data:image/jpeg;base64,{Convert.ToBase64String(ms.ToArray())}");
+            }
+        }
+        catch { Toast.Erro("Não foi possível carregar uma das fotos (máx. 10 MB cada)."); }
+        finally { carregandoFoto = false; }
+    }
+
+    private async Task Publicar()
+    {
+        if (salvando || AuthService.UsuarioLogado is not { } eu) return;
+        if (fotos.Count == 0) { Toast.Aviso("Adicione pelo menos uma foto: ela é a melhor forma de reconhecer o pet."); return; }
+        if (string.IsNullOrWhiteSpace(anuncio.Cor)) { Toast.Aviso("Escolha a cor principal do pet."); return; }
+        if (string.IsNullOrWhiteSpace(anuncio.Bairro) || string.IsNullOrWhiteSpace(anuncio.Cidade)) { Toast.Aviso("Informe o bairro e a cidade."); return; }
+        if ((anuncio.Descricao ?? "").Trim().Length < 20) { Toast.Aviso("Descreva o pet com um pouco mais de detalhes (pelo menos 20 letras)."); return; }
+        if (!EspeciesPermitidas.Especies.Any(e => e.Valor == anuncio.Especie)) { Toast.Aviso("Escolha uma espécie da lista."); return; }
+
+        salvando = true;
+        try
+        {
+            anuncio.DataOcorrido = dataOcorrido > DateTime.Today ? DateTime.Today : dataOcorrido;
+            anuncio.Descricao = anuncio.Descricao.Trim();
+            var direto = await Achados.PublicarAsync(anuncio, fotos, eu);
+            var id = anuncio.Id;
+            if (direto) Toast.Sucesso("Anúncio publicado! 📢");
+            else Analise.Mostrar("Anúncio enviado para análise", "O anúncio", "em Achados e Perdidos");
+            Nav.NavigateTo($"/achados-e-perdidos/{id}");
+        }
+        catch (Exception ex) { Toast.Erro("Não foi possível publicar: " + (ex.InnerException?.Message ?? ex.Message)); }
+        finally { salvando = false; }
+    }
+}

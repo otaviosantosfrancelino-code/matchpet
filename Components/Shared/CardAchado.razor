@@ -1,0 +1,40 @@
+@* Card de anúncio de Achados e Perdidos *@
+@inject NavigationManager Nav
+
+<article class="mp-card mp-card-hover pet-card card-achado @(Anuncio.Status == AnimalPerdido.StatusResolvido ? "resolvido" : "")" @onclick="Abrir" role="link" tabindex="0" @onkeydown="Teclado" aria-label="Ver anúncio: @Anuncio.Titulo">
+    <div class="foto">
+        @if (Anuncio.Imagens.Any())
+        {
+            <img src="@Url.Achado(Anuncio.Imagens.First())" alt="Foto: @Anuncio.Titulo" loading="lazy" />
+        }
+        else
+        {
+            <div class="foto-vazia"><span style="font-size:2.4rem">@EspeciesPermitidas.Emoji(Anuncio.Especie)</span><small>Sem foto</small></div>
+        }
+        <div class="selos">
+            <span class="faixa-achado @Classe(Anuncio)">@Rotulo(Anuncio)</span>
+            <span class="selo"><i class="bi bi-geo-alt-fill text-danger"></i>@Anuncio.Cidade</span>
+        </div>
+    </div>
+    <div class="corpo">
+        <h3 class="nome text-truncate" title="@Anuncio.Titulo">@Anuncio.Titulo</h3>
+        <div class="info">@EspeciesPermitidas.Emoji(Anuncio.Especie) @Anuncio.Especie · @Anuncio.Porte@(string.IsNullOrEmpty(Anuncio.Cor) ? "" : $" · {Anuncio.Cor}")</div>
+        <div class="small text-muted"><i class="bi bi-pin-map me-1"></i>@(string.IsNullOrWhiteSpace(Anuncio.Bairro) ? Anuncio.Cidade : $"{Anuncio.Bairro}, {Anuncio.Cidade}")</div>
+        <div class="small text-muted"><i class="bi bi-calendar-event me-1"></i>@(Anuncio.Tipo == AnimalPerdido.TipoPerdido ? "Perdido em" : "Visto em") @Consultas.HoraBrasil(Anuncio.DataOcorrido).ToString("dd/MM/yyyy")</div>
+    </div>
+</article>
+
+@code {
+    [Parameter, EditorRequired] public AnimalPerdido Anuncio { get; set; } = default!;
+
+    private void Abrir() => Nav.NavigateTo($"/achados-e-perdidos/{Anuncio.Id}");
+    private void Teclado(KeyboardEventArgs e) { if (e.Key == "Enter") Abrir(); }
+
+    public static string Rotulo(AnimalPerdido a) =>
+        a.Status == AnimalPerdido.StatusResolvido ? "ENCONTRADO" : a.Status == AchadosPerdidosService.StatusModeracao ? "EM ANÁLISE"
+        : a.Tipo == AnimalPerdido.TipoPerdido ? "PERDIDO" : "ACHADO";
+
+    public static string Classe(AnimalPerdido a) =>
+        a.Status == AnimalPerdido.StatusResolvido ? "reencontrado" : a.Status == AchadosPerdidosService.StatusModeracao ? "analise"
+        : a.Tipo == AnimalPerdido.TipoPerdido ? "perdido" : "achado";
+}

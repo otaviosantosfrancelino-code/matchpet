@@ -65,7 +65,7 @@ namespace crudcomdb.Endpoints
                 await using var db = await fabrica.CreateDbContextAsync();
                 var site = $"{http.Request.Scheme}://{http.Request.Host}";
                 var pets = await db.Pets.AsNoTracking().Where(p => p.Status == "Disponível").OrderByDescending(p => p.Id).Select(p => p.Id).Take(2000).ToListAsync();
-                string[] paginas = { "/", "/pets", "/bazar", "/ongs", "/comunidade", "/final-feliz", "/estatisticas", "/sobre", "/avaliar", "/verificar-termo", "/privacidade", "/cadastro" };
+                string[] paginas = { "/", "/pets", "/achados-e-perdidos", "/bazar", "/ongs", "/comunidade", "/final-feliz", "/estatisticas", "/sobre", "/avaliar", "/verificar-termo", "/privacidade", "/cadastro" };
 
                 var xml = new StringBuilder("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">\n");
                 foreach (var p in paginas) xml.Append($"  <url><loc>{site}{p}</loc><changefreq>daily</changefreq></url>\n");

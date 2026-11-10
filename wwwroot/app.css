@@ -539,3 +539,25 @@ html:has(.menu-overlay.active) { overflow: hidden; scrollbar-gutter: stable; }
 .post.pendente { border: 1.5px dashed #fbbf24; }
 .faixa-pendente { background: var(--mp-warning-soft); color: #b45309; font-size: .8rem; font-weight: 700; padding: .5rem 1rem; border-radius: var(--mp-radius) var(--mp-radius) 0 0; }
 [data-tema="escuro"] .faixa-pendente { color: #fcd34d; }
+
+/* ---------- ACHADOS E PERDIDOS ---------- */
+.faixa-achado { font-size: .72rem; font-weight: 800; letter-spacing: .06em; padding: .32rem .65rem; border-radius: 999px; color: #fff; box-shadow: 0 4px 12px -4px rgba(15, 23, 42, .4); }
+.faixa-achado.perdido { background: #dc2626; }
+.faixa-achado.achado { background: #0f766e; }
+.faixa-achado.reencontrado { background: #16a34a; }
+.faixa-achado.analise { background: #b45309; }
+.card-achado.resolvido .foto img { filter: saturate(.85); }
+.aba-achado { display: inline-flex; align-items: center; gap: .45rem; border: 1.5px solid var(--mp-line); background: var(--mp-surface); color: var(--mp-text); font-weight: 700; padding: .55rem 1rem; border-radius: 14px; }
+.aba-achado.ativo.perdido { border-color: #dc2626; background: rgba(220, 38, 38, .08); color: #b91c1c; }
+.aba-achado.ativo.achado { border-color: #0f766e; background: rgba(15, 118, 110, .08); color: #0f766e; }
+.aba-achado.ativo.todos { border-color: var(--mp-ink); background: var(--mp-ink); color: var(--mp-bg); }
+[data-tema="escuro"] .aba-achado.ativo.perdido { color: #fca5a5; }
+[data-tema="escuro"] .aba-achado.ativo.achado { color: #5eead4; }
+.cartao-tipo { cursor: pointer; display: flex; gap: .9rem; align-items: flex-start; padding: 1rem; border: 2px solid var(--mp-line); border-radius: 16px; background: var(--mp-surface); height: 100%; margin: 0; }
+.cartao-tipo input { position: absolute; opacity: 0; pointer-events: none; }
+.cartao-tipo .emoji { font-size: 1.8rem; line-height: 1; }
+.cartao-tipo.marcado.perdido { border-color: #dc2626; background: rgba(220, 38, 38, .06); }
+.cartao-tipo.marcado.achado { border-color: #0f766e; background: rgba(15, 118, 110, .06); }
+.paleta-cor { display: flex; flex-wrap: wrap; gap: .4rem; }
+.paleta-cor button { border: 1.5px solid var(--mp-line); background: var(--mp-surface); color: var(--mp-text); border-radius: 999px; padding: .35rem .8rem; font-size: .85rem; font-weight: 600; }
+.paleta-cor button.ativo { border-color: var(--mp-primary); background: var(--mp-primary-soft); color: var(--mp-primary); }

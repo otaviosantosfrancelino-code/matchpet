@@ -1,0 +1,249 @@
+@page "/achados-e-perdidos/{Id:int}"
+@inject AchadosPerdidosService Achados
+@inject AuthService AuthService
+@inject ChatService Chat
+@inject GeoService Geo
+@inject ToastService Toast
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+
+<PageTitle>@(anuncio?.Titulo ?? "Achados e Perdidos") | Match-Pet SP</PageTitle>
+
+<div class="container-xl py-4 py-md-5">
+    @if (carregando)
+    {
+        <div class="row g-4">
+            <div class="col-lg-7"><div class="skeleton" style="aspect-ratio:4/3;border-radius:22px"></div></div>
+            <div class="col-lg-5"><div class="skeleton" style="height:360px;border-radius:22px"></div></div>
+        </div>
+    }
+    else if (anuncio == null || Escondido)
+    {
+        <div class="estado-vazio mx-auto" style="max-width:560px">
+            <div class="emoji">🔎</div>
+            <h4>Anúncio não encontrado</h4>
+            <p class="text-muted">Ele pode ter sido removido ou ainda está em análise pela moderação.</p>
+            <a href="/achados-e-perdidos" class="btn btn-primary">Ver Achados e Perdidos</a>
+        </div>
+    }
+    else
+    {
+        var a = anuncio;
+        var perdido = a.Tipo == AnimalPerdido.TipoPerdido;
+        var resolvido = a.Status == AnimalPerdido.StatusResolvido;
+        <a href="/achados-e-perdidos" class="btn btn-ghost px-2 mb-3"><i class="bi bi-arrow-left me-1"></i> Achados e Perdidos</a>
+
+        @if (resolvido)
+        {
+            <div class="alert alert-success d-flex gap-2 align-items-center"><i class="bi bi-stars fs-4"></i>
+                <div><b>ENCONTRADO!</b> @a.Titulo voltou para casa @(a.DataResolucao is { } d ? $"em {Consultas.HoraBrasil(d):dd/MM/yyyy}" : "") através do Match-Pet. 💛 <a href="/final-feliz">Ver no Final Feliz</a></div>
+            </div>
+        }
+        else if (a.Status == AchadosPerdidosService.StatusModeracao)
+        {
+            <div class="alert alert-warning small"><i class="bi bi-hourglass-split me-1"></i>Anúncio <b>aguardando aprovação da moderação</b>. Só você e a equipe conseguem ver.</div>
+        }
+
+        <div class="row g-4 g-lg-5">
+            <div class="col-lg-7">
+                <div class="galeria mp-card overflow-hidden">
+                    @if (a.Imagens.Any())
+                    {
+                        <img src="@Url.Achado(a.Imagens[fotoAtual])" class="img-cover" alt="Foto: @a.Titulo" />
+                        @if (a.Imagens.Count > 1)
+                        {
+                            <button class="seta esq" @onclick="() => MudarFoto(-1)" aria-label="Foto anterior"><i class="bi bi-chevron-left"></i></button>
+                            <button class="seta dir" @onclick="() => MudarFoto(1)" aria-label="Próxima foto"><i class="bi bi-chevron-right"></i></button>
+                            <span class="contador">@(fotoAtual + 1) / @a.Imagens.Count</span>
+                        }
+                    }
+                    else
+                    {
+                        <div class="foto-vazia"><span style="font-size:4rem">@EspeciesPermitidas.Emoji(a.Especie)</span><span>Sem fotos</span></div>
+                    }
+                    <span class="faixa-achado @CardAchado.Classe(a) position-absolute" style="top:14px;left:14px;font-size:.85rem">@CardAchado.Rotulo(a)</span>
+                </div>
+
+                <div class="mp-card mt-4 overflow-hidden">
+                    <div class="d-flex align-items-center gap-2 px-3 py-2 border-bottom">
+                        <i class="bi bi-map text-primary"></i>
+                        <b class="small">@(perdido ? "Região onde se perdeu" : "Região onde foi encontrado")</b>
+                        <span class="small text-muted ms-auto">@a.Bairro · @a.Cidade/@a.Estado</span>
+                    </div>
+                    @if (local != null)
+                    {
+                        <div id="mapa-achado" class="mapa" role="img" aria-label="Mapa da região"></div>
+                    }
+                    else
+                    {
+                        <div class="p-4 text-center text-muted small">@(localizando ? "Carregando mapa..." : "Não foi possível mostrar o mapa desta região.")</div>
+                    }
+                </div>
+            </div>
+
+            <div class="col-lg-5">
+                <span class="rotulo-tipo @(perdido ? "perdido" : "achado")">@(perdido ? "🔴 Pet perdido" : "🟢 Pet encontrado · procura o dono")</span>
+                <h1 class="mt-2 mb-1 text-break" style="font-size:clamp(2rem,4vw,2.5rem)">@a.Titulo</h1>
+                <p class="text-muted fw-semibold mb-3">
+                    <i class="bi bi-geo-alt-fill text-danger me-1"></i>@a.Bairro, @a.Cidade ·
+                    <i class="bi bi-calendar-event ms-1 me-1"></i>@(perdido ? "Perdido em" : "Visto em") @Consultas.HoraBrasil(a.DataOcorrido).ToString("dd/MM/yyyy")
+                </p>
+
+                <div class="d-flex flex-wrap gap-2 mb-4">
+                    <BotaoCompartilhar Titulo="@(perdido ? $"Ajude a encontrar: {a.Titulo} 🔎" : $"Alguém conhece este pet? 🔎")"
+                                       Texto="@($"{a.Especie} {a.Porte.ToLower()}, cor {a.Cor.ToLower()}, {(perdido ? "perdido" : "encontrado")} no bairro {a.Bairro}, {a.Cidade}.")"
+                                       Caminho="@($"/achados-e-perdidos/{a.Id}")" />
+                    @if (a.UsuarioId != AuthService.UsuarioLogado?.Id)
+                    {
+                        <BotaoDenunciar Tipo="achado" AlvoId="a.Id" NomeAlvo="este anúncio" Rotulo="Denunciar" Classe="btn btn-light btn-sm text-muted" />
+                    }
+                </div>
+
+                <div class="row g-2 mb-4">
+                    <div class="col-6"><div class="dado"><small>Espécie</small><b>@EspeciesPermitidas.Emoji(a.Especie) @a.Especie</b></div></div>
+                    <div class="col-6"><div class="dado"><small>Raça</small><b>@(string.IsNullOrWhiteSpace(a.Raca) ? "Não informada" : a.Raca)</b></div></div>
+                    <div class="col-6"><div class="dado"><small>Porte</small><b>@a.Porte</b></div></div>
+                    <div class="col-6"><div class="dado"><small>Sexo</small><b>@a.Sexo</b></div></div>
+                    <div class="col-6"><div class="dado"><small>Cor</small><b>@a.Cor</b></div></div>
+                    <div class="col-6"><div class="dado"><small>Coleira</small><b>@(a.UsaColeira ? "Sim" : "Não")</b></div></div>
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(a.SinaisParticulares))
+                {
+                    <h6 class="fw-bold">Sinais particulares</h6>
+                    <p class="text-muted">@a.SinaisParticulares</p>
+                }
+                <h6 class="fw-bold">Descrição</h6>
+                <p class="text-muted" style="white-space:pre-line">@a.Descricao</p>
+
+                @if (autor != null)
+                {
+                    <a href="/u/@autor.Id" class="mp-card mp-card-hover p-3 d-flex align-items-center gap-3 mb-4 text-decoration-none">
+                        <Avatar Usuario="autor" Tamanho="48" />
+                        <div class="min-w-0">
+                            <small class="text-muted">Anunciado por</small>
+                            <div class="fw-bold text-dark text-truncate">@autor.Nome</div>
+                        </div>
+                        <i class="bi bi-chevron-right text-muted ms-auto"></i>
+                    </a>
+                }
+
+                <div class="acao-adotar">
+                    @if (a.UsuarioId == AuthService.UsuarioLogado?.Id)
+                    {
+                        @if (!resolvido)
+                        {
+                            <a href="/achados-e-perdidos/@a.Id/encontrado" class="btn btn-success btn-lg w-100 mb-2">
+                                <i class="bi bi-stars me-2"></i>@(perdido ? "Meu pet foi encontrado!" : "Encontrei a família dele!")
+                            </a>
+                        }
+                        <button class="btn btn-light w-100 text-danger" @onclick="Excluir" disabled="@ocupado"><i class="bi bi-trash me-1"></i>Excluir anúncio</button>
+                    }
+                    else if (!resolvido)
+                    {
+                        <button class="btn btn-danger btn-lg w-100" @onclick="EntrarEmContato" disabled="@ocupado">
+                            @if (ocupado) { <span class="spinner-border spinner-border-sm me-2"></span> } else { <i class="bi bi-chat-heart-fill me-2"></i> }
+                            @(perdido ? "Vi este pet / tenho informações" : "Acho que é meu pet!")
+                        </button>
+                        <p class="text-center text-muted small mt-2 mb-0"><i class="bi bi-shield-lock me-1"></i>A conversa acontece pelo chat do site, sem expor seu telefone.</p>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<style>
+    .galeria { position: relative; aspect-ratio: 4 / 3; border-radius: 22px; }
+    .galeria .seta { position: absolute; top: 50%; transform: translateY(-50%); width: 44px; height: 44px; border-radius: 50%; border: none; background: rgba(255,255,255,.92); box-shadow: var(--mp-shadow); color: #0f172a; font-size: 1.2rem; }
+    .galeria .seta.esq { left: 14px; } .galeria .seta.dir { right: 14px; }
+    .galeria .contador { position: absolute; bottom: 14px; right: 14px; background: rgba(15,23,42,.7); color: #fff; font-size: .8rem; font-weight: 700; padding: .25rem .6rem; border-radius: 999px; }
+    .dado { background: var(--mp-surface); border: 1px solid var(--mp-line); border-radius: 14px; padding: .7rem .9rem; }
+    .dado small { display: block; color: var(--mp-muted); font-size: .75rem; font-weight: 600; }
+    .dado b { color: var(--mp-ink); }
+    .mapa { height: 260px; background: #e5e7eb; z-index: 0; }
+    .rotulo-tipo { font-size: .8rem; font-weight: 800; letter-spacing: .04em; padding: .35rem .75rem; border-radius: 999px; }
+    .rotulo-tipo.perdido { background: rgba(220,38,38,.1); color: #dc2626; }
+    .rotulo-tipo.achado { background: rgba(15,118,110,.12); color: #0f766e; }
+    @@media (max-width: 991.98px) {
+        .acao-adotar { position: sticky; bottom: calc(76px + env(safe-area-inset-bottom)); background: var(--mp-bg); padding: .75rem 0; z-index: 10; }
+    }
+</style>
+
+@code {
+    [Parameter] public int Id { get; set; }
+    private AnimalPerdido? anuncio;
+    private Usuario? autor;
+    private GeoService.Ponto? local;
+    private bool carregando = true, localizando, ocupado, desenharMapa;
+    private int fotoAtual;
+
+    private bool Escondido => anuncio != null && anuncio.Status is not (AnimalPerdido.StatusAtivo or AnimalPerdido.StatusResolvido)
+                              && anuncio.UsuarioId != AuthService.UsuarioLogado?.Id && !AuthService.EhAdmin;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        carregando = true;
+        fotoAtual = 0;
+        local = null;
+        var r = await Achados.ObterAsync(Id);
+        anuncio = r?.anuncio;
+        autor = r?.autor;
+        carregando = false;
+        if (anuncio == null || Escondido) return;
+
+        localizando = true;
+        StateHasChanged();
+        local = await Geo.LocalizarAsync(anuncio.Cidade, anuncio.Estado, anuncio.Bairro);
+        localizando = false;
+        desenharMapa = local != null;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (desenharMapa && local != null)
+        {
+            desenharMapa = false;
+            try { await JS.InvokeVoidAsync("mpMapa", "mapa-achado", local.Lat, local.Lng, local.RaioMetros, "Região aproximada"); }
+            catch { }
+        }
+    }
+
+    private void MudarFoto(int passo)
+    {
+        if (anuncio == null || anuncio.Imagens.Count == 0) return;
+        fotoAtual = (fotoAtual + passo + anuncio.Imagens.Count) % anuncio.Imagens.Count;
+    }
+
+    // Abre a conversa com quem anunciou (uma conversa por anúncio)
+    private async Task EntrarEmContato()
+    {
+        if (anuncio == null) return;
+        if (AuthService.UsuarioLogado is not { } eu)
+        {
+            Toast.Info("Entre na sua conta para conversar com quem anunciou.");
+            Nav.NavigateTo($"/login?voltar=/achados-e-perdidos/{anuncio.Id}");
+            return;
+        }
+        ocupado = true;
+        try
+        {
+            var msg = anuncio.Tipo == AnimalPerdido.TipoPerdido
+                ? $"Olá! Vi o anúncio de {anuncio.Titulo} em Achados e Perdidos e acho que tenho informações. 🔎"
+                : $"Olá! Vi o anúncio do pet que você encontrou ({anuncio.Titulo}) e acho que pode ser meu! 🐾";
+            var conversaId = await Chat.ObterOuCriarAsync(eu.Id, anuncio.UsuarioId, primeiraMensagem: msg, achadoId: anuncio.Id);
+            Nav.NavigateTo($"/mensagens/{conversaId}");
+        }
+        catch (Exception ex) { Toast.Erro(ex.Message); }
+        finally { ocupado = false; }
+    }
+
+    private async Task Excluir()
+    {
+        if (anuncio == null || AuthService.UsuarioLogado is not { } eu) return;
+        ocupado = true;
+        await Achados.ExcluirAsync(anuncio.Id, eu.Id);
+        Toast.Info("Anúncio excluído.");
+        Nav.NavigateTo("/achados-e-perdidos/meus");
+    }
+}

@@ -7,6 +7,7 @@
 @inject SocialService Social
 @inject RankingService Ranking
 @inject EstatisticasService Estatisticas
+@inject AchadosPerdidosService Achados
 
 <PageTitle>Match-Pet SP | Adoção responsável em Franca e região</PageTitle>
 
@@ -118,6 +119,32 @@
                 @foreach (var pet in esperando)
                 {
                     <PetCard Pet="pet" MostrarBotao="false" />
+                }
+            </div>
+        </div>
+    </section>
+}
+
+@* ================= ACHADOS E PERDIDOS ================= *@
+@if (perdidos?.Any() == true)
+{
+    <section class="container-xl pb-5">
+        <div class="cartao-achados" data-revelar>
+            <div class="d-flex align-items-end justify-content-between gap-3 mb-3 flex-wrap">
+                <div>
+                    <span class="eyebrow" style="background:rgba(220,38,38,.1);color:#dc2626">🔎 Achados e Perdidos</span>
+                    <h2 class="h3 mb-1 mt-2">Ajude estes pets a voltarem para casa</h2>
+                    <p class="text-muted mb-0">Viu algum deles pela rua? Toque no anúncio e avise quem está procurando.</p>
+                </div>
+                <div class="d-flex gap-2 flex-wrap">
+                    <a href="/achados-e-perdidos/novo" class="btn btn-light">Perdi ou encontrei um pet</a>
+                    <a href="/achados-e-perdidos" class="btn btn-danger">Ver todos</a>
+                </div>
+            </div>
+            <div class="carrossel">
+                @foreach (var a in perdidos)
+                {
+                    <CardAchado Anuncio="a" />
                 }
             </div>
         </div>
@@ -405,6 +432,8 @@
     .numeros-faixa b { display: block; font-size: clamp(1.6rem, 3.5vw, 2.3rem); font-weight: 800; color: var(--mp-ink); line-height: 1.1; }
     .numeros-faixa span { font-size: .8rem; color: var(--mp-muted); font-weight: 600; }
     .cartao-destaque { border-radius: 28px; padding: clamp(1.25rem, 3vw, 2rem); background: linear-gradient(135deg, #fff7ed, #fff 60%); border: 1px solid #fed7aa; }
+    .cartao-achados { border-radius: 28px; padding: clamp(1.25rem, 3vw, 2rem); background: linear-gradient(135deg, #fef2f2, var(--mp-surface) 60%); border: 1px solid #fecaca; }
+    [data-tema="escuro"] .cartao-achados { background: linear-gradient(135deg, rgba(220, 38, 38, .14), var(--mp-surface) 60%); border-color: rgba(220, 38, 38, .35); }
     .numero-passo { font-size: 2.2rem; font-weight: 800; background: linear-gradient(135deg, #93c5fd, #c4b5fd); -webkit-background-clip: text; background-clip: text; color: transparent; }
     .ong-chip { display: inline-flex; align-items: center; gap: .55rem; padding: .5rem .9rem .5rem .5rem; background: var(--mp-surface); border: 1px solid var(--mp-line); border-radius: 999px; text-decoration: none; color: var(--mp-ink); font-weight: 700; font-size: .9rem; white-space: nowrap; box-shadow: var(--mp-shadow-sm); }
     .beneficio { transition: transform .25s; }
@@ -444,6 +473,7 @@
 
     private EstatisticasService.Resumo? numeros;
     private IEnumerable<Pet>? recentes, esperando;
+    private List<AnimalPerdido>? perdidos;
     private List<Usuario> rostos = new();
     private List<Usuario>? ongs;
     private List<SocialService.DepoimentoView>? historias;
@@ -467,6 +497,7 @@
         StateHasChanged();
 
         esperando = (await PetRepository.BuscarAsync(new FiltroPets { Ordem = "antigos" })).Take(10).ToList();
+        try { perdidos = (await Achados.BuscarAsync(new AchadosPerdidosService.Filtro())).Take(10).ToList(); } catch { }
         ongs = await UsuarioRepository.GetOngsAsync();
         StateHasChanged();
 

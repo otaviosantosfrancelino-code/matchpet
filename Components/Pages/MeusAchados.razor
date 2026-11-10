@@ -1,0 +1,59 @@
+@page "/achados-e-perdidos/meus"
+@inject AchadosPerdidosService Achados
+@inject AuthService AuthService
+@inject NavigationManager Nav
+
+<PageTitle>Meus anúncios de Achados e Perdidos | Match-Pet SP</PageTitle>
+
+<div class="container-xl py-4 py-md-5">
+    <a href="/achados-e-perdidos" class="btn btn-ghost px-2 mb-3"><i class="bi bi-arrow-left me-1"></i> Achados e Perdidos</a>
+    <div class="page-header">
+        <div class="d-flex align-items-center gap-3">
+            <div class="icone-bolha vermelho"><i class="bi bi-collection"></i></div>
+            <div>
+                <h1>Meus anúncios</h1>
+                <p>Pets que você perdeu ou encontrou. Quando o pet voltar para casa, marque como encontrado.</p>
+            </div>
+        </div>
+        <a href="/achados-e-perdidos/novo" class="btn btn-danger"><i class="bi bi-plus-lg me-1"></i>Novo anúncio</a>
+    </div>
+
+    @if (anuncios == null)
+    {
+        <CardsCarregando />
+    }
+    else if (anuncios.Count == 0)
+    {
+        <div class="estado-vazio"><div class="emoji">🔎</div><h5>Você ainda não tem anúncios</h5>
+            <a href="/achados-e-perdidos/novo" class="btn btn-danger">Anunciar pet perdido ou achado</a></div>
+    }
+    else
+    {
+        <div class="row g-3 g-md-4">
+            @foreach (var a in anuncios)
+            {
+                <div class="col-12 col-sm-6 col-md-4 col-lg-3 d-grid gap-2">
+                    <CardAchado Anuncio="a" />
+                    @if (a.Status == AnimalPerdido.StatusAtivo)
+                    {
+                        <a href="/achados-e-perdidos/@a.Id/encontrado" class="btn btn-success btn-sm"><i class="bi bi-stars me-1"></i>@(a.Tipo == AnimalPerdido.TipoPerdido ? "Foi encontrado!" : "Achei a família!")</a>
+                    }
+                    else if (a.Status == AchadosPerdidosService.StatusModeracao)
+                    {
+                        <small class="text-center text-muted"><i class="bi bi-hourglass-split me-1"></i>Aguardando aprovação</small>
+                    }
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private List<AnimalPerdido>? anuncios;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (AuthService.UsuarioLogado is not { } eu) { Nav.NavigateTo("/login?voltar=/achados-e-perdidos/meus"); return; }
+        anuncios = await Achados.MeusAsync(eu.Id);
+    }
+}

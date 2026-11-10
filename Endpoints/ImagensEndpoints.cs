@@ -30,6 +30,13 @@ namespace crudcomdb.Endpoints
                 return Responder(dado, http, UmAno);
             });
 
+            app.MapGet("/imagens/achado/{id:int}", async (int id, IDbContextFactory<AppDbContext> fabrica, HttpContext http) =>
+            {
+                await using var db = await fabrica.CreateDbContextAsync();
+                var dado = await db.AnimaisPerdidosImagens.AsNoTracking().Where(i => i.Id == id).Select(i => i.Base64Data).FirstOrDefaultAsync();
+                return Responder(dado, http, UmAno);
+            });
+
             // A foto de perfil pode mudar: o endereço leva ?v=<data da alteração> para atualizar o cache
             app.MapGet("/imagens/usuario/{id:int}", async (int id, IDbContextFactory<AppDbContext> fabrica, HttpContext http) =>
             {
@@ -78,5 +85,6 @@ namespace crudcomdb.Endpoints
     {
         public static string Pet(PetImagem img) => img.Id > 0 ? $"/imagens/pet/{img.Id}" : img.Base64Data;
         public static string Item(ItemImagem img) => img.Id > 0 ? $"/imagens/item/{img.Id}" : img.Base64Data;
+        public static string Achado(AnimalPerdidoImagem img) => img.Id > 0 ? $"/imagens/achado/{img.Id}" : img.Base64Data;
     }
 }

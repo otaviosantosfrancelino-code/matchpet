@@ -1,0 +1,134 @@
+@page "/achados-e-perdidos/{Id:int}/encontrado"
+@inject AchadosPerdidosService Achados
+@inject AuthService AuthService
+@inject SocialService Social
+@inject ToastService Toast
+@inject AvisoAnaliseService Analise
+@inject NavigationManager Nav
+
+<PageTitle>O pet foi encontrado? | Match-Pet SP</PageTitle>
+
+<div class="container py-4 py-md-5" style="max-width: 720px;">
+    @if (anuncio == null)
+    {
+        @if (!carregando)
+        {
+            <div class="estado-vazio"><div class="emoji">🔎</div><h5>Anúncio não encontrado</h5><a href="/achados-e-perdidos/meus" class="btn btn-primary">Meus anúncios</a></div>
+        }
+        else { <div class="skeleton" style="height:420px;border-radius:22px"></div> }
+    }
+    else if (anuncio.Status == AnimalPerdido.StatusResolvido)
+    {
+        <div class="estado-vazio"><div class="emoji">💛</div><h5>@anuncio.Titulo já está marcado como ENCONTRADO</h5>
+            <a href="/final-feliz" class="btn btn-primary">Ver no Final Feliz</a></div>
+    }
+    else if (!respondeuSim)
+    {
+        var perdido = anuncio.Tipo == AnimalPerdido.TipoPerdido;
+        <div class="mp-card p-4 p-md-5 text-center">
+            @if (anuncio.Imagens.Any())
+            {
+                <img src="@Url.Achado(anuncio.Imagens[0])" alt="" style="width:140px;height:140px;object-fit:cover;border-radius:24px" class="mb-3" />
+            }
+            <h1 class="h3">@(perdido ? $"{anuncio.Titulo} já foi encontrado?" : $"Você encontrou a família de {anuncio.Titulo}?")</h1>
+            <p class="text-muted">Anunciado em @Consultas.HoraBrasil(anuncio.DataCadastro).ToString("dd/MM/yyyy") no bairro @anuncio.Bairro, @anuncio.Cidade.</p>
+            <div class="d-grid gap-2 mt-4" style="max-width:380px;margin:0 auto">
+                <button class="btn btn-success btn-lg" @onclick="() => respondeuSim = true"><i class="bi bi-stars me-2"></i>Sim, @(perdido ? "foi encontrado!" : "voltou para casa!")</button>
+                <button class="btn btn-light btn-lg" @onclick="AindaNao" disabled="@salvando">Ainda não</button>
+            </div>
+            <p class="small text-muted mt-3 mb-0">Enquanto o anúncio estiver ativo, vamos perguntar de novo a cada 2 dias.</p>
+        </div>
+    }
+    else
+    {
+        <form class="mp-card p-4 p-md-5" @onsubmit="Concluir" @onsubmit:preventDefault>
+            <div class="text-center mb-4">
+                <div class="display-5">🎉</div>
+                <h1 class="h3 mb-1">Que notícia maravilhosa!</h1>
+                <p class="text-muted mb-0">O anúncio será marcado como <b>ENCONTRADO</b> e a história vai para a galeria <b>Final Feliz</b>.</p>
+            </div>
+
+            <div class="mp-card p-3 mb-4 d-flex gap-3 align-items-center" style="background:var(--mp-bg)">
+                <img src="@(fotoNova ?? (anuncio.Imagens.Any() ? Url.Achado(anuncio.Imagens[0]) : "/home-match-pet.png"))" alt="" style="width:92px;height:92px;object-fit:cover;border-radius:16px" />
+                <div class="min-w-0">
+                    <small class="text-muted d-block">Como vai aparecer no Final Feliz</small>
+                    <b class="text-dark">“@AchadosPerdidosService.TituloHistoria(anuncio)”</b>
+                </div>
+            </div>
+
+            <label class="form-label">Foto da história</label>
+            <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+                <label class="btn btn-light btn-sm m-0">
+                    @if (enviandoFoto) { <span class="spinner-border spinner-border-sm me-1"></span> } else { <i class="bi bi-camera me-1"></i> }
+                    @(fotoNova == null ? "Usar uma foto do reencontro" : "Trocar a foto")
+                    <InputFile OnChange="CarregarFoto" accept="image/*" class="d-none" />
+                </label>
+                <small class="text-muted">Se não escolher, usamos a foto do anúncio.</small>
+            </div>
+
+            <label class="form-label" for="agradecimento">Agradecimentos</label>
+            <textarea id="agradecimento" class="form-control" rows="5" maxlength="2500" @bind="agradecimento"
+                      placeholder="Conte como foi o reencontro e agradeça quem ajudou: quem compartilhou, quem avisou que viu, quem cuidou dele..."></textarea>
+
+            <button type="submit" class="btn btn-success btn-lg w-100 mt-4" disabled="@salvando">
+                @if (salvando) { <span class="spinner-border spinner-border-sm me-2"></span> }
+                Marcar como ENCONTRADO e publicar no Final Feliz
+            </button>
+            <button type="button" class="btn btn-ghost w-100 mt-2" @onclick="() => respondeuSim = false">Voltar</button>
+        </form>
+    }
+</div>
+
+@code {
+    [Parameter] public int Id { get; set; }
+    private AnimalPerdido? anuncio;
+    private bool carregando = true, respondeuSim, salvando, enviandoFoto;
+    private string agradecimento = "";
+    private string? fotoNova;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (AuthService.UsuarioLogado is not { } eu) { Nav.NavigateTo($"/login?voltar=/achados-e-perdidos/{Id}/encontrado"); return; }
+        var r = await Achados.ObterAsync(Id);
+        anuncio = r?.anuncio is { } a && a.UsuarioId == eu.Id ? a : null; // só quem anunciou responde
+        carregando = false;
+    }
+
+    private async Task AindaNao()
+    {
+        salvando = true;
+        await Achados.AindaProcurandoAsync(Id, AuthService.UsuarioLogado!.Id);
+        Toast.Info("Tudo bem. Vamos continuar divulgando! Compartilhe o anúncio para mais gente ver. 🙏");
+        Nav.NavigateTo($"/achados-e-perdidos/{Id}");
+    }
+
+    private async Task CarregarFoto(InputFileChangeEventArgs e)
+    {
+        enviandoFoto = true;
+        try
+        {
+            var reduzida = await e.File.RequestImageFileAsync("image/jpeg", 1200, 1200);
+            using var s = reduzida.OpenReadStream(10 * 1024 * 1024);
+            using var ms = new MemoryStream();
+            await s.CopyToAsync(ms);
+            fotoNova = await Social.SalvarMidiaAsync(ms.ToArray(), "image/jpeg", AuthService.UsuarioLogado!.Id);
+        }
+        catch { Toast.Erro("Não foi possível carregar a foto."); }
+        finally { enviandoFoto = false; }
+    }
+
+    private async Task Concluir()
+    {
+        if (anuncio == null || salvando) return;
+        salvando = true;
+        try
+        {
+            var direto = await Achados.MarcarEncontradoAsync(Id, AuthService.UsuarioLogado!, agradecimento, fotoNova);
+            if (direto) Toast.Sucesso("Que alegria! A história já está no Final Feliz. 💛");
+            else Analise.Mostrar("História enviada para análise 💛", "A história do reencontro", "na galeria Final Feliz");
+            Nav.NavigateTo($"/achados-e-perdidos/{Id}");
+        }
+        catch (Exception ex) { Toast.Erro(ex.Message); }
+        finally { salvando = false; }
+    }
+}

@@ -117,6 +117,119 @@ namespace crudcomdb.Migrations
                     b.ToTable("Amizades");
                 });
 
+            modelBuilder.Entity("crudcomdb.Models.AnimalPerdido", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Bairro")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)");
+
+                    b.Property<string>("Cidade")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)");
+
+                    b.Property<string>("Cor")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
+                    b.Property<DateTime>("DataCadastro")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("DataOcorrido")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DataResolucao")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Descricao")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("Especie")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Estado")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Nome")
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)");
+
+                    b.Property<string>("Porte")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Raca")
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)");
+
+                    b.Property<string>("Sexo")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("SinaisParticulares")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Tipo")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("UltimoLembrete")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("UsaColeira")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("UsuarioId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UsuarioId");
+
+                    b.HasIndex("Status", "Tipo");
+
+                    b.ToTable("AnimaisPerdidos");
+                });
+
+            modelBuilder.Entity("crudcomdb.Models.AnimalPerdidoImagem", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("AnimalPerdidoId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Base64Data")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AnimalPerdidoId");
+
+                    b.ToTable("AnimaisPerdidosImagens");
+                });
+
             modelBuilder.Entity("crudcomdb.Models.AvaliacaoUso", b =>
                 {
                     b.Property<int>("Id")
@@ -195,6 +308,9 @@ namespace crudcomdb.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<int?>("AnimalPerdidoId")
+                        .HasColumnType("integer");
+
                     b.Property<DateTime>("DataCriacao")
                         .HasColumnType("timestamp with time zone");
 
@@ -214,6 +330,8 @@ namespace crudcomdb.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("AnimalPerdidoId");
 
                     b.HasIndex("DestinatarioId");
 
@@ -316,6 +434,9 @@ namespace crudcomdb.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<int?>("AnimalPerdidoId")
+                        .HasColumnType("integer");
+
                     b.Property<bool>("Aprovado")
                         .HasColumnType("boolean");
 
@@ -342,6 +463,8 @@ namespace crudcomdb.Migrations
                         .HasColumnType("character varying(120)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("AnimalPerdidoId");
 
                     b.HasIndex("AutorId");
 
@@ -1044,6 +1167,26 @@ namespace crudcomdb.Migrations
                     b.Navigation("Solicitante");
                 });
 
+            modelBuilder.Entity("crudcomdb.Models.AnimalPerdido", b =>
+                {
+                    b.HasOne("crudcomdb.Models.Usuario", "Usuario")
+                        .WithMany()
+                        .HasForeignKey("UsuarioId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Usuario");
+                });
+
+            modelBuilder.Entity("crudcomdb.Models.AnimalPerdidoImagem", b =>
+                {
+                    b.HasOne("crudcomdb.Models.AnimalPerdido", null)
+                        .WithMany("Imagens")
+                        .HasForeignKey("AnimalPerdidoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("crudcomdb.Models.AvaliacaoUso", b =>
                 {
                     b.HasOne("crudcomdb.Models.Usuario", null)
@@ -1071,6 +1214,11 @@ namespace crudcomdb.Migrations
 
             modelBuilder.Entity("crudcomdb.Models.Conversa", b =>
                 {
+                    b.HasOne("crudcomdb.Models.AnimalPerdido", "AnimalPerdido")
+                        .WithMany()
+                        .HasForeignKey("AnimalPerdidoId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("crudcomdb.Models.Usuario", "Destinatario")
                         .WithMany()
                         .HasForeignKey("DestinatarioId")
@@ -1092,6 +1240,8 @@ namespace crudcomdb.Migrations
                         .WithMany()
                         .HasForeignKey("PetId")
                         .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("AnimalPerdido");
 
                     b.Navigation("Destinatario");
 
@@ -1130,6 +1280,11 @@ namespace crudcomdb.Migrations
 
             modelBuilder.Entity("crudcomdb.Models.Depoimento", b =>
                 {
+                    b.HasOne("crudcomdb.Models.AnimalPerdido", null)
+                        .WithMany()
+                        .HasForeignKey("AnimalPerdidoId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("crudcomdb.Models.Usuario", "Autor")
                         .WithMany()
                         .HasForeignKey("AutorId")
@@ -1326,6 +1481,11 @@ namespace crudcomdb.Migrations
                     b.Navigation("Doador");
 
                     b.Navigation("Pet");
+                });
+
+            modelBuilder.Entity("crudcomdb.Models.AnimalPerdido", b =>
+                {
+                    b.Navigation("Imagens");
                 });
 
             modelBuilder.Entity("crudcomdb.Models.Conversa", b =>

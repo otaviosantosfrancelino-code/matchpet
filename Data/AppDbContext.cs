@@ -33,6 +33,8 @@ namespace crudcomdb.Data
         public DbSet<PerfilAdotante> PerfisAdotante { get; set; }
         public DbSet<AvaliacaoUso> AvaliacoesUso { get; set; }
         public DbSet<AcessoRapido> AcessosRapidos { get; set; }
+        public DbSet<AnimalPerdido> AnimaisPerdidos { get; set; }
+        public DbSet<AnimalPerdidoImagem> AnimaisPerdidosImagens { get; set; }
 
         // Chaves de criptografia do site (sessões e documentos): ficam no banco para não se perderem a cada publicação
         public DbSet<DataProtectionKey> DataProtectionKeys { get; set; } = null!;
@@ -155,6 +157,17 @@ namespace crudcomdb.Data
             modelBuilder.Entity<PerfilAdotante>()
                 .HasOne<Usuario>().WithMany().HasForeignKey(p => p.UsuarioId).OnDelete(DeleteBehavior.Cascade);
             modelBuilder.Entity<PerfilAdotante>().HasIndex(p => p.UsuarioId).IsUnique();
+
+            // ----- Achados e Perdidos -----
+            modelBuilder.Entity<AnimalPerdido>()
+                .HasMany(a => a.Imagens).WithOne().HasForeignKey(i => i.AnimalPerdidoId).OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<AnimalPerdido>()
+                .HasOne(a => a.Usuario).WithMany().HasForeignKey(a => a.UsuarioId).OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<AnimalPerdido>().HasIndex(a => new { a.Status, a.Tipo });
+            modelBuilder.Entity<Conversa>()
+                .HasOne(c => c.AnimalPerdido).WithMany().HasForeignKey(c => c.AnimalPerdidoId).OnDelete(DeleteBehavior.SetNull);
+            modelBuilder.Entity<Depoimento>()
+                .HasOne<AnimalPerdido>().WithMany().HasForeignKey(d => d.AnimalPerdidoId).OnDelete(DeleteBehavior.SetNull);
 
             modelBuilder.Entity<AcessoRapido>()
                 .HasOne<Usuario>().WithMany().HasForeignKey(a => a.UsuarioId).OnDelete(DeleteBehavior.Cascade);

@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace crudcomdb.Services
 {
-    // Acompanhamento pós-adoção: roda sozinho a cada 6 horas.
+    // Acompanhamento pós-adoção e lembretes de Achados e Perdidos: roda sozinho a cada 6 horas.
     //  - 7 dias depois da adoção: dicas de adaptação para o adotante.
     //  - 30 dias depois: convida o adotante a contar como o pet está (galeria Final Feliz)
     //    e avisa o doador que pode perguntar pelo chat.
@@ -39,6 +39,10 @@ namespace crudcomdb.Services
             var fabrica = escopo.ServiceProvider.GetRequiredService<IDbContextFactory<AppDbContext>>();
             var notificacoes = escopo.ServiceProvider.GetRequiredService<NotificacaoService>();
             await using var db = await fabrica.CreateDbContextAsync();
+
+            // Achados e Perdidos: a cada 2 dias, pergunta a quem anunciou se o pet já foi encontrado
+            try { await escopo.ServiceProvider.GetRequiredService<AchadosPerdidosService>().EnviarLembretesAsync(); }
+            catch (Exception ex) { _log.LogWarning(ex, "Falha nos lembretes de Achados e Perdidos"); }
 
             var agora = DateTime.UtcNow;
             var adotados = await db.Pets.AsNoTracking()

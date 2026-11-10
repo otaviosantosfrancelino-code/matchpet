@@ -92,6 +92,8 @@ namespace crudcomdb.Models
         public Pet? Pet { get; set; }
         public int? ItemDoacaoId { get; set; }
         public ItemDoacao? ItemDoacao { get; set; }
+        public int? AnimalPerdidoId { get; set; }          // conversa sobre um anúncio de Achados e Perdidos
+        public AnimalPerdido? AnimalPerdido { get; set; }
 
         public DateTime DataCriacao { get; set; } = DateTime.UtcNow;
         public DateTime UltimaMensagemEm { get; set; } = DateTime.UtcNow;
@@ -149,6 +151,7 @@ namespace crudcomdb.Models
         public Usuario? Autor { get; set; }
         public int? PetId { get; set; }
         public Pet? Pet { get; set; }
+        public int? AnimalPerdidoId { get; set; }          // história de reencontro (Achados e Perdidos)
 
         [MaxLength(120)]
         public string Titulo { get; set; } = string.Empty;
