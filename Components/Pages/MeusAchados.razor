@@ -34,6 +34,10 @@
             {
                 <div class="col-12 col-sm-6 col-md-4 col-lg-3 d-grid gap-2">
                     <CardAchado Anuncio="a" />
+                    @if (a.Status != "Removido")
+                    {
+                        <a href="/achados-e-perdidos/@a.Id/editar" class="btn btn-light btn-sm"><i class="bi bi-pencil me-1"></i>Editar</a>
+                    }
                     @if (a.Status == AnimalPerdido.StatusAtivo)
                     {
                         <a href="/achados-e-perdidos/@a.Id/encontrado" class="btn btn-success btn-sm"><i class="bi bi-stars me-1"></i>@(a.Tipo == AnimalPerdido.TipoPerdido ? "Foi encontrado!" : "Achei a família!")</a>

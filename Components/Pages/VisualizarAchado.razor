@@ -137,7 +137,10 @@
                                 <i class="bi bi-stars me-2"></i>@(perdido ? "Meu pet foi encontrado!" : "Encontrei a família dele!")
                             </a>
                         }
-                        <button class="btn btn-light w-100 text-danger" @onclick="Excluir" disabled="@ocupado"><i class="bi bi-trash me-1"></i>Excluir anúncio</button>
+                        <div class="d-flex gap-2">
+                            <a href="/achados-e-perdidos/@a.Id/editar" class="btn btn-light flex-fill"><i class="bi bi-pencil me-1"></i>Editar anúncio</a>
+                            <button class="btn btn-light flex-fill text-danger" @onclick="Excluir" disabled="@ocupado"><i class="bi bi-trash me-1"></i>Excluir</button>
+                        </div>
                     }
                     else if (!resolvido)
                     {

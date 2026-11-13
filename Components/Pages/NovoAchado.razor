@@ -1,24 +1,31 @@
 @page "/achados-e-perdidos/novo"
+@page "/achados-e-perdidos/{Id:int}/editar"
 @inject AchadosPerdidosService Achados
 @inject AuthService AuthService
 @inject ToastService Toast
 @inject AvisoAnaliseService Analise
 @inject NavigationManager Nav
 
-<PageTitle>Anunciar pet perdido ou achado | Match-Pet SP</PageTitle>
+<PageTitle>@(Editando ? "Editar anúncio" : "Anunciar pet perdido ou achado") | Match-Pet SP</PageTitle>
 
 <div class="container py-4 py-md-5" style="max-width: 860px;">
-    <a href="/achados-e-perdidos" class="btn btn-ghost px-2 mb-3"><i class="bi bi-arrow-left me-1"></i> Achados e Perdidos</a>
+    <a href="@(Editando ? $"/achados-e-perdidos/{Id}" : "/achados-e-perdidos")" class="btn btn-ghost px-2 mb-3"><i class="bi bi-arrow-left me-1"></i> @(Editando ? "Voltar ao anúncio" : "Achados e Perdidos")</a>
     <div class="page-header">
         <div class="d-flex align-items-center gap-3">
-            <div class="icone-bolha vermelho"><i class="bi bi-megaphone"></i></div>
+            <div class="icone-bolha vermelho"><i class="bi @(Editando ? "bi-pencil" : "bi-megaphone")"></i></div>
             <div>
-                <h1>Anunciar pet perdido ou achado</h1>
-                <p>Quanto mais detalhes, maior a chance de o pet voltar para casa.</p>
+                <h1>@(Editando ? "Editar anúncio" : "Anunciar pet perdido ou achado")</h1>
+                <p>@(Editando ? "Atualize as informações e as fotos. As mudanças passam pela aprovação da moderação." : "Quanto mais detalhes, maior a chance de o pet voltar para casa.")</p>
             </div>
         </div>
     </div>
 
+    @if (Editando && !carregado)
+    {
+        <div class="skeleton" style="height:520px;border-radius:22px"></div>
+    }
+    else
+    {
     <form class="mp-card p-4 p-md-5" @onsubmit="Publicar" @onsubmit:preventDefault>
         <div class="secao-form mt-0">O que aconteceu?</div>
         <div class="row g-3">
@@ -135,9 +142,10 @@
 
         <button type="submit" class="btn btn-danger btn-lg w-100 mt-4" disabled="@salvando">
             @if (salvando) { <span class="spinner-border spinner-border-sm me-2"></span> }
-            Publicar anúncio
+            @(Editando ? "Salvar alterações" : "Publicar anúncio")
         </button>
     </form>
+    }
 </div>
 
 @code {
@@ -149,13 +157,32 @@
     private string Hoje => DateTime.Today.ToString("yyyy-MM-dd");
 
     [SupplyParameterFromQuery(Name = "tipo")] public string? TipoQuery { get; set; }
+    [Parameter] public int? Id { get; set; }          // preenchido quando a página é usada para editar
+    private bool Editando => Id != null;
+    private bool carregado;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
         if (AuthService.UsuarioLogado is not { } eu)
         {
             Toast.Info("Entre na sua conta para anunciar.");
-            Nav.NavigateTo("/login?voltar=/achados-e-perdidos/novo");
+            Nav.NavigateTo($"/login?voltar={Uri.EscapeDataString(Editando ? $"/achados-e-perdidos/{Id}/editar" : "/achados-e-perdidos/novo")}");
+            return;
+        }
+        if (Editando)
+        {
+            // Só quem anunciou pode editar
+            var r = await Achados.ObterAsync(Id!.Value);
+            if (r?.anuncio is not { } existente || existente.UsuarioId != eu.Id || existente.Status == ModeracaoService.StatusRemovido)
+            {
+                Toast.Erro("Anúncio não encontrado ou você não pode editá-lo.");
+                Nav.NavigateTo("/achados-e-perdidos/meus");
+                return;
+            }
+            anuncio = existente;
+            fotos.AddRange(existente.Imagens.Select(i => $"/imagens/achado/{i.Id}"));
+            dataOcorrido = Consultas.HoraBrasil(existente.DataOcorrido).Date;
+            carregado = true;
             return;
         }
         anuncio.Cidade = string.IsNullOrWhiteSpace(eu.Cidade) ? "Franca" : eu.Cidade;
@@ -197,13 +224,21 @@
         {
             anuncio.DataOcorrido = dataOcorrido > DateTime.Today ? DateTime.Today : dataOcorrido;
             anuncio.Descricao = anuncio.Descricao.Trim();
+            if (Editando)
+            {
+                var visivel = await Achados.EditarAsync(Id!.Value, anuncio, fotos, eu);
+                if (visivel) Toast.Sucesso("Anúncio atualizado! ✏️");
+                else Analise.Mostrar("Alterações enviadas para análise", "A edição do seu anúncio", "em Achados e Perdidos");
+                Nav.NavigateTo($"/achados-e-perdidos/{Id}");
+                return;
+            }
             var direto = await Achados.PublicarAsync(anuncio, fotos, eu);
             var id = anuncio.Id;
             if (direto) Toast.Sucesso("Anúncio publicado! 📢");
             else Analise.Mostrar("Anúncio enviado para análise", "O anúncio", "em Achados e Perdidos");
             Nav.NavigateTo($"/achados-e-perdidos/{id}");
         }
-        catch (Exception ex) { Toast.Erro("Não foi possível publicar: " + (ex.InnerException?.Message ?? ex.Message)); }
+        catch (Exception ex) { Toast.Erro((Editando ? "Não foi possível salvar: " : "Não foi possível publicar: ") + (ex.InnerException?.Message ?? ex.Message)); }
         finally { salvando = false; }
     }
 }

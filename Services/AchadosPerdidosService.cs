@@ -122,6 +122,43 @@ namespace crudcomdb.Services
             return direto;
         }
 
+        // Edição feita por quem anunciou. "fotos" traz as fotos que ficam: as já salvas pelo endereço
+        // "/imagens/achado/{id}" e as novas em "data:image/...". Anúncio ativo editado volta para a aprovação
+        // (menos de administradores). Devolve true se continua visível sem aprovação.
+        public async Task<bool> EditarAsync(int id, AnimalPerdido dados, IReadOnlyList<string> fotos, Usuario autor)
+        {
+            await using var db = await _fabrica.CreateDbContextAsync();
+            var a = await db.AnimaisPerdidos.Include(x => x.Imagens).FirstOrDefaultAsync(x => x.Id == id && x.UsuarioId == autor.Id)
+                    ?? throw new InvalidOperationException("Anúncio não encontrado.");
+            if (a.Status == ModeracaoService.StatusRemovido) throw new InvalidOperationException("Este anúncio foi removido pela moderação e não pode ser editado.");
+
+            a.Tipo = dados.Tipo;
+            a.Nome = string.IsNullOrWhiteSpace(dados.Nome) ? null : dados.Nome.Trim();
+            a.Especie = dados.Especie;
+            a.Raca = string.IsNullOrWhiteSpace(dados.Raca) ? null : dados.Raca.Trim();
+            a.Porte = dados.Porte;
+            a.Sexo = dados.Sexo;
+            a.Cor = dados.Cor;
+            a.UsaColeira = dados.UsaColeira;
+            a.SinaisParticulares = string.IsNullOrWhiteSpace(dados.SinaisParticulares) ? null : dados.SinaisParticulares.Trim();
+            a.Descricao = dados.Descricao.Trim();
+            a.Bairro = dados.Bairro.Trim();
+            a.Cidade = dados.Cidade.Trim();
+            a.DataOcorrido = DateTime.SpecifyKind(dados.DataOcorrido.Date.AddHours(12), DateTimeKind.Utc);
+
+            // Fotos: remove as que saíram e acrescenta as novas
+            var manter = fotos.Where(f => f.StartsWith("/imagens/achado/"))
+                .Select(f => int.TryParse(f["/imagens/achado/".Length..], out var n) ? n : 0).ToHashSet();
+            db.AnimaisPerdidosImagens.RemoveRange(a.Imagens.Where(i => !manter.Contains(i.Id)));
+            foreach (var nova in fotos.Where(f => f.StartsWith("data:image/")))
+                a.Imagens.Add(new AnimalPerdidoImagem { Base64Data = nova });
+
+            var direto = Consultas.PublicaDireto(autor);
+            if (!direto && a.Status == AnimalPerdido.StatusAtivo) a.Status = StatusModeracao;
+            await db.SaveChangesAsync();
+            return direto || a.Status == AnimalPerdido.StatusResolvido;
+        }
+
         public async Task ExcluirAsync(int id, int usuarioId)
         {
             await using var db = await _fabrica.CreateDbContextAsync();
