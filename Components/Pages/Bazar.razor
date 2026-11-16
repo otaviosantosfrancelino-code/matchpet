@@ -73,13 +73,6 @@
             Nav.NavigateTo("/login");
             return;
         }
-        if (!AuthService.DocumentoAprovado)
-        {
-            Toast.Aviso("Por segurança, verifique seu documento no Perfil antes de pedir itens doados.");
-            Nav.NavigateTo("/perfil");
-            return;
-        }
-
         if (item.UsuarioDoadorId == AuthService.UsuarioLogado!.Id)
         {
             Toast.Info("Este item é seu. Gerencie em Meus anúncios.");

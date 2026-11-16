@@ -90,6 +90,9 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
+// Aprovação prévia do conteúdo pelo administrador: desligada (todos publicam na hora). Para religar: Moderacao__AprovacaoPrevia = true
+Consultas.AprovacaoPrevia = app.Configuration.GetValue("Moderacao:AprovacaoPrevia", false);
+
 // 4. BANCO: aplica migrações pendentes e cria os cadastros de demonstração (uma única vez)
 using (var escopo = app.Services.CreateScope())
 {
